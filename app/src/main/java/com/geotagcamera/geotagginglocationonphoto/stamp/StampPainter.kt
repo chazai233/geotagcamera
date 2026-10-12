@@ -36,18 +36,18 @@ import com.geotagcamera.geotagginglocationonphoto.ui.theme.StampAnchorStyle
  * makes "what you frame is what burns in" a guarantee, not a coincidence
  * between two separately-maintained implementations.
  *
- * Card/Bar/Minimal are three branches sharing the same row-building idea:
- * nothing is positioned by a fixed index, every row's presence is read
- * straight off [StampSpec], so the layout closes the gap itself when a
- * field is off — never a hole where the address used to be.
+ * Bar and Minimal share the same row-building idea: nothing is positioned
+ * by a fixed index, every row's presence is read straight off [StampSpec],
+ * so the layout closes the gap itself when a field is off — never a hole
+ * where the address used to be.
  *
  * No RenderEffect/backdrop blur here (that needs API 31+): a flat
  * semi-transparent scrim is used everywhere, matching the design system's
  * own documented low-end/API-26 fallback path (section 10, "API 26
  * fallbacks" — "a slightly darker flat scrim below it, tuned to the same
- * measured contrast"). Address/date lines are measured single-line for now
- * (no wrap); very long addresses may overflow the card edge until this
- * gets a real device pass and a wrap pass is added.
+ * measured contrast"). Every line is measured against the space it has and
+ * wraps or ellipsizes, so long place names and addresses never run off the
+ * stamp or the photo edge.
  */
 object StampPainter {
     private val CardScrim = Color(0xB2141619) // ~rgba(20,22,25,.70), one shade lighter than chrome/base for legibility
@@ -72,8 +72,6 @@ object StampPainter {
             StampTemplate.MINIMAL -> drawMinimal(scope, spec, textMeasurer)
         }
     }
-
-    // ---- Card: the primary template, a scrim card anchored to one of nine positions ----
 
     // ---- Bar (default): every enabled field in a full-width strip on the top or bottom edge ----
 

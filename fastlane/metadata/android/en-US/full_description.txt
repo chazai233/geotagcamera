@@ -3,22 +3,27 @@ GeoTag Camera is a free, open source camera for anyone who needs to show where a
 <b>What it does</b>
 <ul>
 <li>Stamps the GPS coordinates, address and time onto each photo, with a live preview of the stamp in the viewfinder</li>
-<li>Writes the location into the photo's EXIF data too, so GIS and photo tools can read it</li>
-<li>Lets you choose the stamp fields (coordinates, address, time, altitude, accuracy, bearing, Plus Code and more), the template (Card, Bar or Minimal) and the position</li>
+<li>Two stamp styles: Bar (the default), a full-width strip with every field you turn on, and Minimal, a small coordinates-and-time label</li>
+<li>Choose the stamp fields: place and country, address with Plus Code, coordinates, date and time with GMT offset, accuracy, altitude, bearing and more</li>
+<li>Move the stamp by holding and dragging it on the viewfinder</li>
+<li>Writes the location, altitude, accuracy, direction and time into the photo's EXIF data too, so GIS and photo tools can read it</li>
 <li>Adds your organization name and logo to the stamp</li>
 <li>Optional hand-drawn signature on the photo before saving</li>
-<li>Camera controls: flash, front/back camera, zoom, tap-to-focus, grid, 4:3 / 16:9 / 1:1</li>
+<li>Camera that adapts to your phone: zoom presets from the real lenses, flash only when there is one, and the phone maker's Night, HDR, Portrait and other modes when the phone offers them</li>
+<li>Tap-to-focus with exposure control, pinch zoom, grid, front/back camera, 4:3 / 16:9 / 1:1 / Full</li>
+<li>The saved photo matches the on-screen frame exactly</li>
 <li>Saves straight to your gallery in Pictures/GeoTagCamera</li>
+<li>Gallery grouped by day, with multi-select share and delete, open in maps and copy coordinates</li>
 </ul>
 
 <b>Tamper evidence</b>
-Each photo is hashed with SHA-256 and signed with a key created on your phone in the Android Keystore. The proof is embedded in the file, so any copy of the app can check any photo, offline. A "verified" result means the image hasn't changed since it was signed by the key stored in the file. It does not prove who took the photo, and it can't tell whether the phone's GPS or clock were telling the truth. Compressing or re-saving a photo breaks verification.
+Each photo is hashed with SHA-256 and signed with a key created on your phone in the Android Keystore. The proof is embedded in the file, so any copy of the app can check any photo, offline. Verification shows the signing key's fingerprint and whether it is this phone's key. A "verified" result means the image hasn't changed since it was signed by the key stored in the file. It does not prove who took the photo, it does not cover the EXIF metadata, and it can't tell whether the phone's GPS or clock were telling the truth. Compressing or re-saving a photo breaks verification.
 
-<b>Works offline</b>
-Taking, stamping, signing and verifying photos all work with no signal. Addresses you've looked up before are cached on the phone.
+<b>Works without signal</b>
+Taking, stamping, signing and verifying photos all work with no signal. With no connection the stamp uses the nearest address already cached on the phone, and the Plus Code is always calculated on the device.
 
 <b>Privacy</b>
-No ads, analytics or tracking. Nothing is sent to the developer. Two optional features are off by default: a weather chip (sends your coordinates to Open-Meteo) and a map thumbnail (downloads OpenStreetMap tiles from Stadia Maps; it needs an API key at build time, so it isn't available in builds without one). Address lookup uses Android's built-in geocoder, which on most phones is provided by Google and uses the network.
+No ads, analytics or tracking. Nothing is sent to the developer. Location is only used while the camera screen is visible. Two optional features are off by default: a weather chip (sends your position, rounded to about 1 km, to Open-Meteo) and a map thumbnail (downloads OpenStreetMap tiles from Stadia Maps; it needs an API key at build time, so it isn't available in builds without one). Address lookup uses the phone's built-in Android geocoder, which on most phones is provided by Google and uses the network. App data is excluded from cloud backup and device transfer, and can be wiped from the About screen.
 
 Location comes from Google Play services (Fused Location Provider), which is not free software.
 

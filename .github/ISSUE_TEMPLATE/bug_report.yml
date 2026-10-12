@@ -31,7 +31,7 @@ body:
     attributes:
       label: App version
       description: Shown on the About & legal screen.
-      placeholder: "1.1.0"
+      placeholder: "1.2.0"
     validations:
       required: true
   - type: dropdown

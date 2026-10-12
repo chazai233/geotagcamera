@@ -11,7 +11,7 @@ Thanks for wanting to help. This is a small project, so the process is light, bu
 
 ## Setting up
 
-You need JDK 17 and the Android SDK with platform 36. Android Studio Narwhal or newer handles the SDK for you.
+You need JDK 17 and the Android SDK with platform 36. Android Studio Narwhal or newer handles the SDK for you. The project builds with Gradle 8.14 (through the wrapper), Android Gradle Plugin 8.13 and Kotlin 2.3, and all dependency versions live in the version catalog at `gradle/libs.versions.toml`. Minimum SDK is 26, target SDK is 36.
 
 ```
 git clone https://github.com/konkomaji/geotagcamera.git
@@ -67,5 +67,4 @@ These are not up for negotiation, because they are the reason the app exists:
 - No analytics, telemetry, crash reporting or tracking of any kind, including "anonymous" usage stats.
 - No dependencies that only work through Google Play or that make the app unusable without it (for example Firebase, Play Billing, Play Integrity). The existing Fused Location Provider dependency is a known exception we'd like to make optional, not a precedent.
 - No new network calls that are on by default. Anything that talks to the internet must be opt-in, must not block capture, and must be documented in [PRIVACY.md](PRIVACY.md).
-- No new permissions without a clear reason in the PR and an update to the permissions table in the README.
-- No closed source or non-free binaries.
+- No new permissions without a clear reason in the PR and an update to the permissions table in the README.- No closed source or non-free binaries.

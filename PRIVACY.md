@@ -12,12 +12,12 @@ All of this stays on your device:
 
 - **Your photos.** Saved to your gallery in Pictures/GeoTagCamera. They're ordinary files you can view, share or delete with any gallery app.
 - **A list of your captures.** For each photo: where the file is, when it was taken, the coordinates, altitude, accuracy, compass bearing, address, your organization label, and the hash and signature used for verification.
-- **An address cache.** Addresses you've already looked up, so the stamp works without a signal.
+- **An address cache.** Addresses you've already looked up, so with no signal the stamp can use the nearest address already on the phone.
 - **A map tile cache**, only if you turned the map thumbnail on.
 - **Your settings**, and your organization logo if you uploaded one.
 - **A signing key**, created on your phone and kept in the Android Keystore. The private part can't be exported.
 
-Android backup is turned off for this app, so none of this goes into a Google or device-maker cloud backup.
+Android backup is turned off for this app, and the app's data is also excluded from cloud backup and device-to-device transfer, so none of this (including the location history in your capture list and address cache) goes into a Google or device-maker cloud backup or gets copied to a new phone.
 
 ## What leaves your phone
 
@@ -25,7 +25,7 @@ Nothing is sent to the developer. The only network traffic comes from the featur
 
 ### Map thumbnail (off by default)
 
-If you turn on the map thumbnail, the app downloads map images from **Stadia Maps** (map data from OpenStreetMap). Each request names a map tile by its x, y and zoom numbers. Those numbers correspond to a small area around your location, a few hundred metres across, so Stadia can work out roughly where you are. Stadia also sees your IP address and the app's API key. See the [Stadia Maps privacy policy](https://stadiamaps.com/privacy-policy/).
+The map thumbnail is off until you turn it on in Settings. If you turn it on, the app downloads map images from **Stadia Maps** (map data from OpenStreetMap). Each request names a map tile by its x, y and zoom numbers. Those numbers correspond to a small area around your location, a few hundred metres across, so Stadia can work out roughly where you are. Stadia also sees your IP address and the app's API key. See the [Stadia Maps privacy policy](https://stadiamaps.com/privacy-policy/).
 
 Tiles are cached on your phone, so the same place isn't downloaded twice.
 
@@ -33,21 +33,21 @@ Copies of the app downloaded from GitHub Releases are built without a Stadia Map
 
 ### Weather (off by default)
 
-If you turn on the weather chip, the app sends your latitude and longitude to **Open-Meteo** to get the current temperature and conditions. The coordinates are sent with five decimal places, which is about one metre, so treat this as sharing your precise location with Open-Meteo. Open-Meteo also sees your IP address. See the [Open-Meteo terms and privacy information](https://open-meteo.com/en/terms).
+The weather chip is off until you turn it on in Settings. If you turn it on, the app sends your latitude and longitude to **Open-Meteo** to get the current temperature and conditions. The coordinates are rounded to two decimal places before they are sent, which is roughly 1 km, so Open-Meteo learns your approximate area but not your exact spot. Open-Meteo also sees your IP address. See the [Open-Meteo terms and privacy information](https://open-meteo.com/en/terms).
 
 ### Address lookup
 
-To turn coordinates into an address, the app uses the geocoder built into Android. On most phones this service is provided by Google Play services and needs an internet connection, which means the coordinates being looked up are sent to Google and handled under Google's privacy policy. The app caches the result so it doesn't need to ask again for the same place. If no geocoder is available or there's no connection, the app uses the cache or leaves the address off.
+To turn coordinates into an address, the app uses the geocoder built into your phone's Android system. The app does not choose who provides it: on most phones this service is provided by Google Play services and needs an internet connection, which means the coordinates being looked up are sent to Google and handled under Google's privacy policy. The app caches the result so it doesn't need to ask again for the same place. If no geocoder is available or there's no connection, the app uses the nearest cached address or leaves the address off. The Plus Code on the stamp is calculated on the phone and never needs the network.
 
 ### Location
 
-The app gets your location from Google Play services (the Fused Location Provider). Depending on your phone's location settings, Google Play services may use Wi-Fi and mobile network information to improve accuracy. That is controlled by your phone's settings, not by this app. GeoTag Camera only asks for location while you're using it, never in the background.
+The app gets your location from Google Play services (the Fused Location Provider). Depending on your phone's location settings, Google Play services may use Wi-Fi and mobile network information to improve accuracy. That is controlled by your phone's settings, not by this app. GeoTag Camera only receives location updates while the camera screen is open and visible. It stops as soon as you leave the camera screen or the app, and it never uses location in the background.
 
 ### When you share a photo
 
 When you share a photo, the file you send contains:
 - the stamp burned into the image (whatever fields you chose to show),
-- EXIF metadata with the exact GPS coordinates, altitude and time,
+- EXIF metadata with the exact GPS coordinates, altitude, accuracy, compass direction, time and time-zone offset,
 - the verification proof (a hash, a signature and a public key).
 
 Anyone who receives the file can read all of this. If you don't want to share your precise location, don't share the original file.
@@ -58,12 +58,12 @@ Anyone who receives the file can read all of this. If you don't want to share yo
 - No analytics, telemetry or crash reporting.
 - No account or sign-in.
 - No selling or sharing of data, because we don't have any.
-- No background location.
+- No background location. Location is only used while the camera screen is visible.
 
 ## Permissions
 
 - **Camera:** to take photos.
-- **Location:** to stamp and tag photos with where they were taken.
+- **Location:** to stamp and tag photos with where they were taken, only while the camera screen is visible.
 - **Internet:** only for the optional map thumbnail and weather features above (and the Android geocoder, which may use it on its own).
 - **Storage (Android 9 and older only):** to save photos to the gallery.
 

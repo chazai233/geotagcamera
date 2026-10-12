@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GeoTag Camera — Free Open Source GPS Camera App for Android</title>
-<meta name="description" content="GeoTag Camera is a free, open source, ad-free Android app that stamps photos with GPS location, address and timestamp. Built for field surveyors, students and NGO workers in India. No ads, no tracking, works offline." />
+<meta name="description" content="GeoTag Camera is a free, open source, ad-free Android app that stamps photos with GPS location, address and timestamp. Built for field surveyors, students and NGO workers in India. No ads, no tracking, capture works without signal." />
 <meta name="keywords" content="geotag camera, geo camera app, gps camera android, gps photo stamp, open source camera app, gps map camera alternative, field survey photo app, timestamp camera, geotagging app india, tamper evident photo" />
 <meta name="author" content="Konko Maji" />
 <link rel="canonical" href="https://konkomaji.github.io/geotagcamera/" />
@@ -41,7 +41,7 @@
     "priceCurrency": "USD"
   },
   "license": "https://www.gnu.org/licenses/gpl-3.0.html",
-  "softwareVersion": "1.0.0",
+  "softwareVersion": "1.2.0",
   "author": {
     "@type": "Person",
     "name": "Konko Maji"
@@ -79,7 +79,7 @@
       "name": "Does GeoTag Camera work without an internet connection?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. I cache reverse-geocoded addresses on your device, so the address on your photo stamp keeps working even when you are out of network range, which is common on field sites in rural India."
+        "text": "Yes. Taking, stamping, signing and verifying photos need no connection. Addresses come from your phone's built-in geocoder, which usually needs the network, so I cache them on your device: out of network range, which is common on field sites in rural India, the stamp uses the nearest address already looked up, and the Plus Code is always worked out on the phone."
       }
     },
     {
@@ -87,7 +87,7 @@
       "name": "What data does GeoTag Camera collect?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "None beyond what the app needs to function. Camera and location access are used locally on your device only. Nothing is sent to any server, because I didn't build one."
+        "text": "None. Nothing is sent to me, because I didn't build a server. Location is only used while the camera screen is visible. The optional map thumbnail and weather chip are off by default; if you turn weather on, your position is rounded to about 1 km before it goes to Open-Meteo. Address lookup uses your phone's own geocoder, which on most phones is Google Play services. App data is kept out of cloud backups and device transfers."
       }
     },
     {
@@ -95,7 +95,7 @@
       "name": "How does the tamper-evident photo feature work?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Every photo is hashed with SHA-256 and signed using a private key generated on your device through the Android Keystore. That signature can later be used to verify the photo's bytes have not changed since the moment it was captured."
+        "text": "Every photo's image data is hashed with SHA-256 and signed using a private key generated on your device through the Android Keystore. The hash, signature and public key are embedded in the photo, so the app can later check that the pixels, including the burned-in stamp, have not changed since capture. It does not prove who took the photo, the EXIF metadata is not covered, and re-compressing the photo breaks the check."
       }
     },
     {
@@ -119,7 +119,7 @@
       "name": "Can I verify a photo that someone else sent me?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Not yet in the current release, since the signing key never leaves the phone that took the photo. The 1.1.0 update fixes this: the hash, signature and matching public key travel embedded in the photo itself, so anyone with the app can verify any photo, on any device, whether or not it was captured there."
+        "text": "Yes. The hash, signature and matching public key travel embedded in the photo itself, so anyone with the app can verify it on any device, offline. The result shows a short fingerprint of the signing key and whether it is your own phone's key, so you can compare it with the fingerprint the sender gives you."
       }
     }
   ]
@@ -542,19 +542,19 @@
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M9 7l1.2-2.2h3.6L15 7"/><circle cx="12" cy="13.5" r="3.4"/></svg></div>
         <h3>Clean camera capture</h3>
-        <p>A focused capture screen built on CameraX. No filters, no clutter, no background processes you didn't ask for.</p>
+        <p>A focused capture screen built on CameraX that adapts to your phone: zoom presets from the real lenses, flash only when there is one, and the phone maker's Night, HDR and Portrait modes when it offers them. Shoot in 4:3, 16:9, 1:1 or Full, and the saved photo matches the frame on screen exactly.</p>
       </article>
 
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></div>
         <h3>Location, address and time, stamped in</h3>
-        <p>Every photo carries GPS coordinates, a readable address and the exact timestamp burned right into the image.</p>
+        <p>Every photo carries GPS coordinates, a readable address with Plus Code and the exact time burned right into the image. Pick the full-width Bar stamp or a small Minimal label, and drag it into place on the viewfinder.</p>
       </article>
 
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="12" height="12" rx="2"/><rect x="8" y="8" width="12" height="12" rx="2"/></svg></div>
         <h3>GPS written into EXIF too</h3>
-        <p>Coordinates are also saved in the photo's own EXIF metadata, so GIS software and photo tools pick it up automatically.</p>
+        <p>Coordinates, altitude, accuracy, direction and capture time are also saved in the photo's own EXIF metadata, so GIS software and photo tools pick them up automatically.</p>
       </article>
 
       <article class="feature-card">
@@ -572,13 +572,13 @@
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/><line x1="3" y1="3" x2="21" y2="21"/></svg></div>
         <h3>Built to work offline</h3>
-        <p>Addresses are cached on your device, so the stamp keeps working even when you lose signal out in the field.</p>
+        <p>Capturing, stamping and signing need no connection. Addresses are cached on your device, so with no signal the stamp uses the nearest one already looked up, and the Plus Code is always there.</p>
       </article>
 
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2.2" fill="currentColor" stroke="none"/><line x1="4" y1="14" x2="20" y2="14"/><circle cx="16" cy="14" r="2.2" fill="currentColor" stroke="none"/><line x1="4" y1="21" x2="20" y2="21"/><circle cx="11" cy="21" r="2.2" fill="currentColor" stroke="none"/></svg></div>
         <h3>Pick exactly what shows</h3>
-        <p>Turn coordinates, address, altitude, accuracy or compass bearing on or off. It's your stamp, your call.</p>
+        <p>Turn coordinates, address, altitude, accuracy, compass bearing and more on or off, with a live preview in Settings. It's your stamp, your call.</p>
       </article>
 
       <article class="feature-card">
@@ -590,19 +590,19 @@
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 4v4h-4M6 20v-4h4"/></svg></div>
         <h3>Always a fresh location</h3>
-        <p>Every capture fetches a new address instead of quietly reusing an old cached one, a common bug in other apps.</p>
+        <p>Location streams while the camera is open, and a fix older than 30 seconds is never stamped, instead of quietly reusing an old one, a common bug in other apps.</p>
       </article>
 
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h13l3 6-3 6H4z"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></div>
         <h3>Your own name on the stamp</h3>
-        <p>Add your college, company or project name to every photo. No paywall for something this basic.</p>
+        <p>Add your college, company or project name and logo to every photo. No paywall for something this basic.</p>
       </article>
 
       <article class="feature-card">
         <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <h3>Photos you can prove weren't edited</h3>
-        <p>Every photo is hashed and signed on-device at capture, so you can later verify it hasn't been touched since.</p>
+        <p>Every photo is hashed and signed on-device at capture, so you, or anyone you send it to, can later verify it hasn't been touched since.</p>
       </article>
 
       <article class="feature-card">
@@ -625,8 +625,8 @@
       <p class="eyebrow">Trust, not promises</p>
       <h2>Open source you can actually audit</h2>
       <p style="margin-top:1rem">Every line of GeoTag Camera is public. There's no server collecting your data, because there isn't one. Location and camera access stay on your device. Don't take my word for it, read the code yourself.</p>
-      <p style="margin-top:1rem">On top of that, I hash every photo with SHA-256 and sign it using a private key generated on your device through the Android Keystore, the same secure hardware layer Android uses for biometric unlock. That's what lets you prove later that a photo hasn't been edited since the second it was taken.</p>
-      <p style="margin-top:1rem">Today that check only works on the exact phone that took the photo, since the signing key never leaves it. The next release fixes that: the hash, the signature and the matching public key travel embedded in the photo itself, so anyone with the app can verify a photo you send them, not just you.</p>
+      <p style="margin-top:1rem">On top of that, I hash every photo with SHA-256 and sign it using a private key generated on your device through the Android Keystore, which on most phones keeps the key in secure hardware. That's what lets you show later that a photo hasn't been edited since the second it was taken.</p>
+      <p style="margin-top:1rem">The hash, the signature and the matching public key travel embedded in the photo itself, so anyone with the app can verify a photo you send them, not just you. The result shows the signing key's fingerprint so they can check it is yours. It can't prove the GPS or the clock were telling the truth, and the EXIF metadata isn't covered, only the image itself.</p>
     </div>
     <div class="security-visual">
       <div>&gt; sha256(photo.jpg)</div>
@@ -647,13 +647,13 @@
   <section id="roadmap" class="wrap">
     <p class="eyebrow">What's next</p>
     <h2>Actively maintained, more coming</h2>
-    <p style="margin-top:.8rem">Version 1.0.0 shipped photo capture. 1.1.0 is a full redesign already locked and in progress, not just a feature list, and everything further out is on my list for the releases after that.</p>
-    <p class="eyebrow" style="margin-top:2.2rem">1.1.0, in design</p>
+    <p style="margin-top:.8rem">Version 1.0.0 shipped photo capture. 1.1.0 was a full redesign with portable verification. 1.2.0 is out now as a pre-release focused on robustness: it hasn't been tested across many real phones yet, so reports from your device help. Everything further out is on my list for the releases after that.</p>
+    <p class="eyebrow" style="margin-top:2.2rem">Shipped in 1.1.0 and 1.2.0</p>
     <div class="roadmap-chips">
-      <span class="chip">Redesigned stamp with map thumbnail</span>
+      <span class="chip">Bar and Minimal stamps</span>
       <span class="chip">Live stamp preview in the viewfinder</span>
-      <span class="chip">Share straight from the app</span>
-      <span class="chip">Real camera controls</span>
+      <span class="chip">Share and delete from the app</span>
+      <span class="chip">Camera that adapts to your phone</span>
       <span class="chip">Verify a photo someone else sent you</span>
       <span class="chip">Organization logo on the stamp</span>
     </div>
@@ -665,7 +665,6 @@
       <span class="chip">CSV / KML / GeoJSON export</span>
       <span class="chip">Voice notes on photos</span>
       <span class="chip">Before and after pairing</span>
-      <span class="chip">Multiple stamp templates</span>
       <span class="chip">Quick-capture widget</span>
       <span class="chip">Biometric app lock</span>
       <span class="chip">Manual local backup</span>
@@ -689,15 +688,15 @@
       </details>
       <details>
         <summary>Does it work without an internet connection?</summary>
-        <p>Yes. I cache reverse-geocoded addresses on your device, so the address on your stamp keeps working even when you're out of signal, which I know happens a lot on field sites.</p>
+        <p>Yes. Taking, stamping, signing and verifying photos need no connection. Addresses come from your phone's built-in geocoder, which usually needs the network, so I cache them on your device: out of signal, which I know happens a lot on field sites, the stamp uses the nearest address already looked up, and the Plus Code is always worked out on the phone.</p>
       </details>
       <details>
         <summary>What data does it collect?</summary>
-        <p>None beyond what's needed to work. Camera and location access are used locally on your device. Nothing is sent to any server, because I didn't build one.</p>
+        <p>None. Nothing is sent to me, because I didn't build a server. Location is only used while the camera screen is visible. The optional map thumbnail and weather chip are off by default; if you turn weather on, your position is rounded to about 1 km before it goes to Open-Meteo. Address lookup uses your phone's own geocoder, which on most phones is Google Play services. App data is kept out of cloud backups and device transfers.</p>
       </details>
       <details>
         <summary>How does the tamper-evident feature actually work?</summary>
-        <p>Every photo is hashed with SHA-256 and signed using a private key generated on your device through Android's own Keystore. That signature can later be used to verify the photo's bytes haven't changed since capture.</p>
+        <p>Every photo's image data is hashed with SHA-256 and signed using a private key generated on your device through Android's own Keystore. The hash, signature and public key are embedded in the photo, so the app can later check that the pixels, including the burned-in stamp, haven't changed since capture. It doesn't prove who took the photo, the EXIF metadata isn't covered, and re-compressing the photo breaks the check.</p>
       </details>
       <details>
         <summary>Who is this app built for?</summary>
@@ -709,7 +708,7 @@
       </details>
       <details>
         <summary>Can I verify a photo that someone else sent me?</summary>
-        <p>Not yet in the current release, since the signing key never leaves the phone that took the photo. The 1.1.0 update fixes this: the hash, signature and matching public key travel embedded in the photo itself, so anyone with the app can verify any photo, on any device, whether or not it was captured there.</p>
+        <p>Yes. The hash, signature and matching public key travel embedded in the photo itself, so anyone with the app can verify it on any device, offline. The result shows a short fingerprint of the signing key and whether it is your own phone's key, so you can compare it with the fingerprint the sender gives you.</p>
       </details>
     </div>
   </section>

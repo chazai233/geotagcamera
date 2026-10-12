@@ -7,7 +7,7 @@ package com.geotagcamera.geotagginglocationonphoto.stamp
  */
 enum class StampTemplate { BAR, MINIMAL }
 
-/** One of nine positions the stamp card/bar/pill can sit at, matching the viewfinder's drag anchors. */
+/** Where the stamp sits: Minimal uses all nine, Bar only the top or bottom row. Set by dragging on the viewfinder. */
 enum class StampAnchor { TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, MID_RIGHT, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT }
 
 /**

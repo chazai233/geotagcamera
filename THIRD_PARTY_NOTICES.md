@@ -34,7 +34,9 @@ The optional map thumbnail is built from raster tiles downloaded at run time. No
 | [kotlinx.coroutines](https://github.com/Kotlin/kotlinx.coroutines) | JetBrains s.r.o. and contributors | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | AndroidX Core, Annotation, Activity, Lifecycle, Navigation | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [Jetpack Compose](https://developer.android.com/jetpack/androidx/releases/compose) (UI, Graphics, Material 3, Tooling) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
+| [Compose Material Icons](https://developer.android.com/jetpack/androidx/releases/compose-material) (`androidx.compose.material:material-icons-extended`) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [CameraX](https://developer.android.com/jetpack/androidx/releases/camera) (core, camera2, lifecycle, view) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
+| [CameraX Extensions](https://developer.android.com/jetpack/androidx/releases/camera) (`androidx.camera:camera-extensions`) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [Room](https://developer.android.com/jetpack/androidx/releases/room) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [DataStore](https://developer.android.com/jetpack/androidx/releases/datastore) (Preferences) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [ExifInterface](https://developer.android.com/jetpack/androidx/releases/exifinterface) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
@@ -44,6 +46,8 @@ The optional map thumbnail is built from raster tiles downloaded at run time. No
 | [Google Play services Location](https://developers.google.com/android/guides/setup) (`play-services-location`) | Google LLC | [Android Software Development Kit License](https://developer.android.com/studio/terms) and Google APIs Terms of Service. Not open source |
 
 Google Play services Location is proprietary. It is the one non-free component in the app and is used for the Fused Location Provider.
+
+CameraX Extensions is only the open-source interface. The Night, HDR, Portrait and other modes themselves are provided by the phone maker's own software already on the device, when the phone has them. Nothing from the phone maker is bundled in the app.
 
 Some of these libraries pull in further AndroidX and Kotlin artifacts, all under Apache 2.0. To list everything that ends up in the APK, run:
 
@@ -58,5 +62,6 @@ Some of these libraries pull in further AndroidX and Kotlin artifacts, all under
 | Gradle and the Gradle wrapper | Apache 2.0 |
 | Android Gradle Plugin, Room compiler, KSP | Apache 2.0 |
 | JUnit 4 | Eclipse Public License 1.0 |
+| kotlinx-coroutines-test | Apache 2.0 |
 | JSON-java (`org.json`) | Public domain |
 | AndroidX Test, Espresso, Compose UI Test | Apache 2.0 |
