@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest something new or a change to how the app works.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [roadmap](https://github.com/konkomaji/geotagcamera#roadmap) and existing issues first, in case it's already planned.
+
+        Some things won't be added however useful they seem: ads, analytics or tracking, features that need a Google Play-only library, or network features that are on by default. See [CONTRIBUTING.md](https://github.com/konkomaji/geotagcamera/blob/main/CONTRIBUTING.md#what-we-wont-accept).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation, for example "I survey 40 sites a day and need to ...".
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like the app to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+      description: Workarounds, other apps, or alternatives you've considered.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This feature would need an internet connection or send data off the device
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to work on this myself

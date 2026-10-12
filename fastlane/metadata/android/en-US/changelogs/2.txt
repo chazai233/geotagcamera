@@ -1,0 +1,7 @@
+First release.
+- GPS coordinates, address and time stamped on photos and written to EXIF
+- Choose which stamp fields to show, plus an organization label
+- Offline-first address lookup with an on-device cache
+- Photos signed on-device (SHA-256 + Android Keystore) for tamper checks
+- Optional hand-drawn signature on the photo
+- Photos saved to the gallery (Pictures/GeoTagCamera)

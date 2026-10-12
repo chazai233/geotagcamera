@@ -1,0 +1,8 @@
+A full redesign.
+- Live stamp preview in the viewfinder; Card, Bar and Minimal templates
+- Flash, zoom, tap-to-focus, grid, aspect ratios, front/back camera
+- Verify any photo, even one taken on another phone; share to verify
+- Review screen with Share, rebuilt gallery and photo details
+- Organization logo on the stamp
+- Optional map thumbnail and weather, both off by default (adds Internet permission)
+- Landscape support

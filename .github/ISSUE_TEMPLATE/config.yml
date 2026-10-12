@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/konkomaji/geotagcamera/security/advisories/new
+    about: Verification bypasses, location or EXIF leaks, share-intent problems. Please report these privately, not as a public issue.

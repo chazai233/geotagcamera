@@ -1,0 +1,26 @@
+GeoTag Camera is a free, open source camera for anyone who needs to show where and when a photo was taken: field surveyors, inspectors, students, NGO teams. There are no ads, no subscriptions and no account.
+
+<b>What it does</b>
+<ul>
+<li>Stamps the GPS coordinates, address and time onto each photo, with a live preview of the stamp in the viewfinder</li>
+<li>Writes the location into the photo's EXIF data too, so GIS and photo tools can read it</li>
+<li>Lets you choose the stamp fields (coordinates, address, time, altitude, accuracy, bearing, Plus Code and more), the template (Card, Bar or Minimal) and the position</li>
+<li>Adds your organization name and logo to the stamp</li>
+<li>Optional hand-drawn signature on the photo before saving</li>
+<li>Camera controls: flash, front/back camera, zoom, tap-to-focus, grid, 4:3 / 16:9 / 1:1</li>
+<li>Saves straight to your gallery in Pictures/GeoTagCamera</li>
+</ul>
+
+<b>Tamper evidence</b>
+Each photo is hashed with SHA-256 and signed with a key created on your phone in the Android Keystore. The proof is embedded in the file, so any copy of the app can check any photo, offline. A "verified" result means the image hasn't changed since it was signed by the key stored in the file. It does not prove who took the photo, and it can't tell whether the phone's GPS or clock were telling the truth. Compressing or re-saving a photo breaks verification.
+
+<b>Works offline</b>
+Taking, stamping, signing and verifying photos all work with no signal. Addresses you've looked up before are cached on the phone.
+
+<b>Privacy</b>
+No ads, analytics or tracking. Nothing is sent to the developer. Two optional features are off by default: a weather chip (sends your coordinates to Open-Meteo) and a map thumbnail (downloads OpenStreetMap tiles from Stadia Maps; it needs an API key at build time, so it isn't available in builds without one). Address lookup uses Android's built-in geocoder, which on most phones is provided by Google and uses the network.
+
+Location comes from Google Play services (Fused Location Provider), which is not free software.
+
+Source code (GPL-3.0-or-later): https://github.com/konkomaji/geotagcamera
+Privacy policy: https://github.com/konkomaji/geotagcamera/blob/main/PRIVACY.md
