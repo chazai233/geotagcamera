@@ -4,7 +4,9 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] - 2026-10-12
+
+A robustness and usability release. Still a preview: not yet tested on a range of real phones.
 
 ### Changed
 - Bar is now the default stamp, showing every enabled field (place, country, address with Plus Code, coordinates, date, time and GMT offset, accuracy/altitude/bearing/weather chips, map, logo, org name, signed mark) and reflowing as fields are turned on or off. The Card layout is removed; Bar and Minimal remain.

@@ -140,9 +140,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          prerelease=""
-          case "$TAG" in *-*) prerelease="--prerelease" ;; esac
-          gh release create "$TAG" dist/* \
-            --title "GeoTag Camera ${TAG#v}" \
-            --notes-file "$RUNNER_TEMP/notes.md" \
-            --verify-tag $prerelease
+          # Every release is a pre-release until the app has had a real-device
+          # test pass; set the repo variable PRERELEASE to "false" to publish
+          # a full release instead.
+          prerelease="--prerelease"
+          if [ "${{ vars.PRERELEASE }}" = "false" ]; then prerelease=""; fi
+          # If a release for this tag was already created by hand, attach the
+          # CI-built assets to it instead of failing the job.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --title "GeoTag Camera ${TAG#v}" \
+              --notes-file "$RUNNER_TEMP/notes.md" \
+              --verify-tag $prerelease
+          fi

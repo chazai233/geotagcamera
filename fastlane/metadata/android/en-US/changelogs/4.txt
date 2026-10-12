@@ -1,0 +1,1 @@
+Bar stamp by default with every field, drag the stamp on the viewfinder to move it. Saved photo matches the frame exactly in every ratio and orientation. Zoom, flash and Night/HDR/Portrait follow your phone. Fresh location for every shot. Delete photos, maps link, key fingerprint. Fixes crashes when saving and with large logos. Map is off by default.
