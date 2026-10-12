@@ -78,18 +78,41 @@ Both need an internet connection, both are off until you turn them on, and a cap
 
 Version 1.2.0 is out as a **pre-release**. It is a robustness and usability release: the Bar stamp as the default, moving the stamp by dragging it on the viewfinder, a camera that adapts to each phone's lenses and modes, a saved photo that matches the on-screen frame exactly, deleting from the gallery, and fixes for crashes when saving on high-resolution cameras. It has not yet been tested across many real phones, so expect rough edges on some devices and please [report what you find](https://github.com/konkomaji/geotagcamera/issues). See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
-Download the APK from [GitHub Releases](https://github.com/konkomaji/geotagcamera/releases). Each release lists the SHA-256 of the APK so you can check the download.
+## Install
+
+1. Download `geotagcamera-1.2.0.apk` from the [1.2.0 release](https://github.com/konkomaji/geotagcamera/releases/tag/v1.2.0) (or the newest release on the [Releases page](https://github.com/konkomaji/geotagcamera/releases)).
+2. Optional: check the download against the SHA-256 listed on the release page.
+3. Open the APK on your phone. Android asks you to allow installs from your browser or file manager the first time; allow it for that app only.
+4. Open GeoTag Camera and allow camera and location when asked.
+
+Already on 1.1.0? Install 1.2.0 over it; your photos, settings and signing key are kept. The APKs are signed with a development key and are built without a Stadia Maps key, so the map thumbnail is not available in them. Android 8.0 or newer is required.
+
+## Using the app
+
+1. **Frame the photo.** The live stamp on the viewfinder is exactly what will be burned into the photo. Pick a ratio (4:3, 16:9, 1:1 or Full) from the top bar.
+2. **Move the stamp if you need to.** Long-press it and drag. Bar snaps to the top or bottom edge, Minimal to any of nine spots.
+3. **Take the photo.** Wait for "Location locked" in the corner of the frame; it shows the GPS accuracy.
+4. **Review.** Share it straight away, keep it with Done, or Retake (which deletes that photo).
+5. **Later:** the Gallery tab shows every photo with a verified badge. Open one to share it, delete it, open its location in a maps app or copy the coordinates.
+6. **Check a photo someone sent you:** Settings, then Verify a photo, or share the photo to GeoTag Camera from any app.
+
+Settings is where you choose the stamp style and fields, add your organization's name and logo, and turn on the optional map and weather.
 
 ## Roadmap
 
+**Next**
+- A free-text line on the stamp (site ID, inspector name, notes)
+- CSV, KML and GeoJSON export for GIS workflows
+- Project and site folders to organize captures
+- Quick-capture shortcut from the home screen
+- A build without Google Play services for F-Droid
+
 **Later**
 - Video geotagging
-- Project and site folders to organize captures
-- Batch export to PDF report
-- CSV, KML and GeoJSON export for GIS workflows
+- Batch export to PDF report per site visit
 - Voice notes attached to photos
 - Before and after photo pairing
-- Quick capture home screen widget
+- Home screen widget
 - Biometric app lock
 - Manual local backup and restore
 - Material You dynamic theming
@@ -100,7 +123,7 @@ When you take a photo, the app:
 
 1. Renders the stamp onto the image and saves it as a JPEG.
 2. Computes a SHA-256 hash over a canonical view of that JPEG: the image data itself (quantization and Huffman tables, frame header and the compressed scan), with every APPn metadata segment left out. That is where EXIF and XMP live, so the proof can be written back into the file without changing the hash. See [`JpegCanonical.kt`](app/src/main/java/com/geotagcamera/geotagginglocationonphoto/exif/JpegCanonical.kt).
-3. Signs that hash together with the capture latitude, longitude and time (proof v2) using an ECDSA (P-256, SHA256withECDSA) key generated on the device in the Android Keystore. The private key can't be exported from the Keystore. On most phones it is held in secure hardware, but that depends on the device.
+3. Signs that hash together with the capture latitude, longitude and time using an ECDSA (P-256, SHA256withECDSA) key generated on the device in the Android Keystore. The private key can't be exported from the Keystore. On most phones it is held in secure hardware, but that depends on the device.
 4. Embeds the hash, the signed latitude/longitude/time, the signature and the matching public key in the photo's EXIF UserComment, mirrored in an XMP segment, and writes the same latitude, longitude and time into the normal EXIF GPS fields.
 
 The verification result also shows a short fingerprint of the signing key (four groups of four hex characters) and says whether it is this phone's own key. Comparing that fingerprint with one you got from the photographer is the simple way to check who signed a photo.
@@ -109,7 +132,7 @@ Verifying recomputes the canonical hash from the file, checks that it matches th
 
 **What a "verified" result tells you:** the image pixels (which include the burned-in stamp) and the EXIF GPS latitude, longitude and time have not changed since they were signed by the key whose public half is embedded in the file.
 
-If the image matches but the copy you have carries no readable GPS or time metadata (sharing apps often strip it), the result is "Image intact, location not checked" rather than a pass. Photos signed by version 1.1.0 carry the older v1 proof, which covers the pixels only.
+If the image matches but the copy you have carries no readable GPS or time metadata (sharing apps often strip it), the result is "Image intact, location not checked" rather than a pass. Photos taken with version 1.1.0 carry the older proof format, which covers the pixels only.
 
 **What it does not tell you:**
 - **Who signed it, or on which device.** The public key travels inside the photo and is not tied to a person, a phone, or a certificate authority. Someone who edits a photo can strip the proof and re-sign the edited version with a key of their own, and it will verify. If you need to know that a photo came from a particular person, get their public key from them through a channel you trust and compare it.
