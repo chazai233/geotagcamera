@@ -45,7 +45,7 @@ Q: Does it work without internet?
 A: Yes. Taking, stamping, signing and verifying photos need no connection. Addresses come from the phone's built-in geocoder, which usually needs the network; with no signal the stamp uses the nearest address already cached on the phone, and the Plus Code always works.
 
 Q: How is photo authenticity verified?
-A: Each photo's image data is SHA-256 hashed and signed with a device-generated Android Keystore key at capture time, and the hash, signature and public key are embedded in the file. Verifying recomputes the hash and checks the signature. A pass means the pixels, including the burned-in stamp, have not changed since signing. It does not prove who signed the photo or that the GPS and clock were accurate, and the EXIF metadata is not covered by the signature.
+A: Each photo's image data is SHA-256 hashed and signed with a device-generated Android Keystore key at capture time, and the hash, signature and public key are embedded in the file. Verifying recomputes the hash and checks the signature. A pass means the pixels, including the burned-in stamp, have not changed since signing. The signature also covers the capture latitude, longitude and time, so rewriting the EXIF GPS or time fails verification; a copy with that metadata stripped shows "location not checked". It does not prove who signed the photo or that the GPS and clock were accurate.
 
 Q: What leaves the phone?
 A: Nothing goes to the developer. The optional weather chip sends the position rounded to about 1 km to Open-Meteo, the optional map downloads tiles from Stadia Maps, and the phone's own geocoder (usually Google Play services) looks up addresses. App data is excluded from cloud backup and device transfer.

@@ -38,9 +38,9 @@ private val VerifiedGreen = Color(0xFF2FA878)
 /**
  * The verification result, worded so it never overclaims (design section 05):
  * a valid signature proves the image pixels, stamp included, are unchanged
- * since a given key signed them. It says which key, and whether that key is
- * this device's own. It does not prove who held the phone, and the EXIF
- * fields are not covered by the signature.
+ * since a given key signed them, and (v2 proofs) that the EXIF latitude,
+ * longitude and time still match what was signed. It says which key, and
+ * whether that key is this device's own. It does not prove who held the phone.
  */
 @Composable
 fun ProofCard(outcome: VerificationOutcome, deviceKeyBase64: String?, modifier: Modifier = Modifier) {
@@ -95,15 +95,24 @@ private fun describe(outcome: VerificationOutcome, deviceKey: String?): ProofCon
             }
             ProofContent(
                 Icons.Filled.Verified, VerifiedGreen, "Unaltered since signing",
-                "$origin ${formatSigned(p)}. The image, including its stamp, matches the signature exactly. " +
-                    "The location fields in the file's metadata are not covered by the signature.",
+                "$origin ${formatSigned(p)}. " + if (p.claims != null) {
+                    "The image, including its stamp, and its GPS location and time match the signature exactly."
+                } else {
+                    "The image, including its stamp, matches the signature exactly. This older proof does not cover the GPS location and time in the file's metadata."
+                },
                 KeyFingerprint.of(p.publicKeyBase64)
             )
         }
         is VerificationOutcome.Edited -> ProofContent(
             Icons.Filled.ErrorOutline, MaterialTheme.colorScheme.error, "Edited after signing",
-            "This photo carries a GeoTag proof, but its pixels no longer match it. " +
-                "It was edited, cropped or re-compressed after it was signed.",
+            "This photo carries a GeoTag proof, but its pixels or its GPS location and time no longer match it. " +
+                "It was edited, cropped, re-compressed or had its metadata changed after it was signed.",
+            KeyFingerprint.of(outcome.payload.publicKeyBase64)
+        )
+        is VerificationOutcome.MetadataUnavailable -> ProofContent(
+            Icons.Outlined.Info, muted, "Image intact, location not checked",
+            "The image matches its proof, but this copy has no readable GPS location or time to check against it. " +
+                "Sharing apps often strip that metadata. Verify the original file to check the location.",
             KeyFingerprint.of(outcome.payload.publicKeyBase64)
         )
         is VerificationOutcome.NoProof -> ProofContent(

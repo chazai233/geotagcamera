@@ -8,6 +8,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 A robustness and usability release. Still a preview: not yet tested on a range of real phones.
 
+### Security
+- Proof v2: the signature now also commits to the capture latitude, longitude and time, and verification checks them against the photo's EXIF. Previously the hash ignored all metadata, so EXIF GPS/time could be rewritten without failing verification. Photos signed by 1.1.0 (v1 proofs) still verify, but only their pixels are covered.
+- A photo whose image matches its proof but whose GPS/time metadata is missing (stripped by a sharing app) now shows "Image intact, location not checked" instead of passing.
+- Verification wording makes clear that a pass means "unchanged since signing", not proof of who held the phone.
+
 ### Changed
 - Bar is now the default stamp, showing every enabled field (place, country, address with Plus Code, coordinates, date, time and GMT offset, accuracy/altitude/bearing/weather chips, map, logo, org name, signed mark) and reflowing as fields are turned on or off. The Card layout is removed; Bar and Minimal remain.
 - The stamp is moved only by holding and dragging it on the viewfinder. Bar snaps to the top or bottom edge, Minimal to nine positions.

@@ -26,6 +26,7 @@ import com.geotagcamera.geotagginglocationonphoto.location.WeatherReading
 import com.geotagcamera.geotagginglocationonphoto.location.WeatherRepository
 import com.geotagcamera.geotagginglocationonphoto.location.ageMs
 import com.geotagcamera.geotagginglocationonphoto.security.PhotoIntegrity
+import com.geotagcamera.geotagginglocationonphoto.security.ProofClaims
 import com.geotagcamera.geotagginglocationonphoto.signature.SignatureOverlay
 import com.geotagcamera.geotagginglocationonphoto.stamp.LogoDecoder
 import com.geotagcamera.geotagginglocationonphoto.stamp.StampAnchor
@@ -433,7 +434,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         // JpegCanonical), so embedding the proof below can't invalidate it —
         // then carry the proof in EXIF UserComment and mirror it in XMP so any
         // device can verify this photo, not just the one that shot it.
-        val integrity = PhotoIntegrity.sign(file)
+        val integrity = PhotoIntegrity.sign(file, ProofClaims(fix.latitude, fix.longitude, capturedAtEpochMs))
         val proof = UserCommentCodec.encode(integrity, capturedAtEpochMs)
         ExifWriter.write(file, fix, capturedAtEpochMs, proof)
         XmpWriter.write(file, proof)

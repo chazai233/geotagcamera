@@ -50,7 +50,7 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 - Add your college, company or project name and logo to the stamp, free, no paywall
 
 **Trust and verification**
-- Every photo is hashed with SHA-256 and signed on-device with a key kept in the Android Keystore. See [How photo verification works](#how-photo-verification-works) for exactly what that does and does not prove
+- Every photo is hashed with SHA-256 and signed on-device with a key kept in the Android Keystore. The signature also covers the capture latitude, longitude and time, so rewriting the photo's GPS or time EXIF fails verification. See [How photo verification works](#how-photo-verification-works) for exactly what that does and does not prove
 - Verify any photo that carries a GeoTag Camera proof, including one someone else sent you, from the "Verify a photo" screen or via Share → Verify with GeoTag Camera. The result shows the signing key's fingerprint and whether it is this phone's key
 - Field workers can add a hand-drawn signature onto the photo before saving, useful for inspection reports and muster-roll style documentation. Settings can make the signature required
 
@@ -100,19 +100,21 @@ When you take a photo, the app:
 
 1. Renders the stamp onto the image and saves it as a JPEG.
 2. Computes a SHA-256 hash over a canonical view of that JPEG: the image data itself (quantization and Huffman tables, frame header and the compressed scan), with every APPn metadata segment left out. That is where EXIF and XMP live, so the proof can be written back into the file without changing the hash. See [`JpegCanonical.kt`](app/src/main/java/com/geotagcamera/geotagginglocationonphoto/exif/JpegCanonical.kt).
-3. Signs that hash with an ECDSA (P-256, SHA256withECDSA) key generated on the device in the Android Keystore. The private key can't be exported from the Keystore. On most phones it is held in secure hardware, but that depends on the device.
-4. Embeds the hash, the signature and the matching public key in the photo's EXIF UserComment, mirrored in an XMP segment.
+3. Signs that hash together with the capture latitude, longitude and time (proof v2) using an ECDSA (P-256, SHA256withECDSA) key generated on the device in the Android Keystore. The private key can't be exported from the Keystore. On most phones it is held in secure hardware, but that depends on the device.
+4. Embeds the hash, the signed latitude/longitude/time, the signature and the matching public key in the photo's EXIF UserComment, mirrored in an XMP segment, and writes the same latitude, longitude and time into the normal EXIF GPS fields.
 
 The verification result also shows a short fingerprint of the signing key (four groups of four hex characters) and says whether it is this phone's own key. Comparing that fingerprint with one you got from the photographer is the simple way to check who signed a photo.
 
-Verifying recomputes the canonical hash from the file, checks that it matches the embedded hash, and checks the signature against the embedded public key. No network and no account are involved, so any copy of the app can check any photo.
+Verifying recomputes the canonical hash from the file, checks that it matches the embedded hash, checks the signature against the embedded public key, and checks that the photo's EXIF GPS latitude, longitude and time still match what was signed. No network and no account are involved, so any copy of the app can check any photo.
 
-**What a "verified" result tells you:** the image pixels (which include the burned-in stamp) have not changed since they were signed by the key whose public half is embedded in the file.
+**What a "verified" result tells you:** the image pixels (which include the burned-in stamp) and the EXIF GPS latitude, longitude and time have not changed since they were signed by the key whose public half is embedded in the file.
+
+If the image matches but the copy you have carries no readable GPS or time metadata (sharing apps often strip it), the result is "Image intact, location not checked" rather than a pass. Photos signed by version 1.1.0 carry the older v1 proof, which covers the pixels only.
 
 **What it does not tell you:**
 - **Who signed it, or on which device.** The public key travels inside the photo and is not tied to a person, a phone, or a certificate authority. Someone who edits a photo can strip the proof and re-sign the edited version with a key of their own, and it will verify. If you need to know that a photo came from a particular person, get their public key from them through a channel you trust and compare it.
 - **That the location or time is true.** The app records what the phone reported. A spoofed GPS fix or a wrong system clock will be stamped and signed like any other.
-- **Anything about the metadata.** EXIF and XMP are deliberately outside the hash, so the EXIF GPS fields and timestamps are not covered by the signature and can be changed without breaking verification. The burned-in stamp is part of the pixels, so that is the part that is protected.
+- **The rest of the metadata.** Only latitude, longitude and capture time are signed. Other EXIF fields (altitude, accuracy, direction, camera details) and the XMP segment are outside the proof and can be changed without breaking verification.
 
 Re-encoding the photo, for example when a messaging app compresses it, changes the pixels and the photo will no longer verify, even though nobody meant to tamper with it. Share the original file when verification matters.
 

@@ -95,7 +95,7 @@
       "name": "How does the tamper-evident photo feature work?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Every photo's image data is hashed with SHA-256 and signed using a private key generated on your device through the Android Keystore. The hash, signature and public key are embedded in the photo, so the app can later check that the pixels, including the burned-in stamp, have not changed since capture. It does not prove who took the photo, the EXIF metadata is not covered, and re-compressing the photo breaks the check."
+        "text": "Every photo's image data is hashed with SHA-256 and signed using a private key generated on your device through the Android Keystore. The hash, signature and public key are embedded in the photo, so the app can later check that the pixels, including the burned-in stamp, have not changed since capture. The signature also covers the capture latitude, longitude and time, so rewriting the photo's GPS or time metadata fails the check. It does not prove who took the photo, and re-compressing the photo breaks the check."
       }
     },
     {
@@ -626,7 +626,7 @@
       <h2>Open source you can actually audit</h2>
       <p style="margin-top:1rem">Every line of GeoTag Camera is public. There's no server collecting your data, because there isn't one. Location and camera access stay on your device. Don't take my word for it, read the code yourself.</p>
       <p style="margin-top:1rem">On top of that, I hash every photo with SHA-256 and sign it using a private key generated on your device through the Android Keystore, which on most phones keeps the key in secure hardware. That's what lets you show later that a photo hasn't been edited since the second it was taken.</p>
-      <p style="margin-top:1rem">The hash, the signature and the matching public key travel embedded in the photo itself, so anyone with the app can verify a photo you send them, not just you. The result shows the signing key's fingerprint so they can check it is yours. It can't prove the GPS or the clock were telling the truth, and the EXIF metadata isn't covered, only the image itself.</p>
+      <p style="margin-top:1rem">The hash, the signature and the matching public key travel embedded in the photo itself, so anyone with the app can verify a photo you send them, not just you. The result shows the signing key's fingerprint so they can check it is yours. The signature covers the image and the capture latitude, longitude and time, so editing the photo's GPS or time metadata fails the check. It can't prove the GPS or the clock were telling the truth in the first place.</p>
     </div>
     <div class="security-visual">
       <div>&gt; sha256(photo.jpg)</div>
@@ -696,7 +696,7 @@
       </details>
       <details>
         <summary>How does the tamper-evident feature actually work?</summary>
-        <p>Every photo's image data is hashed with SHA-256 and signed using a private key generated on your device through Android's own Keystore. The hash, signature and public key are embedded in the photo, so the app can later check that the pixels, including the burned-in stamp, haven't changed since capture. It doesn't prove who took the photo, the EXIF metadata isn't covered, and re-compressing the photo breaks the check.</p>
+        <p>Every photo's image data is hashed with SHA-256 and signed using a private key generated on your device through Android's own Keystore. The hash, signature and public key are embedded in the photo, so the app can later check that the pixels, including the burned-in stamp, haven't changed since capture. The signature also covers the capture latitude, longitude and time, so rewriting the photo's GPS or time metadata fails the check. It doesn't prove who took the photo, and re-compressing the photo breaks the check.</p>
       </details>
       <details>
         <summary>Who is this app built for?</summary>

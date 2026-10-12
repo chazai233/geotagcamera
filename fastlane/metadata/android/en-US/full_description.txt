@@ -17,7 +17,7 @@ GeoTag Camera is a free, open source camera for anyone who needs to show where a
 </ul>
 
 <b>Tamper evidence</b>
-Each photo is hashed with SHA-256 and signed with a key created on your phone in the Android Keystore. The proof is embedded in the file, so any copy of the app can check any photo, offline. Verification shows the signing key's fingerprint and whether it is this phone's key. A "verified" result means the image hasn't changed since it was signed by the key stored in the file. It does not prove who took the photo, it does not cover the EXIF metadata, and it can't tell whether the phone's GPS or clock were telling the truth. Compressing or re-saving a photo breaks verification.
+Each photo is hashed with SHA-256 and signed with a key created on your phone in the Android Keystore. The proof is embedded in the file, so any copy of the app can check any photo, offline. Verification shows the signing key's fingerprint and whether it is this phone's key. A "verified" result means the image and its GPS latitude, longitude and capture time haven't changed since they were signed by the key stored in the file. It does not prove who took the photo, and it can't tell whether the phone's GPS or clock were telling the truth. Compressing or re-saving a photo breaks verification.
 
 <b>Works without signal</b>
 Taking, stamping, signing and verifying photos all work with no signal. With no connection the stamp uses the nearest address already cached on the phone, and the Plus Code is always calculated on the device.
