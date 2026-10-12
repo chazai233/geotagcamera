@@ -6,5 +6,7 @@ data class LocationFix(
     val altitudeMeters: Double?,
     val accuracyMeters: Float?,
     val bearingDegrees: Float?,
-    val timestampEpochMs: Long
+    val timestampEpochMs: Long,
+    /** Monotonic fix time (Location.elapsedRealtimeNanos); immune to wall-clock changes. */
+    val elapsedRealtimeNanos: Long? = null
 )

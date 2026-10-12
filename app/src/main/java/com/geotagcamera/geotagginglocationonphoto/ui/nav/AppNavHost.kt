@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -85,7 +86,7 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
     // A shared "verify this photo" image is held here (not threaded through the
     // route's query arg, which can't safely carry a content:// Uri) and read by
     // the verify destination once, then cleared.
-    var pendingVerifyUri by remember { mutableStateOf<String?>(null) }
+    var pendingVerifyUri by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Tabs share one back stack rooted at Capture. Launch is popped on the way
     // in, so it can't be the popUpTo target (navigation would silently push a

@@ -126,8 +126,9 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     private val _latestFix = MutableStateFlow<LocationFix?>(null)
     private val _liveData = MutableStateFlow<LiveStampData?>(null)
 
-    private val _lastCaptureUri = MutableStateFlow<String?>(null)
-    val lastCaptureUri: StateFlow<String?> = _lastCaptureUri.asStateFlow()
+    /** Newest photo in the index: survives restarts and follows deletes made anywhere. */
+    val lastCaptureUri: StateFlow<String?> = photoDao.observeLatestPath()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
      * Org logo bitmap, decoded from the path Settings stored. Settings writes
@@ -200,12 +201,15 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             _locationChip.value = LocationChipState.PermissionDenied
             return
         }
-        if (_latestFix.value == null) _locationChip.value = LocationChipState.Locating
+        fun hasRecentFix() = _latestFix.value?.let { it.ageMs() <= MAX_FIX_AGE_MS } == true
+        // A fix from the last visit doesn't count: the chip only says "locked"
+        // for a fix the shutter would actually use.
+        if (!hasRecentFix()) _locationChip.value = LocationChipState.Locating
         coroutineScope {
-            // No fix at all after a while: say so instead of "Locating…" forever.
+            // No usable fix after a while: say so instead of "Locating…" forever.
             val noFixTimeout = launch {
                 delay(NO_FIX_TIMEOUT_MS)
-                if (_latestFix.value == null) _locationChip.value = LocationChipState.Unavailable
+                if (!hasRecentFix()) _locationChip.value = LocationChipState.Unavailable
             }
             locationProvider.updates().collect { fix ->
                 noFixTimeout.cancel()
@@ -219,7 +223,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     /** Re-resolves address/tile/weather when the user has moved or the data is old. */
     private fun resolve(fix: LocationFix, force: Boolean) {
         val current = _liveData.value
-        val fresh = current != null &&
+        // A failed lookup (offline start) is retried on the next fix, not in 5 minutes.
+        val fresh = current != null && current.geocode != null &&
             distanceMeters(current.fix, fix) <= RERESOLVE_AFTER_M &&
             System.currentTimeMillis() - current.resolvedAtEpochMs <= RERESOLVE_AFTER_MS
         if (!force && (fresh || resolveJob?.isActive == true)) return
@@ -332,9 +337,9 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val review = _uiState.value as? CaptureUiState.Review ?: return
         _uiState.value = CaptureUiState.Idle
         viewModelScope.launch(Dispatchers.IO) {
-            MediaStoreImageSaver.delete(getApplication(), listOf(Uri.parse(review.uri)))
-            photoDao.delete(review.photoId)
-            if (_lastCaptureUri.value == review.uri) _lastCaptureUri.value = null
+            val outcome = MediaStoreImageSaver.delete(getApplication(), listOf(Uri.parse(review.uri)))
+            // Keep the index row if the file couldn't be removed, so it isn't orphaned.
+            if (outcome.deleted.isNotEmpty()) photoDao.delete(review.photoId)
         }
     }
 
@@ -367,7 +372,6 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     _uiState.value = CaptureUiState.Error("Couldn't save the photo to your gallery.")
                     return@launch
                 }
-                _lastCaptureUri.value = saved.uri
                 _uiState.value = saved
             } catch (e: CancellationException) {
                 throw e
@@ -480,13 +484,20 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             return out[0]
         }
 
-        /** Center-crops to the largest centered square, for the 1:1 option (no native CameraX 1:1). */
+        /**
+         * Center-crops to a square, a fallback for when the camera's own crop
+         * didn't (CameraX's ViewPort normally delivers 1:1 already). Draws into
+         * a new mutable bitmap so the stamp can draw in place afterwards.
+         */
         fun centerSquare(bitmap: Bitmap): Bitmap {
             if (bitmap.width == bitmap.height) return bitmap
             val side = minOf(bitmap.width, bitmap.height)
-            val cropped = Bitmap.createBitmap(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side)
-            if (cropped !== bitmap) bitmap.recycle()
-            return cropped
+            val out = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(out).drawBitmap(
+                bitmap, -((bitmap.width - side) / 2f), -((bitmap.height - side) / 2f), null
+            )
+            bitmap.recycle()
+            return out
         }
 
         /** Decodes mutable (so the stamp draws in place) and applies the EXIF orientation. */
@@ -511,9 +522,16 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             }
             if (matrix.isIdentity) return bitmap
 
-            val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-            if (rotated !== bitmap) bitmap.recycle()
-            return rotated
+            // Rotate into a new MUTABLE bitmap (Bitmap.createBitmap(src, matrix)
+            // returns an immutable one, which would force a third full-size copy
+            // when the stamp is drawn).
+            val bounds = android.graphics.RectF(0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat())
+            matrix.mapRect(bounds)
+            matrix.postTranslate(-bounds.left, -bounds.top)
+            val out = Bitmap.createBitmap(bounds.width().toInt(), bounds.height().toInt(), Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(out).drawBitmap(bitmap, matrix, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+            bitmap.recycle()
+            return out
         }
     }
 }

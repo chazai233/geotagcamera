@@ -69,23 +69,35 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         if (gone.isNotEmpty()) photoDao.deleteByIds(gone)
     }
 
-    private fun exists(uri: Uri): Boolean = runCatching {
+    /**
+     * False only when the file is definitely gone. Any other error (no storage
+     * permission on Android 8/9, a busy provider) keeps the row: deleting a
+     * photo's index entry, with its hash and signature, on a transient error
+     * would be unrecoverable.
+     */
+    private fun exists(uri: Uri): Boolean = try {
         getApplication<Application>().contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
-    }.getOrDefault(false)
+    } catch (e: java.io.FileNotFoundException) {
+        false
+    } catch (e: Exception) {
+        true
+    }
 
     /** Deletes the photos from the device gallery and the index. May ask for consent first. */
     fun delete(photos: List<PhotoEntity>) {
         if (photos.isEmpty()) return
         viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
+            val byUri = photos.associateBy { it.filePath }
+            val outcome = withContext(Dispatchers.IO) {
                 MediaStoreImageSaver.delete(getApplication(), photos.map { Uri.parse(it.filePath) })
             }
-            when (result) {
-                is MediaStoreImageSaver.DeleteResult.NeedsConsent -> {
-                    idsAwaitingConsent = photos.map { it.id }
-                    _deleteConsent.value = result.request
-                }
-                else -> photoDao.deleteByIds(photos.map { it.id })
+            // Only rows whose file is really gone; the rest wait for consent or stay.
+            val deletedIds = outcome.deleted.mapNotNull { byUri[it.toString()]?.id }
+            if (deletedIds.isNotEmpty()) photoDao.deleteByIds(deletedIds)
+            _tileStatus.update { it - deletedIds.toSet() }
+            if (outcome.consent != null) {
+                idsAwaitingConsent = outcome.awaitingConsent.mapNotNull { byUri[it.toString()]?.id }
+                _deleteConsent.value = outcome.consent
             }
         }
     }

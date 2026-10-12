@@ -7,6 +7,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import android.hardware.display.DisplayManager
 import android.util.Rational
 import android.util.Size
 import android.view.OrientationEventListener
@@ -20,6 +21,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCase
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.ViewPort
 import androidx.camera.extensions.ExtensionMode
@@ -99,6 +101,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -147,6 +150,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
 import kotlin.math.roundToInt
 
 // Chrome tokens (design system section 03). Only the shutter is ever a filled control.
@@ -191,8 +197,14 @@ fun CaptureScreen(
         }
     }
 
+    // Ask once per visit to the camera, not on every return from another tab:
+    // repeated prompts turn a single "no" into a permanent block on API 30+.
+    var askedForPermissions by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        if (!hasCamera || !hasLocation) launcher.launch(CAPTURE_PERMISSIONS)
+        if (!askedForPermissions && (!hasCamera || !hasLocation)) {
+            askedForPermissions = true
+            launcher.launch(CAPTURE_PERMISSIONS)
+        }
     }
     // Back from system Settings with a permission flipped: pick it up immediately.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -287,8 +299,7 @@ private fun CameraContent(
     // rotation alone would be wrong). The same reading turns the on-screen
     // icons so they stay upright, like the stock camera.
     var deviceRotation by remember { mutableIntStateOf(Surface.ROTATION_0) }
-    val view = LocalView.current
-    val displayRotation = view.display?.rotation ?: Surface.ROTATION_0
+    val displayRotation = rememberDisplayRotation()
     // With auto-rotate on, the UI already turns with the phone, so the screen's
     // rotation is the truth for the photo, the frame and the icons alike. Only
     // with auto-rotate off does the motion sensor decide how the photo is saved.
@@ -313,12 +324,13 @@ private fun CameraContent(
         onDispose { listener.disable() }
     }
 
-    val iconAngle by animateFloatAsState(
+    val iconAngle = animateFloatAsState(
         targetValue = uprightAngle(captureRotation, displayRotation),
         animationSpec = tween(250),
         label = "iconAngle"
     )
-    val iconRotation = Modifier.graphicsLayer { rotationZ = iconAngle }
+    // Read in the draw phase only: the animation never recomposes the screen.
+    val iconRotation = Modifier.graphicsLayer { rotationZ = iconAngle.value }
 
     val shutterScale = remember { Animatable(1f) }
     val shutterFlash = remember { Animatable(0f) }
@@ -333,14 +345,40 @@ private fun CameraContent(
     }
 
     var provider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
-    var boundPreview by remember { mutableStateOf<Preview?>(null) }
-    LaunchedEffect(lensFacing, imageCapture, cameraMode, frameSize, displayRotation) {
-        if (frameSize.width <= 0 || frameSize.height <= 0) return@LaunchedEffect
-        val p = context.getCameraProvider().also { provider = it }
+    // Exactly the use cases this screen bound, so rebinding and leaving only
+    // ever touch our own (never another Capture entry's).
+    val bound = remember { BoundUseCases() }
+    val latestFrame by rememberUpdatedState(frameSize)
+    // Rebind on a meaningful frame-shape change only, not on every pixel of layout.
+    val frameShape = if (frameSize.height > 0) (frameSize.width * 100) / frameSize.height else 0
+    LaunchedEffect(lensFacing, imageCapture, cameraMode, frameShape, displayRotation) {
+        val frame = latestFrame
+        if (frame.width <= 0 || frame.height <= 0) return@LaunchedEffect
+        // Right after an aspect change the frame is still the old shape for one
+        // layout pass; wait for it instead of binding twice.
+        viewfinderRatio(aspect, isLandscape)?.let { expected ->
+            if (kotlin.math.abs(frame.width.toFloat() / frame.height - expected) > 0.03f) return@LaunchedEffect
+        }
+        val p = try {
+            context.getCameraProvider()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            snackbarHostState.showSnackbar("The camera isn't available right now.")
+            return@LaunchedEffect
+        }
+        provider = p
         hasFrontCamera = runCatching { p.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) }.getOrDefault(false)
 
-        // Night/HDR: offered only if this phone's camera stack provides them.
-        val ext = extensionsManager ?: runCatching { context.getExtensionsManager(p) }.getOrNull()?.also { extensionsManager = it }
+        // The phone maker's modes: offered only if this camera stack provides them.
+        val ext = extensionsManager ?: try {
+            context.getExtensionsManager(p).also { extensionsManager = it }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+        ensureActive()
         availableModes = listOf(ExtensionMode.NONE) + NATIVE_MODES.filter { mode ->
             ext != null && runCatching { ext.isExtensionAvailable(lensFacing, mode) }.getOrDefault(false)
         }
@@ -356,10 +394,9 @@ private fun CameraContent(
             .setResolutionSelector(previewResolution(aspect))
             .build()
             .also { it.surfaceProvider = previewView.surfaceProvider }
-        boundPreview = preview
         // The ViewPort is the on-screen frame: CameraX crops the saved photo to
         // exactly this region, for every ratio including 1:1 and Full.
-        val viewPort = ViewPort.Builder(Rational(frameSize.width, frameSize.height), displayRotation)
+        val viewPort = ViewPort.Builder(Rational(frame.width, frame.height), displayRotation)
             .setScaleType(ViewPort.FILL_CENTER)
             .build()
         val group = UseCaseGroup.Builder()
@@ -367,11 +404,11 @@ private fun CameraContent(
             .addUseCase(preview)
             .addUseCase(imageCapture)
             .build()
-        val bound = runCatching {
-            p.unbindAll()
-            p.bindToLifecycle(lifecycleOwner, selector, group)
+        val result = runCatching {
+            bound.unbindFrom(p)
+            p.bindToLifecycle(lifecycleOwner, selector, group).also { bound.set(preview, imageCapture) }
         }
-        bound.onSuccess { cam ->
+        result.onSuccess { cam ->
             camera = cam
             hasFlash = cam.cameraInfo.hasFlashUnit()
             exposureIndex = cam.cameraInfo.exposureState.exposureCompensationIndex
@@ -388,13 +425,8 @@ private fun CameraContent(
             }
         }
     }
-    // Unbind only what this screen bound: never another Capture entry's camera.
     DisposableEffect(Unit) {
-        onDispose {
-            val p = provider ?: return@onDispose
-            val ours = listOfNotNull(boundPreview, imageCapture).toTypedArray()
-            runCatching { p.unbind(*ours) }
-        }
+        onDispose { provider?.let { bound.unbindFrom(it) } }
     }
 
     LaunchedEffect(reticle) {
@@ -669,10 +701,16 @@ private fun Viewfinder(
         reticle?.let { FocusReticle(it) }
         exposure?.let { ExposureSlider(it, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)) }
 
+        // The chip always sits where the stamp isn't.
+        val chipAlignment = when {
+            liveSpec?.template == StampTemplate.BAR && liveSpec.anchor.isTopRow() -> Alignment.BottomStart
+            liveSpec?.anchor == StampAnchor.TOP_LEFT -> Alignment.TopEnd
+            else -> Alignment.TopStart
+        }
         LocationChip(
             state = locationChip,
             onClick = onLocationChipClick,
-            modifier = Modifier.align(Alignment.TopStart).padding(12.dp)
+            modifier = Modifier.align(chipAlignment).padding(12.dp)
         )
 
         // Shutter feedback: read inside graphicsLayer, so the animation never recomposes the screen.
@@ -1093,6 +1131,9 @@ private fun previewResolution(aspect: CaptureAspect): ResolutionSelector =
         )
         .build()
 
+private fun StampAnchor.isTopRow(): Boolean =
+    this == StampAnchor.TOP_LEFT || this == StampAnchor.TOP_CENTER || this == StampAnchor.TOP_RIGHT
+
 /**
  * Where a dragged stamp lands. Bar is a full-width strip, so it only snaps to
  * the top or bottom edge; Minimal can sit in any of the nine cells.
@@ -1166,16 +1207,73 @@ private fun aspectLabel(a: CaptureAspect): String = when (a) {
     CaptureAspect.FULL -> "Full"
 }
 
+/** The use cases this screen currently has bound, so it can unbind exactly those. */
+private class BoundUseCases {
+    private var useCases: Array<UseCase> = emptyArray()
+
+    fun set(vararg cases: UseCase) {
+        useCases = arrayOf(*cases)
+    }
+
+    fun unbindFrom(provider: ProcessCameraProvider) {
+        if (useCases.isNotEmpty()) runCatching { provider.unbind(*useCases) }
+        useCases = emptyArray()
+    }
+}
+
+/**
+ * The display's rotation as observable state. A 180° flip between the two
+ * landscape orientations is not a configuration change, so nothing else would
+ * notice it and the photo would be saved upside down.
+ */
+@Composable
+private fun rememberDisplayRotation(): Int {
+    val view = LocalView.current
+    val context = LocalContext.current
+    var rotation by remember { mutableIntStateOf(view.display?.rotation ?: Surface.ROTATION_0) }
+    DisposableEffect(view) {
+        val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        val listener = object : DisplayManager.DisplayListener {
+            override fun onDisplayChanged(displayId: Int) {
+                val d = view.display ?: return
+                if (d.displayId == displayId) rotation = d.rotation
+            }
+            override fun onDisplayAdded(displayId: Int) = Unit
+            override fun onDisplayRemoved(displayId: Int) = Unit
+        }
+        dm.registerDisplayListener(listener, android.os.Handler(android.os.Looper.getMainLooper()))
+        view.display?.let { rotation = it.rotation }
+        onDispose { dm.unregisterDisplayListener(listener) }
+    }
+    return rotation
+}
+
 private suspend fun Context.getCameraProvider(): ProcessCameraProvider = suspendCancellableCoroutine { cont ->
     val future = ProcessCameraProvider.getInstance(this)
-    future.addListener({ if (cont.isActive) cont.resume(future.get()) }, ContextCompat.getMainExecutor(this))
+    future.addListener({
+        if (!cont.isActive) return@addListener
+        // A broken camera HAL or service throws here; never let it crash the app.
+        try {
+            cont.resume(future.get())
+        } catch (e: Exception) {
+            cont.resumeWithException(e)
+        }
+    }, ContextCompat.getMainExecutor(this))
 }
 
 private suspend fun Context.getExtensionsManager(provider: ProcessCameraProvider): ExtensionsManager =
     suspendCancellableCoroutine { cont ->
         val future = ExtensionsManager.getInstanceAsync(this, provider)
         future.addListener(
-            { if (cont.isActive) runCatching { future.get() }.onSuccess { cont.resume(it) }.onFailure { cont.cancel(it) } },
+            {
+                if (cont.isActive) {
+                    try {
+                        cont.resume(future.get())
+                    } catch (e: Exception) {
+                        cont.resumeWithException(e)
+                    }
+                }
+            },
             ContextCompat.getMainExecutor(this)
         )
     }

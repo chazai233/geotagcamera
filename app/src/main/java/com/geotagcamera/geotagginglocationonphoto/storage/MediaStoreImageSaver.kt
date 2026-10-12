@@ -86,34 +86,37 @@ object MediaStoreImageSaver {
         return candidate
     }
 
-    sealed interface DeleteResult {
-        data object Deleted : DeleteResult
-        /** Android 11+ wants the user to confirm (e.g. the app was reinstalled and no longer owns the files). */
-        data class NeedsConsent(val request: IntentSender) : DeleteResult
-        data object Failed : DeleteResult
-    }
-
     /**
-     * Deletes photos this app saved. Files the app still owns go straight
-     * away; on Android 11+ anything else comes back as one system consent
-     * request covering every Uri that couldn't be deleted directly.
+     * What a delete actually did: [deleted] are gone now, [consent] (Android
+     * 11+) is one system prompt covering the Uris this app may no longer
+     * delete on its own, [failed] could not be deleted at all.
      */
-    fun delete(context: Context, uris: List<Uri>): DeleteResult {
+    data class DeleteOutcome(
+        val deleted: List<Uri>,
+        val consent: IntentSender?,
+        val awaitingConsent: List<Uri>,
+        val failed: List<Uri>
+    )
+
+    fun delete(context: Context, uris: List<Uri>): DeleteOutcome {
         val resolver = context.contentResolver
+        val deleted = mutableListOf<Uri>()
         val blocked = mutableListOf<Uri>()
-        var failed = false
+        val failed = mutableListOf<Uri>()
         for (uri in uris) {
             try {
+                // 0 rows means it was already gone: as good as deleted.
                 resolver.delete(uri, null, null)
+                deleted += uri
             } catch (e: SecurityException) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) blocked += uri else failed = true
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) blocked += uri else failed += uri
             } catch (e: Exception) {
-                failed = true
+                failed += uri
             }
         }
-        if (blocked.isNotEmpty() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            return DeleteResult.NeedsConsent(MediaStore.createDeleteRequest(resolver, blocked).intentSender)
-        }
-        return if (failed) DeleteResult.Failed else DeleteResult.Deleted
+        val consent = if (blocked.isNotEmpty() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            runCatching { MediaStore.createDeleteRequest(resolver, blocked).intentSender }.getOrNull()
+        } else null
+        return DeleteOutcome(deleted, consent, if (consent != null) blocked else emptyList(), failed + if (consent == null) blocked else emptyList())
     }
 }

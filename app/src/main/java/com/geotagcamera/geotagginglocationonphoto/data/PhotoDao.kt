@@ -13,6 +13,9 @@ interface PhotoDao {
     @Query("SELECT * FROM photos ORDER BY capturedAtEpochMs DESC")
     fun observeAll(): Flow<List<PhotoEntity>>
 
+    @Query("SELECT filePath FROM photos ORDER BY capturedAtEpochMs DESC LIMIT 1")
+    fun observeLatestPath(): Flow<String?>
+
     @Query("SELECT * FROM photos WHERE id = :id")
     suspend fun getById(id: Long): PhotoEntity?
 

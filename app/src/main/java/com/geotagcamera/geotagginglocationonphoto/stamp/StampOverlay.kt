@@ -22,15 +22,17 @@ import androidx.compose.ui.unit.LayoutDirection
 fun StampOverlay(spec: StampSpec, modifier: Modifier = Modifier) {
     val fontFamilyResolver = LocalFontFamilyResolver.current
     val drawScope = remember { CanvasDrawScope() }
-    // One measurer per frame size; its cache is only valid for one density.
-    val measurers = remember(fontFamilyResolver) { HashMap<Int, TextMeasurer>(2) }
+    // One measurer, rebuilt only when the frame size (and so the density) changes.
+    // Its cache holds every string a Bar draws, so steady redraws measure nothing.
+    val measurerHolder = remember(fontFamilyResolver) { arrayOfNulls<Pair<Int, TextMeasurer>>(1) }
     Canvas(modifier = modifier) {
         val shortSide = size.minDimension
         if (shortSide <= 0f) return@Canvas
         val density = Density(density = shortSide / StampRenderer.REFERENCE_SHORT_SIDE_DP, fontScale = 1f)
-        val measurer = measurers.getOrPut(shortSide.toInt()) {
-            TextMeasurer(fontFamilyResolver, density, LayoutDirection.Ltr)
-        }
+        val key = shortSide.toInt()
+        val measurer = measurerHolder[0]?.takeIf { it.first == key }?.second
+            ?: TextMeasurer(fontFamilyResolver, density, LayoutDirection.Ltr, cacheSize = 24)
+                .also { measurerHolder[0] = key to it }
         drawScope.draw(density, LayoutDirection.Ltr, drawContext.canvas, size) {
             StampPainter.draw(this, spec, measurer)
         }

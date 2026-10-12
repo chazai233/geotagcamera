@@ -85,15 +85,17 @@ class PhotoDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun delete() {
         val photo = _state.value.photo ?: return
         viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
+            val outcome = withContext(Dispatchers.IO) {
                 MediaStoreImageSaver.delete(getApplication(), listOf(Uri.parse(photo.filePath)))
             }
-            when (result) {
-                is MediaStoreImageSaver.DeleteResult.NeedsConsent -> _deleteConsent.value = result.request
-                else -> {
+            when {
+                outcome.deleted.isNotEmpty() -> {
                     photoDao.delete(photo.id)
                     _deleted.value = true
                 }
+                outcome.consent != null -> _deleteConsent.value = outcome.consent
+                // Couldn't delete the file: keep the row so the photo isn't orphaned.
+                else -> Unit
             }
         }
     }

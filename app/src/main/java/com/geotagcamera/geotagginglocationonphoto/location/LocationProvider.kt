@@ -90,13 +90,24 @@ class LocationProvider(context: Context) {
         altitudeMeters = if (hasAltitude()) altitude else null,
         accuracyMeters = if (hasAccuracy()) accuracy else null,
         bearingDegrees = if (hasBearing()) bearing else null,
-        timestampEpochMs = time
+        timestampEpochMs = time,
+        elapsedRealtimeNanos = elapsedRealtimeNanos.takeIf { it > 0L }
     )
 
     companion object {
-        const val MAX_LAST_KNOWN_AGE_MS = 2 * 60_000L
+        /** Same limit the capture path applies to streamed fixes: nothing older is ever stamped. */
+        const val MAX_LAST_KNOWN_AGE_MS = 30_000L
     }
 }
 
-/** How old this fix is right now, by wall clock (Location.time is UTC epoch ms). */
-fun LocationFix.ageMs(now: Long = System.currentTimeMillis()): Long = (now - timestampEpochMs).coerceAtLeast(0L)
+/**
+ * How old this fix is. Uses the monotonic clock when the fix has it, so a
+ * wall-clock change can't make an old fix look fresh; [now] (wall clock) is
+ * the fallback for fixes without it.
+ */
+fun LocationFix.ageMs(now: Long = System.currentTimeMillis()): Long {
+    elapsedRealtimeNanos?.let { nanos ->
+        return (android.os.SystemClock.elapsedRealtimeNanos() - nanos) / 1_000_000L
+    }
+    return now - timestampEpochMs
+}

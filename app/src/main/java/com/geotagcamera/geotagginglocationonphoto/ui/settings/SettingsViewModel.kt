@@ -51,15 +51,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val path = withContext(Dispatchers.IO) {
                 val bitmap = decodeDownsampled(uri) ?: return@withContext null
                 val dir = File(context.filesDir, LOGO_DIR).apply { mkdirs() }
-                dir.listFiles()?.forEach { it.delete() }
                 val file = File(dir, "org_logo_${System.currentTimeMillis()}.png")
                 val ok = runCatching {
                     FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 }.getOrDefault(false)
                 bitmap.recycle()
-                if (ok) file.absolutePath else null
+                if (ok) file.absolutePath else { file.delete(); null }
             } ?: return@launch
             stampPreferences.edit { it.copy(orgLogoUri = path, showOrgLogo = true) }
+            // Old logos go only after the new one is written and saved.
+            withContext(Dispatchers.IO) {
+                File(context.filesDir, LOGO_DIR).listFiles()?.filter { it.absolutePath != path }?.forEach { it.delete() }
+                File(context.filesDir, "org_logo.png").delete()
+            }
         }
     }
 
