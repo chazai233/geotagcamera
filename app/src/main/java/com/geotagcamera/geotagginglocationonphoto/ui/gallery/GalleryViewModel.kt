@@ -1,6 +1,7 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.gallery
 
 import android.app.Application
+import android.content.IntentSender
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,51 +9,92 @@ import com.geotagcamera.geotagginglocationonphoto.data.AppDatabase
 import com.geotagcamera.geotagginglocationonphoto.data.PhotoEntity
 import com.geotagcamera.geotagginglocationonphoto.security.PhotoVerification
 import com.geotagcamera.geotagginglocationonphoto.security.VerificationOutcome
+import com.geotagcamera.geotagginglocationonphoto.storage.MediaStoreImageSaver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Per-tile trust dot. UNSIGNED/UNKNOWN draw no dot — only real signals are surfaced. */
+/** Per-tile trust badge. UNSIGNED/UNKNOWN draw nothing — only real signals are surfaced. */
 enum class TileStatus { VERIFIED, TAMPERED, UNSIGNED, UNKNOWN }
 
 class GalleryViewModel(application: Application) : AndroidViewModel(application) {
     private val photoDao = AppDatabase.get(application).photoDao()
 
-    val photos: StateFlow<List<PhotoEntity>> = photoDao.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    /** Null until the first database emission, so the screen can tell "loading" from "empty". */
+    val photos: StateFlow<List<PhotoEntity>?> = photoDao.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _tileStatus = MutableStateFlow<Map<Long, TileStatus>>(emptyMap())
     val tileStatus: StateFlow<Map<Long, TileStatus>> = _tileStatus.asStateFlow()
 
-    private val inFlight = mutableSetOf<Long>()
+    /** A system "allow deleting these photos" prompt the screen must launch. */
+    private val _deleteConsent = MutableStateFlow<IntentSender?>(null)
+    val deleteConsent: StateFlow<IntentSender?> = _deleteConsent.asStateFlow()
+    private var idsAwaitingConsent: List<Long> = emptyList()
 
     init {
-        // Background verification pass: as photos appear, verify each once and
-        // cache the result. Surfaced on the tile, never silent — but a miss or
-        // an unsigned photo shows no alarming dot.
+        // One verification pass at a time: a new list cancels the old pass,
+        // and results are cached so each photo is only read once per session.
         viewModelScope.launch {
-            photos.collect { list -> verifyMissing(list) }
+            photoDao.observeAll().collectLatest { list -> verifyMissing(list) }
         }
     }
 
-    private fun verifyMissing(list: List<PhotoEntity>) {
+    private suspend fun verifyMissing(list: List<PhotoEntity>) = withContext(Dispatchers.IO) {
         val context = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.IO) {
-            for (photo in list) {
-                if (_tileStatus.value.containsKey(photo.id) || !inFlight.add(photo.id)) continue
-                val status = when (PhotoVerification.verifyUri(context, Uri.parse(photo.filePath))) {
-                    is VerificationOutcome.Untampered -> TileStatus.VERIFIED
-                    is VerificationOutcome.Edited -> TileStatus.TAMPERED
-                    is VerificationOutcome.NoProof -> TileStatus.UNSIGNED
-                    is VerificationOutcome.Unreadable -> TileStatus.UNKNOWN
+        val gone = mutableListOf<Long>()
+        for (photo in list) {
+            if (_tileStatus.value.containsKey(photo.id)) continue
+            val uri = Uri.parse(photo.filePath)
+            if (!exists(uri)) {
+                // Deleted from the system gallery: drop the stale index row.
+                gone += photo.id
+                continue
+            }
+            val status = when (PhotoVerification.verifyUri(context, uri)) {
+                is VerificationOutcome.Untampered -> TileStatus.VERIFIED
+                is VerificationOutcome.Edited -> TileStatus.TAMPERED
+                is VerificationOutcome.NoProof -> TileStatus.UNSIGNED
+                is VerificationOutcome.Unreadable -> TileStatus.UNKNOWN
+            }
+            _tileStatus.update { it + (photo.id to status) }
+        }
+        if (gone.isNotEmpty()) photoDao.deleteByIds(gone)
+    }
+
+    private fun exists(uri: Uri): Boolean = runCatching {
+        getApplication<Application>().contentResolver.openFileDescriptor(uri, "r")?.use { true } ?: false
+    }.getOrDefault(false)
+
+    /** Deletes the photos from the device gallery and the index. May ask for consent first. */
+    fun delete(photos: List<PhotoEntity>) {
+        if (photos.isEmpty()) return
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                MediaStoreImageSaver.delete(getApplication(), photos.map { Uri.parse(it.filePath) })
+            }
+            when (result) {
+                is MediaStoreImageSaver.DeleteResult.NeedsConsent -> {
+                    idsAwaitingConsent = photos.map { it.id }
+                    _deleteConsent.value = result.request
                 }
-                _tileStatus.value = _tileStatus.value + (photo.id to status)
+                else -> photoDao.deleteByIds(photos.map { it.id })
             }
         }
+    }
+
+    /** Called with the outcome of the system consent prompt. */
+    fun onDeleteConsentResult(granted: Boolean) {
+        _deleteConsent.value = null
+        val ids = idsAwaitingConsent
+        idsAwaitingConsent = emptyList()
+        if (granted && ids.isNotEmpty()) viewModelScope.launch { photoDao.deleteByIds(ids) }
     }
 }

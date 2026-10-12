@@ -68,7 +68,6 @@ object StampPainter {
 
     fun draw(scope: DrawScope, spec: StampSpec, textMeasurer: TextMeasurer) {
         when (spec.template) {
-            StampTemplate.CARD -> drawCard(scope, spec, textMeasurer)
             StampTemplate.BAR -> drawBar(scope, spec, textMeasurer)
             StampTemplate.MINIMAL -> drawMinimal(scope, spec, textMeasurer)
         }
@@ -76,14 +75,34 @@ object StampPainter {
 
     // ---- Card: the primary template, a scrim card anchored to one of nine positions ----
 
-    private fun drawCard(scope: DrawScope, spec: StampSpec, tm: TextMeasurer) = with(scope) {
-        val px3 = px(3f); val px1 = px(1f)
-        val margin = size.minDimension * 0.035f
-        val cardWidth = (size.width * 0.62f).coerceAtMost(size.width - margin * 2)
-        val pad = cardWidth * 0.045f
-        val gap = cardWidth * 0.03f
+    // ---- Bar (default): every enabled field in a full-width strip on the top or bottom edge ----
 
-        val tileSize = if (spec.mapTile != null) cardWidth * 0.26f else 0f
+    private fun drawBar(scope: DrawScope, spec: StampSpec, tm: TextMeasurer) = with(scope) {
+        drawPanel(spec, tm, size.width, cornered = false, tileFraction = 0.2f) { panel ->
+            Offset(0f, if (spec.anchor in TOP_ANCHORS) 0f else size.height - panel.height)
+        }
+    }
+
+    /**
+     * The shared stamp panel: optional map tile on the left, every enabled
+     * text field stacked on the right, a chip row, then a footer row (logo,
+     * org name, SIGNED, brand mark). Each part is drawn only if present, and
+     * the panel height is computed from what is actually there, so turning
+     * fields on or off reflows it instead of leaving gaps.
+     */
+    private fun DrawScope.drawPanel(
+        spec: StampSpec,
+        tm: TextMeasurer,
+        cardWidth: Float,
+        cornered: Boolean,
+        tileFraction: Float,
+        place: DrawScope.(Size) -> Offset
+    ) {
+        val px3 = px(3f); val px1 = px(1f)
+        val pad = cardWidth * (if (cornered) 0.045f else 0.035f)
+        val gap = pad * 0.67f
+
+        val tileSize = if (spec.mapTile != null) cardWidth * tileFraction else 0f
         val hasTile = spec.mapTile != null
 
         // Text column width: whatever's left of the card after padding and the
@@ -103,37 +122,67 @@ object StampPainter {
 
         val countryLayout = spec.countryCode?.let { tm.measure(it, CountryChipStyle, maxLines = 1) }
         val countryReserve = countryLayout?.let { it.size.width + px(11f) } ?: 0f
-        val placeLayout = spec.placeName?.let { measure(it, StampAnchorStyle.copy(color = TextPrimary), 1, (textColWidth - countryReserve).coerceAtLeast(1f)) }
+        // A footer holding nothing but the app mark would waste a whole row, so
+        // the mark moves up to the top-right corner, beside the place name.
+        val brandInline = spec.showBrandMark && spec.orgLogo == null && spec.orgLabel == null && !spec.showSignedMark
+        val hasFooter = spec.hasFooterRow && !brandInline
+        val brandLabel = if (spec.showBrandMark) tm.measure("GEOTAG", BrandTextStyle, maxLines = 1) else null
+        val brandWidth = brandLabel?.let { px(11f) + px(4f) + it.size.width } ?: 0f
+        val brandReserve = if (brandInline) brandWidth + gap else 0f
+        val placeLayout = spec.placeName?.let {
+            measure(it, StampAnchorStyle.copy(color = TextPrimary), 1, (textColWidth - countryReserve - brandReserve).coerceAtLeast(1f))
+        }
         val addressLayout = spec.addressLine?.let { measure(it, AddressStyle, 2, textColWidth) }
-        val coordsLayout = spec.coordinatesText?.let { measure(it, MonoDataStyle.copy(color = TextPrimary), 1, textColWidth) }
+        // Coordinates may wrap (Lat on one line, Long on the next) but are never cut off.
+        val coordsLayout = spec.coordinatesText?.let { measure(it, MonoDataStyle.copy(color = TextPrimary), 2, textColWidth) }
         val dateTimeText = listOfNotNull(spec.dateTimeText, spec.gmtOffsetText).joinToString(" ")
         val dateTimeLayout = dateTimeText.takeIf { it.isNotBlank() }?.let { measure(it, DateTimeStyle, 2, textColWidth) }
 
-        val textBlockHeight = stackedHeight(listOfNotNull(placeLayout, addressLayout, coordsLayout, dateTimeLayout), px3)
+        // Chips (accuracy, altitude, bearing, weather) flow left to right in the
+        // text column and wrap onto a new row instead of running off the panel.
+        val chipPad = px(5f)
+        val chipSpacing = px(5f)
+        val chipLayouts = spec.chips.map { tm.measure(it.text, ChipStyle, maxLines = 1) }
+        val chipHeight = chipLayouts.firstOrNull()?.let { it.size.height + chipPad * 1.2f } ?: 0f
+        val chipPositions = ArrayList<Offset>(chipLayouts.size) // relative to the chip block's top-left
+        run {
+            var cx = 0f
+            var cy = 0f
+            chipLayouts.forEach { layout ->
+                val w = layout.size.width + chipPad * 2
+                if (cx > 0f && cx + w > textColWidth) { cx = 0f; cy += chipHeight + chipSpacing }
+                chipPositions += Offset(cx, cy)
+                cx += w + chipSpacing
+            }
+        }
+        val chipBlockHeight = chipPositions.lastOrNull()?.let { it.y + chipHeight } ?: 0f
+
+        val textBlockHeight = stackedHeight(listOfNotNull(placeLayout, addressLayout, coordsLayout, dateTimeLayout), px3) +
+            (if (chipBlockHeight > 0f) px(6f) + chipBlockHeight else 0f)
         val rowHeight = maxOf(tileSize, textBlockHeight)
 
-        val chipRowHeight = if (spec.chips.isNotEmpty()) with(ChipStyle.fontSize) { toPx() } * 2.6f else 0f
-        val footerHeight = if (spec.hasFooterRow) with(FooterLabelStyle.fontSize) { toPx() } * 2.4f else 0f
+        val footerHeight = if (hasFooter) with(FooterLabelStyle.fontSize) { toPx() } * 2.0f else 0f
 
         val cardHeight = pad * 2 +
             rowHeight +
-            (if (spec.chips.isNotEmpty()) gap + chipRowHeight else 0f) +
-            (if (spec.hasFooterRow) gap + footerHeight else 0f)
+            (if (hasFooter) gap + footerHeight else 0f)
 
-        val cardOrigin = anchorOrigin(spec.anchor, Size(cardWidth, cardHeight), margin)
-        val corner = CornerRadius(cardWidth * 0.045f)
+        val cardOrigin = place(Size(cardWidth, cardHeight))
+        val corner = CornerRadius(if (cornered) cardWidth * 0.045f else 0f)
 
         drawRoundRect(color = CardScrim, topLeft = cardOrigin, size = Size(cardWidth, cardHeight), cornerRadius = corner)
-        drawRoundRect(color = CardBorder, topLeft = cardOrigin, size = Size(cardWidth, cardHeight), cornerRadius = corner, style = Stroke(width = px1))
+        if (cornered) {
+            drawRoundRect(color = CardBorder, topLeft = cardOrigin, size = Size(cardWidth, cardHeight), cornerRadius = corner, style = Stroke(width = px1))
+        }
 
         var x = cardOrigin.x + pad
         val rowTop = cardOrigin.y + pad
 
-        if (hasTile) {
-            val tile = spec.mapTile!!
+        val tile = spec.mapTile
+        if (tile != null) {
             val tileCorner = CornerRadius(tileSize * 0.12f)
             clipRoundRect(Offset(x, rowTop), Size(tileSize, tileSize), tileCorner) {
-                drawImage(tile, dstOffset = IntOffset(x.toInt(), rowTop.toInt()), dstSize = IntSize(tileSize.toInt(), tileSize.toInt()))
+                drawImage(tile, dstOffset = IntOffset(x.roundToInt(), rowTop.roundToInt()), dstSize = IntSize(tileSize.roundToInt().coerceAtLeast(1), tileSize.roundToInt().coerceAtLeast(1)))
             }
             x += tileSize + gap
         }
@@ -152,25 +201,27 @@ object StampPainter {
         }
         addressLayout?.let { layout -> drawText(layout, topLeft = Offset(x, textY)); textY += layout.size.height + px3 }
         coordsLayout?.let { layout -> drawText(layout, topLeft = Offset(x, textY)); textY += layout.size.height + px3 }
-        dateTimeLayout?.let { layout -> drawText(layout, topLeft = Offset(x, textY)) }
+        dateTimeLayout?.let { layout -> drawText(layout, topLeft = Offset(x, textY)); textY += layout.size.height + px3 }
+
+        if (chipLayouts.isNotEmpty()) {
+            val blockTop = textY + px(6f) - px3
+            chipLayouts.forEachIndexed { i, layout ->
+                val at = chipPositions[i]
+                val chipX = x + at.x
+                val chipY = blockTop + at.y
+                drawRoundRect(ChipBackground, Offset(chipX, chipY), Size(layout.size.width + chipPad * 2, chipHeight), CornerRadius(px(4f)))
+                drawText(layout, topLeft = Offset(chipX + chipPad, chipY + chipPad * 0.6f))
+            }
+        }
 
         var y = rowTop + rowHeight
 
-        if (spec.chips.isNotEmpty()) {
-            y += gap
-            var chipX = cardOrigin.x + pad
-            spec.chips.forEach { chip ->
-                val layout = tm.measure(chip.text, ChipStyle, maxLines = 1)
-                val chipPad = px(5f)
-                val chipSize = Size(layout.size.width + chipPad * 2, layout.size.height + chipPad * 1.2f)
-                drawRoundRect(ChipBackground, Offset(chipX, y), chipSize, CornerRadius(px(4f)))
-                drawText(layout, topLeft = Offset(chipX + chipPad, y + chipPad * 0.6f))
-                chipX += chipSize.width + px(5f)
-            }
-            y += chipRowHeight
+        if (brandInline && brandLabel != null) {
+            val centerY = rowTop + (placeLayout?.size?.height ?: brandLabel.size.height) / 2f
+            drawBrandMark(brandLabel, cardOrigin.x + cardWidth - pad - brandWidth, centerY)
         }
 
-        if (spec.hasFooterRow) {
+        if (hasFooter) {
             y += gap
             drawLine(CardBorder, Offset(cardOrigin.x + pad, y), Offset(cardOrigin.x + cardWidth - pad, y), strokeWidth = px1)
             val centerY = y + footerHeight * 0.5f + gap * 0.2f
@@ -178,24 +229,27 @@ object StampPainter {
             // Left: logo, vertically centred.
             var leftX = cardOrigin.x + pad
             spec.orgLogo?.let { logo ->
-                val logoSize = footerHeight * 0.72f
-                val top = centerY - logoSize / 2f
-                clipRoundRect(Offset(leftX, top), Size(logoSize, logoSize), CornerRadius(logoSize * 0.22f)) {
-                    drawImage(logo, dstOffset = IntOffset(leftX.toInt(), top.toInt()), dstSize = IntSize(logoSize.toInt(), logoSize.toInt()))
+                // Keep the logo's own aspect ratio (wide wordmarks are common),
+                // capped at a third of the panel so the org name still fits.
+                val logoHeight = footerHeight * 0.72f
+                val aspect = if (logo.height > 0) logo.width.toFloat() / logo.height else 1f
+                val logoWidth = (logoHeight * aspect).coerceAtMost(cardWidth / 3f)
+                val drawHeight = if (aspect > 0f) logoWidth / aspect else logoHeight
+                val top = centerY - drawHeight / 2f
+                val w = logoWidth.roundToInt().coerceAtLeast(1)
+                val h = drawHeight.roundToInt().coerceAtLeast(1)
+                clipRoundRect(Offset(leftX, top), Size(logoWidth, drawHeight), CornerRadius(drawHeight * 0.18f)) {
+                    drawImage(logo, dstOffset = IntOffset(leftX.roundToInt(), top.roundToInt()), dstSize = IntSize(w, h))
                 }
-                leftX += logoSize + gap * 0.6f
+                leftX += logoWidth + gap * 0.6f
             }
 
             // Right: brand mark (rightmost), then SIGNED to its left — laid out
             // right-to-left so nothing collides, each vertically centred.
             var rightX = cardOrigin.x + cardWidth - pad
-            if (spec.showBrandMark) {
-                val markSize = px(11f)
-                val label = tm.measure("GEOTAG", BrandTextStyle, maxLines = 1)
-                val startX = rightX - (markSize + px(4f) + label.size.width)
-                drawRoundRect(TextPrimary.copy(alpha = 0.55f), Offset(startX, centerY - markSize / 2f), Size(markSize, markSize), CornerRadius(markSize * 0.33f), style = Stroke(width = px(1.2f)))
-                drawCircle(BrandDotColor.copy(alpha = 0.85f), markSize * 0.15f, Offset(startX + markSize / 2f, centerY))
-                drawText(label, topLeft = Offset(startX + markSize + px(4f), centerY - label.size.height / 2f))
+            if (spec.showBrandMark && brandLabel != null) {
+                val startX = rightX - brandWidth
+                drawBrandMark(brandLabel, startX, centerY)
                 rightX = startX - gap
             }
             if (spec.showSignedMark) {
@@ -215,39 +269,6 @@ object StampPainter {
         }
     }
 
-    // ---- Bar: a bottom gradient scrim, no card, place+address left, coords+date right ----
-
-    private fun drawBar(scope: DrawScope, spec: StampSpec, tm: TextMeasurer) = with(scope) {
-        val px3 = px(3f)
-        val pad = size.width * 0.045f
-        val leftMax = size.width * 0.52f
-        val rightMax = size.width * 0.44f
-        val placeLayout = spec.placeName?.let { tm.measure(it, StampAnchorStyle.copy(color = TextPrimary), overflow = TextOverflow.Ellipsis, maxLines = 1, constraints = Constraints(maxWidth = leftMax.roundToInt().coerceAtLeast(1))) }
-        val addressLayout = spec.addressLine?.let { tm.measure(it, AddressStyle, overflow = TextOverflow.Ellipsis, maxLines = 2, constraints = Constraints(maxWidth = leftMax.roundToInt().coerceAtLeast(1))) }
-        val coordsLayout = spec.coordinatesText?.let { tm.measure(it, MonoDataStyle.copy(color = TextPrimary), overflow = TextOverflow.Ellipsis, maxLines = 1, constraints = Constraints(maxWidth = rightMax.roundToInt().coerceAtLeast(1))) }
-        val dateTimeText = listOfNotNull(spec.dateTimeText, spec.gmtOffsetText).joinToString(" ")
-        val dateTimeLayout = dateTimeText.takeIf { it.isNotBlank() }?.let { tm.measure(it, DateTimeStyle, overflow = TextOverflow.Ellipsis, maxLines = 2, constraints = Constraints(maxWidth = rightMax.roundToInt().coerceAtLeast(1))) }
-
-        val leftHeight = stackedHeight(listOfNotNull(placeLayout, addressLayout), px3)
-        val rightHeight = stackedHeight(listOfNotNull(coordsLayout, dateTimeLayout), px3)
-        val barHeight = maxOf(leftHeight, rightHeight, 1f) + pad * 1.6f
-        if (placeLayout == null && addressLayout == null && coordsLayout == null && dateTimeLayout == null) return@with
-
-        drawRect(
-            color = Color.Black.copy(alpha = 0.72f),
-            topLeft = Offset(0f, size.height - barHeight),
-            size = Size(size.width, barHeight)
-        )
-
-        var leftY = size.height - barHeight + pad * 0.8f
-        placeLayout?.let { drawText(it, topLeft = Offset(pad, leftY)); leftY += it.size.height + px3 }
-        addressLayout?.let { drawText(it, topLeft = Offset(pad, leftY)) }
-
-        var rightY = size.height - barHeight + pad * 0.8f
-        coordsLayout?.let { drawText(it, topLeft = Offset(size.width - pad - it.size.width, rightY)); rightY += it.size.height + px3 }
-        dateTimeLayout?.let { drawText(it, topLeft = Offset(size.width - pad - it.size.width, rightY)) }
-    }
-
     // ---- Minimal: a small blurred-look pill, coordinates and date/time only ----
 
     private fun drawMinimal(scope: DrawScope, spec: StampSpec, tm: TextMeasurer) = with(scope) {
@@ -255,7 +276,7 @@ object StampPainter {
         val pad = px(10f)
         val px2 = px(2f)
         val minimalMax = size.width * 0.7f
-        val coordsLayout = spec.coordinatesText?.let { tm.measure(it, MonoDataStyle.copy(color = TextPrimary), overflow = TextOverflow.Ellipsis, maxLines = 1, constraints = Constraints(maxWidth = minimalMax.roundToInt().coerceAtLeast(1))) }
+        val coordsLayout = spec.coordinatesText?.let { tm.measure(it, MonoDataStyle.copy(color = TextPrimary), overflow = TextOverflow.Ellipsis, maxLines = 2, constraints = Constraints(maxWidth = minimalMax.roundToInt().coerceAtLeast(1))) }
         val dateTimeText = listOfNotNull(spec.dateTimeText, spec.gmtOffsetText).joinToString(" ")
         val dateTimeLayout = dateTimeText.takeIf { it.isNotBlank() }?.let { tm.measure(it, DateTimeStyle, overflow = TextOverflow.Ellipsis, maxLines = 2, constraints = Constraints(maxWidth = minimalMax.roundToInt().coerceAtLeast(1))) }
         if (coordsLayout == null && dateTimeLayout == null) return@with
@@ -272,6 +293,19 @@ object StampPainter {
     }
 
     // ---- Shared helpers ----
+
+    /** The small rounded-square mark plus "GEOTAG", starting at [startX], vertically centred on [centerY]. */
+    private fun DrawScope.drawBrandMark(label: TextLayoutResult, startX: Float, centerY: Float) {
+        val markSize = px(11f)
+        drawRoundRect(
+            TextPrimary.copy(alpha = 0.55f), Offset(startX, centerY - markSize / 2f), Size(markSize, markSize),
+            CornerRadius(markSize * 0.33f), style = Stroke(width = px(1.2f))
+        )
+        drawCircle(BrandDotColor.copy(alpha = 0.85f), markSize * 0.15f, Offset(startX + markSize / 2f, centerY))
+        drawText(label, topLeft = Offset(startX + markSize + px(4f), centerY - label.size.height / 2f))
+    }
+
+    private val TOP_ANCHORS = setOf(StampAnchor.TOP_LEFT, StampAnchor.TOP_CENTER, StampAnchor.TOP_RIGHT)
 
     /** Nine-anchor placement: same grid the viewfinder drag and the Settings position picker use. */
     private fun DrawScope.anchorOrigin(anchor: StampAnchor, contentSize: Size, margin: Float): Offset {

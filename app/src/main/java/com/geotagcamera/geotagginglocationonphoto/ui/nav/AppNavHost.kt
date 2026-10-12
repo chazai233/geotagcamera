@@ -1,8 +1,21 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.nav
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,7 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,6 +39,7 @@ import com.geotagcamera.geotagginglocationonphoto.ui.launch.LaunchScreen
 import com.geotagcamera.geotagginglocationonphoto.ui.legal.AboutLegalScreen
 import com.geotagcamera.geotagginglocationonphoto.ui.onboarding.PermissionPrimerScreen
 import com.geotagcamera.geotagginglocationonphoto.ui.settings.SettingsScreen
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.SystemBarIcons
 import com.geotagcamera.geotagginglocationonphoto.ui.verify.VerifyScreen
 
 /**
@@ -34,10 +48,10 @@ import com.geotagcamera.geotagginglocationonphoto.ui.verify.VerifyScreen
  * bar shown only for these) -> sibling top-level destinations for photo
  * detail, verify, and about/legal, none of which show the bottom bar.
  */
-private sealed class Tab(val route: String, val label: String, val emoji: String) {
-    data object Capture : Tab("capture", "Capture", "📷")
-    data object Gallery : Tab("gallery", "Gallery", "🖼")
-    data object Settings : Tab("settings", "Settings", "⚙")
+private sealed class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
+    data object Capture : Tab("capture", "Capture", Icons.Outlined.PhotoCamera, Icons.Filled.PhotoCamera)
+    data object Gallery : Tab("gallery", "Gallery", Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)
+    data object Settings : Tab("settings", "Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
 }
 
 private val tabs = listOf(Tab.Capture, Tab.Gallery, Tab.Settings)
@@ -64,10 +78,23 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
     // Capture tab to return), and Capture reaches them via its own controls.
     val showBottomBar = currentRoute in tabRoutes && currentRoute != Tab.Capture.route
 
+    // Launch, onboarding and the camera are always dark; everything else follows the system theme.
+    val chromeRoute = currentRoute == null || currentRoute in setOf(Routes.LAUNCH, Routes.ONBOARDING, Tab.Capture.route)
+    SystemBarIcons(darkBackground = chromeRoute || isSystemInDarkTheme())
+
     // A shared "verify this photo" image is held here (not threaded through the
     // route's query arg, which can't safely carry a content:// Uri) and read by
     // the verify destination once, then cleared.
     var pendingVerifyUri by remember { mutableStateOf<String?>(null) }
+
+    // Tabs share one back stack rooted at Capture. Launch is popped on the way
+    // in, so it can't be the popUpTo target (navigation would silently push a
+    // second Capture on every round trip, each with its own camera binding).
+    fun goToTab(route: String) = navController.navigate(route) {
+        popUpTo(Tab.Capture.route) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
     LaunchedEffect(shareUri) {
         if (!shareUri.isNullOrBlank()) {
             pendingVerifyUri = shareUri
@@ -76,29 +103,35 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
         }
     }
 
+    // The outer Scaffold only owns the tab bar. Each destination pads itself by
+    // the safe-drawing insets (AppScaffold, or Capture's own layout), and the
+    // tab bar's height is consumed here so nothing counts the nav bar twice.
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
                     tabs.forEach { tab ->
+                        val selected = currentRoute == tab.route
                         NavigationBarItem(
-                            selected = currentRoute == tab.route,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Text(tab.emoji) },
-                            label = { Text(tab.label) }
+                            selected = selected,
+                            onClick = { goToTab(tab.route) },
+                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            label = { Text(tab.label, style = MaterialTheme.typography.labelLarge) }
                         )
                     }
                 }
             }
         }
     ) { padding ->
-        val contentModifier = if (showBottomBar) Modifier.padding(padding) else Modifier
+        val contentModifier = Modifier.padding(padding).consumeWindowInsets(padding)
 
         NavHost(
             navController = navController,
@@ -128,19 +161,16 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
                     }
                 )
             }
-            // Capture/Gallery/Settings keep their current signatures for now — Phase 5 (Capture),
-            // Phase 9 (Gallery), and Phase 10 (Settings) are what actually wire real navigation
-            // triggers (gallery shortcut, photo detail, verify FAB, about/legal link) into these
-            // routes, which already exist and are reachable in the graph starting now.
             composable(Tab.Capture.route) {
                 CaptureScreen(
-                    onOpenGallery = { navController.navigate(Tab.Gallery.route) { launchSingleTop = true } },
-                    onOpenSettings = { navController.navigate(Tab.Settings.route) { launchSingleTop = true } }
+                    onOpenGallery = { goToTab(Tab.Gallery.route) },
+                    onOpenSettings = { goToTab(Tab.Settings.route) }
                 )
             }
             composable(Tab.Gallery.route) {
                 GalleryScreen(
                     onOpenPhoto = { id -> navController.navigate(Routes.photoDetail(id)) },
+                    onOpenCamera = { goToTab(Tab.Capture.route) },
                     onVerifyExternal = { uriStr ->
                         pendingVerifyUri = uriStr
                         navController.navigate(Routes.verify())
@@ -158,7 +188,14 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
                 arguments = listOf(navArgument("photoId") { type = NavType.LongType })
             ) { entry ->
                 val photoId = entry.arguments?.getLong("photoId") ?: return@composable
-                PhotoDetailScreen(photoId = photoId, onBack = { navController.popBackStack() })
+                PhotoDetailScreen(
+                    photoId = photoId,
+                    onBack = { navController.popBackStack() },
+                    onVerify = { uriStr ->
+                        pendingVerifyUri = uriStr
+                        navController.navigate(Routes.verify())
+                    }
+                )
             }
             composable(
                 route = Routes.VERIFY,
@@ -168,7 +205,11 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
                     defaultValue = null
                 })
             ) { entry ->
-                val uri = entry.arguments?.getString("uri") ?: pendingVerifyUri
+                // A pending (shared or picked) Uri is consumed once, so opening Verify
+                // later from Settings doesn't re-check an old file whose grant is gone.
+                val uri = remember(entry) {
+                    entry.arguments?.getString("uri") ?: pendingVerifyUri.also { pendingVerifyUri = null }
+                }
                 VerifyScreen(uri = uri, onBack = { navController.popBackStack() })
             }
             composable(Routes.ABOUT_LEGAL) {

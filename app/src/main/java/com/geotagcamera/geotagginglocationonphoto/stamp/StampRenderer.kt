@@ -35,7 +35,12 @@ import com.geotagcamera.geotagginglocationonphoto.location.LocationFix
  * density, not `LocalDensity.current`, or the two will drift apart again.
  */
 object StampRenderer {
-    private const val REFERENCE_WIDTH_DP = 360f
+    /**
+     * The burn-in and every on-screen preview treat the frame's SHORTER side as
+     * this many dp, so a stamp covers the same share of a portrait or a
+     * landscape photo instead of ballooning when the frame is wide.
+     */
+    const val REFERENCE_SHORT_SIDE_DP = 360f
 
     fun stamp(
         context: Context,
@@ -51,8 +56,11 @@ object StampRenderer {
     ): Bitmap {
         val spec = buildStampSpec(fix, addressParts, capturedAtEpochMs, fields, mapTile, orgLogo, hasSignature, weatherChipText)
 
-        val output = source.copy(Bitmap.Config.ARGB_8888, true)
-        val density = Density(density = output.width / REFERENCE_WIDTH_DP, fontScale = 1f)
+        // Draw in place when we can: a full-resolution copy is tens of MB, and
+        // the caller already owns [source]. Returns [source] itself in that case.
+        val output = if (source.isMutable && source.config == Bitmap.Config.ARGB_8888) source
+        else source.copy(Bitmap.Config.ARGB_8888, true)
+        val density = Density(density = minOf(output.width, output.height) / REFERENCE_SHORT_SIDE_DP, fontScale = 1f)
         val fontFamilyResolver = createFontFamilyResolver(context)
         val textMeasurer = TextMeasurer(
             defaultFontFamilyResolver = fontFamilyResolver,

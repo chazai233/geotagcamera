@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,18 +43,28 @@ import androidx.compose.ui.unit.sp
 /**
  * Field-worker sign-off as a bottom sheet over the dimmed-but-visible
  * viewfinder (design system section 03/06), not a modal that hides the frame.
- * Split is 2:1 — "Attach & capture" is the primary, twice the width of "Skip"
+ * Split is 2:1 — "Attach & save" is the primary, twice the width of "Skip"
  * — and the "Stored on this device only" line answers the obvious privacy
  * question inline. The drawing/gesture logic ([SignaturePadState]) is unchanged.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignatureCaptureDialog(onConfirm: (Bitmap?) -> Unit, onSkip: () -> Unit) {
+fun SignatureCaptureDialog(
+    required: Boolean,
+    onConfirm: (Bitmap?) -> Unit,
+    onSkip: () -> Unit,
+    onDiscard: () -> Unit
+) {
     val padState = remember { SignaturePadState() }
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // A required signature can't be swiped away: that would save an unsigned
+    // photo. Back or a tap outside discards the shot instead.
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { target -> !required || target != SheetValue.Hidden }
+    )
 
-    ModalBottomSheet(onDismissRequest = onSkip, sheetState = sheetState) {
+    ModalBottomSheet(onDismissRequest = if (required) onDiscard else onSkip, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Text(
                 "Field worker signature",
@@ -62,7 +73,8 @@ fun SignatureCaptureDialog(onConfirm: (Bitmap?) -> Unit, onSkip: () -> Unit) {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Sign below to confirm you captured this photo.",
+                if (required) "A signature is required before this photo is saved."
+                else "Sign below to confirm you captured this photo.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -112,14 +124,14 @@ fun SignatureCaptureDialog(onConfirm: (Bitmap?) -> Unit, onSkip: () -> Unit) {
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(
-                    onClick = onSkip,
+                    onClick = if (required) onDiscard else onSkip,
                     modifier = Modifier.weight(1f).height(52.dp)
-                ) { Text("Skip") }
+                ) { Text(if (required) "Discard" else "Skip") }
                 Button(
                     onClick = { onConfirm(padState.renderToBitmap(canvasSize.width, canvasSize.height)) },
                     enabled = !padState.isEmpty,
                     modifier = Modifier.weight(2f).height(52.dp)
-                ) { Text("Attach & capture") }
+                ) { Text("Attach & save") }
             }
         }
     }

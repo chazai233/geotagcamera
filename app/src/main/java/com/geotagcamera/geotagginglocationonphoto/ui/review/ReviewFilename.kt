@@ -6,13 +6,14 @@ import java.util.Locale
 
 /**
  * Builds the human-quotable capture filename shown on the review screen and
- * used as the MediaStore display name, e.g. `IMG_20260731_0140_Champadanga.jpg`.
+ * used as the MediaStore display name, e.g. `IMG_20260731_014052_Champadanga.jpg`.
  * Address-derived so field staff can read it aloud on site (design section 04).
+ * Seconds are included so two shots in the same minute never share a name.
  * Pure; no Android dependency.
  */
 object ReviewFilename {
     fun generate(place: String?, epochMs: Long): String {
-        val ts = SimpleDateFormat("yyyyMMdd_HHmm", Locale.US).format(Date(epochMs))
+        val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(epochMs))
         val slug = place
             ?.substringBefore(",")
             ?.trim()

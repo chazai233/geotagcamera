@@ -10,8 +10,9 @@ import kotlin.math.roundToInt
 /** Burns a field worker's on-screen signature into the top-right corner of a stamped photo. */
 object SignatureOverlay {
 
+    /** Draws into [photo] itself when it is mutable (and returns it); copies only if it isn't. */
     fun apply(photo: Bitmap, signature: Bitmap): Bitmap {
-        val output = photo.copy(Bitmap.Config.ARGB_8888, true)
+        val output = if (photo.isMutable) photo else photo.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(output)
 
         val boxWidth = output.width * 0.34f

@@ -105,6 +105,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    // Vector icons only, no emoji glyphs anywhere in the UI. R8 strips the unused ones.
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
     // Manifest theme (android:theme="@style/Theme.Material3...") needs the
@@ -116,6 +118,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+    // Night / HDR, only where the phone maker exposes them (CameraX Extensions)
+    implementation(libs.androidx.camera.extensions)
 
     // Location
     implementation(libs.play.services.location)

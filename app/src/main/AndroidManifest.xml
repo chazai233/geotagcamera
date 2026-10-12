@@ -8,8 +8,8 @@
     <!--
       INTERNET (1.1.0): the app's first-ever network permission. Used ONLY by
       two opt-in, off-by-default stamp features — the OSM map thumbnail (Stadia
-      Maps tiles) and the weather chip (Open-Meteo). Core capture/geocode/save
-      stays fully offline; a network miss on either feature never blocks a
+      Maps tiles) and the weather chip (Open-Meteo). Capture, stamping, signing and saving
+      stay fully offline; a network miss on either feature never blocks a
       capture. No ads, analytics, or telemetry — see About & Legal.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -25,6 +25,7 @@
     <application
         android:name=".GeoTagCameraApp"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
@@ -34,8 +35,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:screenOrientation="fullUser">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -47,15 +47,5 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
     </application>
 </manifest>

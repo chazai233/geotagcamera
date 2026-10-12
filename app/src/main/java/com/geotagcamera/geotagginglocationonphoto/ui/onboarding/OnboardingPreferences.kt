@@ -1,13 +1,19 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.onboarding
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.onboardingDataStore by preferencesDataStore(name = "onboarding_prefs")
+private val Context.onboardingDataStore by preferencesDataStore(
+    name = "onboarding_prefs",
+    // A corrupt file (killed mid-write, bad flash) resets to defaults instead of crashing.
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() }
+)
 
 /** Gates whether Launch cross-fades straight into Capture or through the Permission Primer first. */
 class OnboardingPreferences(private val context: Context) {

@@ -1,7 +1,11 @@
 package com.geotagcamera.geotagginglocationonphoto.stamp
 
-/** Which of the three stamp layouts to render. See docs/GeoTag Camera Design System.dc.html section 04. */
-enum class StampTemplate { CARD, BAR, MINIMAL }
+/**
+ * The two stamp layouts. BAR is the full-information strip (default);
+ * MINIMAL is a small coordinates-and-time pill. The old CARD layout was
+ * dropped in 1.2.0; a stored "CARD" preference falls back to BAR.
+ */
+enum class StampTemplate { BAR, MINIMAL }
 
 /** One of nine positions the stamp card/bar/pill can sit at, matching the viewfinder's drag anchors. */
 enum class StampAnchor { TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, MID_RIGHT, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT }
@@ -14,7 +18,7 @@ enum class StampAnchor { TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, 
  * Defaults match the design system's own component state exactly (its
  * `.dc.html` script block): map/country/address/coords/datetime/gmt/org/
  * logo/signature/brand default on, altitude/bearing/weather default off,
- * template CARD, position BOTTOM_LEFT. Note `showAccuracy` defaults `true`
+ * template BAR, position BOTTOM_LEFT. Note `showAccuracy` defaults `true`
  * here, a deliberate change from this field's old `false` default, to match
  * the locked design.
  *
@@ -26,9 +30,9 @@ enum class StampAnchor { TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, 
  * without ever being required — keep these independent.
  */
 data class StampFields(
-    val template: StampTemplate = StampTemplate.CARD,
+    val template: StampTemplate = StampTemplate.BAR,
     val position: StampAnchor = StampAnchor.BOTTOM_LEFT,
-    val showMap: Boolean = true,
+    val showMap: Boolean = false,
     val showCountry: Boolean = true,
     val showAddress: Boolean = true,
     val showCoordinates: Boolean = true,

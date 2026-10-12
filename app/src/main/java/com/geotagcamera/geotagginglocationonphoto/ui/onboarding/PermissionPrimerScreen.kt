@@ -6,6 +6,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +55,7 @@ fun PermissionPrimerScreen(onContinue: () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
@@ -66,7 +70,7 @@ fun PermissionPrimerScreen(onContinue: () -> Unit) {
                 PermissionRow("Camera", "To take the photo. Nothing else.")
                 PermissionRow(
                     "Location",
-                    "To stamp where the photo was taken. Foreground only, never in the background, never uploaded."
+                    "To stamp where the photo was taken. Only while the camera is open, never in the background. Precise or approximate both work."
                 )
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                     PermissionRow(
@@ -76,7 +80,7 @@ fun PermissionPrimerScreen(onContinue: () -> Unit) {
                 }
                 PermissionRow(
                     "Network",
-                    "Used only by the optional map tile and weather chip, both off by default. Everything else works offline."
+                    "Used only by the optional map thumbnail and weather, both off by default, and by your phone's own address lookup. Taking, stamping and signing photos works offline."
                 )
 
                 Spacer(Modifier.height(20.dp))
@@ -88,7 +92,7 @@ fun PermissionPrimerScreen(onContinue: () -> Unit) {
                 ) {
                     Text("No ads. No paywall. We know, it's suspicious.", color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Text(
-                        "No accounts, no analytics, no ad SDK. Nothing leaves the device unless you turn on a map tile or weather lookup.",
+                        "No accounts, no analytics, no ad SDK. Your photos never leave the device unless you share them.",
                         color = Muted, fontSize = 12.sp
                     )
                 }

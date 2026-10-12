@@ -19,6 +19,11 @@ class SignaturePadState {
     }
 
     fun appendPoint(offset: Offset) {
+        // Clear can land mid-drag; the next move then starts a fresh stroke.
+        if (strokes.isEmpty()) {
+            startStroke(offset)
+            return
+        }
         current.add(offset)
         strokes[strokes.lastIndex] = current.toList()
     }

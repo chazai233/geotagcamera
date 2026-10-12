@@ -9,6 +9,7 @@ import com.geotagcamera.geotagginglocationonphoto.data.AppDatabase
 import com.geotagcamera.geotagginglocationonphoto.data.PhotoEntity
 import com.geotagcamera.geotagginglocationonphoto.security.PhotoVerification
 import com.geotagcamera.geotagginglocationonphoto.security.VerificationOutcome
+import com.geotagcamera.geotagginglocationonphoto.storage.MediaStoreImageSaver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,6 +71,39 @@ class PhotoDetailViewModel(application: Application) : AndroidViewModel(applicat
                 exifLat = read?.lat,
                 exifLng = read?.lng
             )
+        }
+    }
+
+    private val _deleteConsent = MutableStateFlow<android.content.IntentSender?>(null)
+    /** A system "allow deleting this photo" prompt the screen must launch. */
+    val deleteConsent: StateFlow<android.content.IntentSender?> = _deleteConsent.asStateFlow()
+
+    private val _deleted = MutableStateFlow(false)
+    /** True once the photo is gone; the screen navigates back. */
+    val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
+
+    fun delete() {
+        val photo = _state.value.photo ?: return
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                MediaStoreImageSaver.delete(getApplication(), listOf(Uri.parse(photo.filePath)))
+            }
+            when (result) {
+                is MediaStoreImageSaver.DeleteResult.NeedsConsent -> _deleteConsent.value = result.request
+                else -> {
+                    photoDao.delete(photo.id)
+                    _deleted.value = true
+                }
+            }
+        }
+    }
+
+    fun onDeleteConsentResult(granted: Boolean) {
+        _deleteConsent.value = null
+        val photo = _state.value.photo ?: return
+        if (granted) viewModelScope.launch {
+            photoDao.delete(photo.id)
+            _deleted.value = true
         }
     }
 

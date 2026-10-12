@@ -1,6 +1,7 @@
 package com.geotagcamera.geotagginglocationonphoto.exif
 
 import androidx.exifinterface.media.ExifInterface
+import com.geotagcamera.geotagginglocationonphoto.BuildConfig
 import com.geotagcamera.geotagginglocationonphoto.location.LocationFix
 import java.io.File
 import java.text.SimpleDateFormat
@@ -32,6 +33,23 @@ object ExifWriter {
         }
         exif.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, gpsDateFormat.format(capturedAtEpochMs))
         exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, gpsTimeFormat.format(capturedAtEpochMs))
+
+        // The pixels are already upright (the pipeline applies the camera's
+        // rotation before stamping), so say so explicitly: 0 is not a valid value.
+        exif.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
+        // Local time offset, so DateTimeOriginal isn't ambiguous across time zones.
+        val offset = SimpleDateFormat("XXX", Locale.US).format(capturedAtEpochMs)
+        exif.setAttribute(ExifInterface.TAG_OFFSET_TIME, offset)
+        exif.setAttribute(ExifInterface.TAG_OFFSET_TIME_ORIGINAL, offset)
+        // Horizontal accuracy and direction of travel, when the fix has them.
+        fix.accuracyMeters?.takeIf { it.isFinite() && it >= 0f }?.let {
+            exif.setAttribute(ExifInterface.TAG_GPS_H_POSITIONING_ERROR, "${(it * 100).toInt()}/100")
+        }
+        fix.bearingDegrees?.takeIf { it.isFinite() }?.let {
+            exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION_REF, ExifInterface.GPS_DIRECTION_TRUE)
+            exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION, "${(it * 100).toInt()}/100")
+        }
+        exif.setAttribute(ExifInterface.TAG_SOFTWARE, "GeoTag Camera ${BuildConfig.VERSION_NAME}")
 
         userComment?.let { exif.setAttribute(ExifInterface.TAG_USER_COMMENT, it) }
 

@@ -1,0 +1,89 @@
+package com.geotagcamera.geotagginglocationonphoto.stamp
+
+import com.geotagcamera.geotagginglocationonphoto.location.AddressParts
+import com.geotagcamera.geotagginglocationonphoto.location.LocationFix
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class BuildStampSpecTest {
+    private val fix = LocationFix(22.5726, 88.3639, 11.4, 4.6f, 135f, 0L)
+    private val address = AddressParts("Kolkata, West Bengal", "BBD Bagh, Kolkata, 700001", "India", "IN", fromCache = false)
+    private val t = 1_790_000_000_000L
+    private val plusCodeShape = Regex("^[23456789CFGHJMPQRVWX]{8}\\+[23456789CFGHJMPQRVWX]{2}$")
+
+    private fun spec(fields: StampFields, weather: String? = null, signed: Boolean = false) =
+        buildStampSpec(fix, address, t, fields, mapTile = null, orgLogo = null, hasSignature = signed, weatherChipText = weather)
+
+    @Test
+    fun `defaults show place, address with plus code, coordinates and time`() {
+        val s = spec(StampFields())
+        assertEquals("Kolkata, West Bengal", s.placeName)
+        val (code, rest) = s.addressLine!!.split(", ", limit = 2)
+        assertTrue(code, plusCodeShape.matches(code))
+        assertEquals("BBD Bagh, Kolkata, 700001", rest)
+        assertEquals("Lat 22.572600°  Long 88.363900°", s.coordinatesText)
+        assertTrue(s.dateTimeText != null && s.gmtOffsetText != null)
+        assertEquals("IND", s.countryCode)
+    }
+
+    @Test
+    fun `turning fields off removes them`() {
+        val s = spec(
+            StampFields(
+                showAddress = false, showCoordinates = false, showTimestamp = false,
+                showCountry = false, showAccuracy = false, showBrandMark = false
+            )
+        )
+        assertNull(s.addressLine)
+        assertNull(s.coordinatesText)
+        assertNull(s.dateTimeText)
+        assertNull(s.gmtOffsetText)
+        assertNull(s.countryCode)
+        assertTrue(s.chips.isEmpty())
+        assertFalse(s.hasFooterRow)
+    }
+
+    @Test
+    fun `gmt offset needs the timestamp on`() {
+        assertNull(spec(StampFields(showTimestamp = false, showGmtOffset = true)).gmtOffsetText)
+    }
+
+    @Test
+    fun `chips follow their toggles and round sensibly`() {
+        val s = spec(
+            StampFields(showAltitude = true, showAccuracy = true, showBearing = true, showWeather = true),
+            weather = "31°C CLEAR"
+        )
+        assertEquals(listOf("ALT 11 m", "±5 m", "135°", "31°C CLEAR"), s.chips.map { it.text })
+        assertTrue(spec(StampFields(showWeather = false), weather = "31°C CLEAR").chips.none { "CLEAR" in it.text })
+    }
+
+    @Test
+    fun `org label only when toggled on and non-blank`() {
+        assertNull(spec(StampFields(orgLabel = "   ")).orgLabel)
+        assertNull(spec(StampFields(orgLabel = "ACME", showOrgLabelToggle = false)).orgLabel)
+        assertEquals("ACME", spec(StampFields(orgLabel = "ACME")).orgLabel)
+    }
+
+    @Test
+    fun `signed mark needs both a signature and the toggle`() {
+        assertTrue(spec(StampFields(), signed = true).showSignedMark)
+        assertFalse(spec(StampFields(), signed = false).showSignedMark)
+        assertFalse(spec(StampFields(showSignatureField = false), signed = true).showSignedMark)
+    }
+
+    @Test
+    fun `map is off by default`() {
+        assertFalse(StampFields().showMap)
+    }
+
+    @Test
+    fun `no address falls back to the plus code alone`() {
+        val s = buildStampSpec(fix, null, t, StampFields(), null, null, false)
+        assertNull(s.placeName)
+        assertTrue(s.addressLine!!, plusCodeShape.matches(s.addressLine!!))
+    }
+}

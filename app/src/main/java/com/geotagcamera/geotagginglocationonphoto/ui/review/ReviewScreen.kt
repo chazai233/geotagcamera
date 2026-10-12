@@ -3,6 +3,7 @@ package com.geotagcamera.geotagginglocationonphoto.ui.review
 import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,21 +11,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -40,22 +53,24 @@ import com.geotagcamera.geotagginglocationonphoto.ui.capture.CaptureUiState
 
 private val ChromeBase = Color(0xFF08090A)
 private val Ink = Color(0xFFF5F7F8)
-private val Muted = Color(0x6BF5F7F8)
+private val Muted = Color(0x8CF5F7F8)
+private val Outline = Color(0x38FFFFFF)
 private val AccentVerified = Color(0xFF56CB98)
 
 /**
  * Post-capture review takeover (design section 04). Share is the only filled
  * control — the entire point of the app is getting proof into WhatsApp or a
- * report in seconds. The SIGNED · SHA-256 chip is always present here because
- * signing completes inside the save pipeline, before this screen appears.
+ * report in seconds. Retake discards the photo just saved; Done keeps it.
+ * The SIGNED chip is always present because signing completes inside the
+ * save pipeline, before this screen appears.
  *
- * Landscape (design section 10): photo and actions sit side by side instead of
- * stacked, so the tall stamped frame still gets the height it needs.
+ * Landscape (design section 10): photo and actions sit side by side.
  */
 @Composable
 fun ReviewScreen(
     review: CaptureUiState.Review,
-    onDismiss: () -> Unit,
+    onRetake: () -> Unit,
+    onDone: () -> Unit,
     onShare: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -65,47 +80,49 @@ fun ReviewScreen(
         modifier = modifier
             .fillMaxSize()
             .background(ChromeBase)
+            // Swallow touches so nothing reaches the viewfinder underneath.
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 16.dp)
     ) {
-        TopBar(onDismiss)
+        TopBar(onDone)
 
         if (isLandscape) {
-            Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                PhotoPane(review.uri, Modifier.weight(1f).fillMaxHeight().padding(vertical = 8.dp))
-                Spacer(Modifier.width(16.dp))
+            Row(modifier = Modifier.fillMaxWidth().weight(1f).padding(bottom = 12.dp)) {
+                PhotoPane(review.uri, Modifier.weight(1f).fillMaxHeight())
+                Spacer(Modifier.width(20.dp))
                 Column(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     verticalArrangement = Arrangement.Center
-                ) { Actions(review, onDismiss, onShare) }
+                ) { Actions(review, onRetake, onDone, onShare) }
             }
         } else {
             PhotoPane(review.uri, Modifier.fillMaxWidth().weight(1f).padding(vertical = 8.dp))
-            Actions(review, onDismiss, onShare)
+            Actions(review, onRetake, onDone, onShare)
         }
     }
 }
 
 @Composable
-private fun TopBar(onDismiss: () -> Unit) {
+private fun TopBar(onBack: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 8.dp),
+        modifier = Modifier.fillMaxWidth().height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            "✕", color = Ink, fontSize = 20.sp,
-            modifier = Modifier.clip(CircleShape).padding(8.dp).clickable(onClick = onDismiss)
-        )
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to camera", tint = Ink)
+        }
         Row(
             modifier = Modifier
                 .clip(CircleShape)
-                .background(Color(0x1AFFFFFF))
-                .padding(horizontal = 11.dp, vertical = 6.dp),
+                .background(AccentVerified.copy(alpha = 0.12f))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Box(Modifier.size(6.dp).clip(CircleShape).background(AccentVerified))
-            Text("SIGNED · SHA-256", color = AccentVerified, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            Icon(Icons.Filled.Verified, contentDescription = null, tint = AccentVerified, modifier = Modifier.size(16.dp))
+            Text("Signed · SHA-256", color = AccentVerified, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -117,11 +134,7 @@ private fun PhotoPane(uri: String, modifier: Modifier) {
             model = uri,
             contentDescription = "Captured photo",
             contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(3f / 4f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF1A1D20))
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
         )
     }
 }
@@ -129,36 +142,58 @@ private fun PhotoPane(uri: String, modifier: Modifier) {
 @Composable
 private fun ColumnScope.Actions(
     review: CaptureUiState.Review,
-    onDismiss: () -> Unit,
+    onRetake: () -> Unit,
+    onDone: () -> Unit,
     onShare: () -> Unit
 ) {
+    Text(
+        review.filename,
+        color = Ink,
+        fontSize = 13.sp,
+        maxLines = 1,
+        overflow = TextOverflow.MiddleEllipsis,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+    )
+    Text(
+        "${ReviewFilename.formatSize(review.sizeBytes)} · saved to Pictures/GeoTagCamera",
+        color = Muted,
+        fontSize = 11.5.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 14.dp)
+    )
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         OutlinedButton(
-            onClick = onDismiss,
+            onClick = onRetake,
             modifier = Modifier.weight(1f).height(52.dp),
-            border = BorderStroke(1.5.dp, Color(0x38FFFFFF))
-        ) { Text("Retake", color = Ink) }
+            border = BorderStroke(1.5.dp, Outline)
+        ) {
+            Icon(Icons.Filled.Refresh, contentDescription = null, tint = Ink, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Retake", color = Ink)
+        }
         OutlinedButton(
-            onClick = onDismiss,
+            onClick = onDone,
             modifier = Modifier.weight(1f).height(52.dp),
-            border = BorderStroke(1.5.dp, Color(0x38FFFFFF))
-        ) { Text("Done", color = Ink) }
+            border = BorderStroke(1.5.dp, Outline)
+        ) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = Ink, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Done", color = Ink)
+        }
     }
     Spacer(Modifier.height(10.dp))
     Button(
         onClick = onShare,
         modifier = Modifier.fillMaxWidth().height(54.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Color(0xFF0C0E10))
-    ) { Text("Share", fontWeight = FontWeight.Medium, fontSize = 15.5.sp) }
-
-    Text(
-        "${review.filename} · ${ReviewFilename.formatSize(review.sizeBytes)}",
-        color = Muted,
-        fontSize = 10.5.sp,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-        textAlign = TextAlign.Center
-    )
+    ) {
+        Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("Share", fontWeight = FontWeight.Medium, fontSize = 15.5.sp)
+    }
+    Spacer(Modifier.height(8.dp))
 }

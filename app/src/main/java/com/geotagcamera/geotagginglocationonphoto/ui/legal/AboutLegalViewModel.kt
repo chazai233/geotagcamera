@@ -15,8 +15,8 @@ class AboutLegalViewModel(application: Application) : AndroidViewModel(applicati
     private val stampPreferences = StampPreferences(application)
 
     /**
-     * Clears the app's own data: capture index, geocode cache, tile cache, org
-     * logo, and stamp preferences. Deliberately does NOT touch the saved photos
+     * Clears the app's own data: capture index, geocode cache, every cached
+     * file (map tiles, half-saved captures), org logo, and stamp preferences. Deliberately does NOT touch the saved photos
      * themselves — those live in the user's gallery (MediaStore) and are theirs
      * to keep or delete. The UI says so plainly.
      */
@@ -27,7 +27,10 @@ class AboutLegalViewModel(application: Application) : AndroidViewModel(applicati
                 db.geoCacheDao().deleteAll()
                 val context = getApplication<Application>()
                 runCatching { File(context.filesDir, "org_logo.png").delete() }
-                runCatching { File(context.cacheDir, "map_tiles").deleteRecursively() }
+                runCatching { File(context.filesDir, "org_logo").deleteRecursively() }
+                // Everything in cache: map tiles plus any capture_*.jpg a killed
+                // process left behind mid-save (those hold unstamped photos).
+                runCatching { context.cacheDir.listFiles()?.forEach { it.deleteRecursively() } }
             }
             stampPreferences.clearAll()
             onDone()

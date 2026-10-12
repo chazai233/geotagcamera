@@ -1,14 +1,22 @@
 package com.geotagcamera.geotagginglocationonphoto.stamp
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.stampDataStore by preferencesDataStore(name = "stamp_prefs")
+private val Context.stampDataStore by preferencesDataStore(
+    name = "stamp_prefs",
+    // A corrupt file (killed mid-write, bad flash) resets to defaults instead of crashing.
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() }
+)
 
 /**
  * No cloud sync, no account required — preferences live only on this device.
@@ -45,13 +53,16 @@ class StampPreferences(private val context: Context) {
         val AUTO_DISMISS_REVIEW = booleanPreferencesKey("auto_dismiss_review")
     }
 
-    val fields: Flow<StampFields> = context.stampDataStore.data.map { prefs ->
-        StampFields(
+    val fields: Flow<StampFields> = context.stampDataStore.data.map { it.toFields() }
+
+    private fun Preferences.toFields(): StampFields {
+        val prefs = this
+        return StampFields(
             template = prefs[Keys.TEMPLATE]?.let { runCatching { StampTemplate.valueOf(it) }.getOrNull() }
-                ?: StampTemplate.CARD,
+                ?: StampTemplate.BAR,
             position = prefs[Keys.POSITION]?.let { runCatching { StampAnchor.valueOf(it) }.getOrNull() }
                 ?: StampAnchor.BOTTOM_LEFT,
-            showMap = prefs[Keys.MAP] ?: true,
+            showMap = prefs[Keys.MAP] ?: false,
             showCountry = prefs[Keys.COUNTRY] ?: true,
             showAddress = prefs[Keys.ADDRESS] ?: true,
             showCoordinates = prefs[Keys.COORDINATES] ?: true,
@@ -88,27 +99,41 @@ class StampPreferences(private val context: Context) {
         context.stampDataStore.edit { it.clear() }
     }
 
+    /**
+     * Read-modify-write inside one DataStore transaction, so the transform
+     * always sees the stored state, never a stale UI snapshot. Two quick edits
+     * (a toggle tapped while typing the org label) can no longer overwrite
+     * each other, and an edit before the first emission can't reset
+     * everything to defaults.
+     */
+    suspend fun edit(transform: (StampFields) -> StampFields) {
+        context.stampDataStore.edit { prefs -> prefs.write(transform(prefs.toFields())) }
+    }
+
     suspend fun update(fields: StampFields) {
-        context.stampDataStore.edit { prefs ->
-            prefs[Keys.TEMPLATE] = fields.template.name
-            prefs[Keys.POSITION] = fields.position.name
-            prefs[Keys.MAP] = fields.showMap
-            prefs[Keys.COUNTRY] = fields.showCountry
-            prefs[Keys.COORDINATES] = fields.showCoordinates
-            prefs[Keys.ADDRESS] = fields.showAddress
-            prefs[Keys.TIMESTAMP] = fields.showTimestamp
-            prefs[Keys.GMT_OFFSET] = fields.showGmtOffset
-            prefs[Keys.ALTITUDE] = fields.showAltitude
-            prefs[Keys.ACCURACY] = fields.showAccuracy
-            prefs[Keys.BEARING] = fields.showBearing
-            prefs[Keys.WEATHER] = fields.showWeather
-            prefs[Keys.ORG_LABEL_TOGGLE] = fields.showOrgLabelToggle
-            prefs[Keys.ORG_LABEL] = fields.orgLabel
-            prefs[Keys.ORG_LOGO_TOGGLE] = fields.showOrgLogo
-            fields.orgLogoUri?.let { prefs[Keys.ORG_LOGO_URI] = it }
-            prefs[Keys.SIGNATURE_FIELD] = fields.showSignatureField
-            prefs[Keys.REQUIRE_SIGNATURE] = fields.requireSignature
-            prefs[Keys.BRAND_MARK] = fields.showBrandMark
-        }
+        context.stampDataStore.edit { prefs -> prefs.write(fields) }
+    }
+
+    private fun MutablePreferences.write(fields: StampFields) {
+        val prefs = this
+        prefs[Keys.TEMPLATE] = fields.template.name
+        prefs[Keys.POSITION] = fields.position.name
+        prefs[Keys.MAP] = fields.showMap
+        prefs[Keys.COUNTRY] = fields.showCountry
+        prefs[Keys.COORDINATES] = fields.showCoordinates
+        prefs[Keys.ADDRESS] = fields.showAddress
+        prefs[Keys.TIMESTAMP] = fields.showTimestamp
+        prefs[Keys.GMT_OFFSET] = fields.showGmtOffset
+        prefs[Keys.ALTITUDE] = fields.showAltitude
+        prefs[Keys.ACCURACY] = fields.showAccuracy
+        prefs[Keys.BEARING] = fields.showBearing
+        prefs[Keys.WEATHER] = fields.showWeather
+        prefs[Keys.ORG_LABEL_TOGGLE] = fields.showOrgLabelToggle
+        prefs[Keys.ORG_LABEL] = fields.orgLabel
+        prefs[Keys.ORG_LOGO_TOGGLE] = fields.showOrgLogo
+        fields.orgLogoUri?.let { prefs[Keys.ORG_LOGO_URI] = it }
+        prefs[Keys.SIGNATURE_FIELD] = fields.showSignatureField
+        prefs[Keys.REQUIRE_SIGNATURE] = fields.requireSignature
+        prefs[Keys.BRAND_MARK] = fields.showBrandMark
     }
 }

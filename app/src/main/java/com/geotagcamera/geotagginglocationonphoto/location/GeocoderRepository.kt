@@ -11,6 +11,7 @@ import com.geotagcamera.geotagginglocationonphoto.data.gridKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import kotlin.coroutines.resume
 
@@ -72,6 +73,13 @@ class GeocoderRepository(
 
     private suspend fun tryLiveGeocode(latitude: Double, longitude: Double): AddressParts? {
         if (!Geocoder.isPresent()) return null
+        // The platform geocoder is usually a network call to Play services. With
+        // no signal it can hang well past any useful point, so it gets a hard cap
+        // and the nearest cached address takes over.
+        return withTimeoutOrNull(LIVE_GEOCODE_TIMEOUT_MS) { liveGeocode(latitude, longitude) }
+    }
+
+    private suspend fun liveGeocode(latitude: Double, longitude: Double): AddressParts? {
         return try {
             val addresses = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 fetchAddressesAsync(latitude, longitude)
@@ -88,9 +96,17 @@ class GeocoderRepository(
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private suspend fun fetchAddressesAsync(latitude: Double, longitude: Double): List<Address>? =
         suspendCancellableCoroutine { cont ->
-            geocoder.getFromLocation(latitude, longitude, 1) { addresses ->
-                cont.resume(addresses)
-            }
+            geocoder.getFromLocation(latitude, longitude, 1, object : Geocoder.GeocodeListener {
+                override fun onGeocode(addresses: MutableList<Address>) {
+                    if (cont.isActive) cont.resume(addresses)
+                }
+
+                // Without this the default no-op leaves the coroutine suspended
+                // forever whenever the geocoder fails (offline, quota, no backend).
+                override fun onError(errorMessage: String?) {
+                    if (cont.isActive) cont.resume(null)
+                }
+            })
         }
 
     private fun toAddressParts(address: Address): AddressParts {
@@ -114,5 +130,9 @@ class GeocoderRepository(
             countryCode = address.countryCode,
             fromCache = false
         )
+    }
+
+    private companion object {
+        const val LIVE_GEOCODE_TIMEOUT_MS = 4_000L
     }
 }

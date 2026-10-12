@@ -6,9 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -54,6 +53,8 @@ private val SurfaceLightColors = lightColorScheme(
     onPrimaryContainer = SurfaceInk,
     secondary = AccentLive,
     onSecondary = Color.White,
+    secondaryContainer = SurfaceDim,
+    onSecondaryContainer = SurfaceInk,
     tertiary = AccentPending,
     onTertiary = SurfaceInk,
     background = SurfaceBg,
@@ -62,6 +63,9 @@ private val SurfaceLightColors = lightColorScheme(
     onSurface = SurfaceInk,
     surfaceVariant = SurfaceDim,
     onSurfaceVariant = SurfaceMuted,
+    surfaceContainer = SurfaceCard,
+    surfaceContainerLow = SurfaceCard,
+    surfaceContainerHigh = SurfaceCard,
     outline = SurfaceOutline,
     error = AccentTamper,
     onError = Color.White
@@ -74,6 +78,8 @@ private val SurfaceDarkColors = darkColorScheme(
     onPrimaryContainer = ChromeInk,
     secondary = AccentLive,
     onSecondary = SurfaceInk,
+    secondaryContainer = ChromeOutline,
+    onSecondaryContainer = ChromeInk,
     tertiary = AccentPending,
     onTertiary = SurfaceInk,
     background = ChromeRaised,
@@ -95,6 +101,8 @@ private val ChromeColors = darkColorScheme(
     onPrimaryContainer = ChromeInk,
     secondary = AccentLive,
     onSecondary = ChromeBase,
+    secondaryContainer = ChromeOutline,
+    onSecondaryContainer = ChromeInk,
     tertiary = AccentPending,
     onTertiary = ChromeBase,
     background = ChromeBase,
@@ -115,26 +123,31 @@ fun GeoTagCameraTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) SurfaceDarkColors else SurfaceLightColors
-    // isAppearanceLightStatusBars=true means a light bar background, so dark icons; that's
-    // exactly the light-theme case, hence !darkTheme.
-    ApplyStatusBar(background = colorScheme.background, isAppearanceLight = !darkTheme)
     MaterialTheme(colorScheme = colorScheme, typography = GeoTagCameraTypography, content = content)
 }
 
 /** Nested override for the camera layer. Wrap Capture/Launch/Onboarding/Signature content in this. */
 @Composable
 fun GeoTagChromeTheme(content: @Composable () -> Unit) {
-    // Chrome is always a dark bar background, so always light (white) icons.
-    ApplyStatusBar(background = ChromeColors.background, isAppearanceLight = false)
     MaterialTheme(colorScheme = ChromeColors, typography = GeoTagCameraTypography, content = content)
 }
 
+/**
+ * The app is edge-to-edge (transparent bars, see MainActivity), so only the
+ * bar icon colour needs choosing: light icons over the dark camera layer and
+ * dark mode, dark icons over the light surface theme. Called once from the
+ * nav host with the current destination, so it follows every navigation
+ * instead of whichever theme happened to compose last.
+ */
 @Composable
-private fun ApplyStatusBar(background: Color, isAppearanceLight: Boolean) {
+fun SystemBarIcons(darkBackground: Boolean) {
     val view = LocalView.current
-    if (!view.isInEditMode) {
+    if (view.isInEditMode) return
+    SideEffect {
         val window = (view.context as Activity).window
-        window.statusBarColor = background.toArgb()
-        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isAppearanceLight
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !darkBackground
+            isAppearanceLightNavigationBars = !darkBackground
+        }
     }
 }

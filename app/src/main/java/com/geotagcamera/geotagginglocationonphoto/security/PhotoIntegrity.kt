@@ -84,6 +84,17 @@ object PhotoIntegrity {
         }
     }
 
+    /**
+     * This device's signing public key (base64 SPKI), or null if this install
+     * has never signed a photo. Lets the UI say "signed on this device" when a
+     * photo's embedded key matches, which is stronger than "the file agrees
+     * with the key it carries".
+     */
+    fun devicePublicKeyBase64OrNull(): String? = runCatching {
+        val keyStore = KeyStore.getInstance(KEYSTORE).apply { load(null) }
+        keyStore.getCertificate(KEY_ALIAS)?.publicKey?.encoded?.let { Base64.getEncoder().encodeToString(it) }
+    }.getOrNull()
+
     /** X.509 SubjectPublicKeyInfo bytes for the signing key (from the Keystore self-cert). */
     private fun publicKeyEncoded(): ByteArray {
         val keyStore = KeyStore.getInstance(KEYSTORE).apply { load(null) }

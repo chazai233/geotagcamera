@@ -1,5 +1,6 @@
 package com.geotagcamera.geotagginglocationonphoto.location
 
+import com.geotagcamera.geotagginglocationonphoto.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -11,7 +12,7 @@ import kotlin.math.roundToInt
 /** One current-weather reading, ready to become a stamp chip like "31°C CLEAR". */
 data class WeatherReading(val temperatureC: Double, val weatherCode: Int) {
     val chipText: String
-        get() = "${temperatureC.roundToInt()}°C ${describe(weatherCode)}"
+        get() = if (temperatureC.isFinite()) "${temperatureC.roundToInt()}°C ${describe(weatherCode)}" else describe(weatherCode)
 }
 
 /**
@@ -28,15 +29,17 @@ class WeatherRepository {
 
     suspend fun current(latitude: Double, longitude: Double): WeatherReading? =
         withContext(Dispatchers.IO) {
+            // Two decimals is ~1 km: plenty for current weather, and Open-Meteo
+            // never learns the exact spot the photo was taken.
             val url = "https://api.open-meteo.com/v1/forecast" +
-                "?latitude=${"%.5f".format(Locale.US, latitude)}" +
-                "&longitude=${"%.5f".format(Locale.US, longitude)}" +
+                "?latitude=${"%.2f".format(Locale.US, latitude)}" +
+                "&longitude=${"%.2f".format(Locale.US, longitude)}" +
                 "&current=temperature_2m,weather_code"
             runCatching {
                 val conn = (URL(url).openConnection() as HttpURLConnection).apply {
                     connectTimeout = 5_000
                     readTimeout = 5_000
-                    setRequestProperty("User-Agent", "GeoTagCamera/1.1.0")
+                    setRequestProperty("User-Agent", "GeoTagCamera/${BuildConfig.VERSION_NAME}")
                 }
                 try {
                     if (conn.responseCode != HttpURLConnection.HTTP_OK) return@runCatching null

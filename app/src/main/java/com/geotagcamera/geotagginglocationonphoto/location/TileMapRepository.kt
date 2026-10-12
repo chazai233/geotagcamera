@@ -8,6 +8,9 @@ import android.graphics.Color
 import android.graphics.Paint
 import com.geotagcamera.geotagginglocationonphoto.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.HttpURLConnection
@@ -76,28 +79,33 @@ class TileMapRepository(context: Context) {
         val maxTileX = floor((centerX + half) / TILE_PX).toInt()
         val maxTileY = floor((centerY + half) / TILE_PX).toInt()
 
+        // Every tile the square touches, fetched in parallel. If any one fails
+        // the whole thumbnail is dropped: a map with a transparent hole in it
+        // would be burned into the photo permanently.
+        val wanted = buildList {
+            for (ty in minTileY..maxTileY) {
+                if (ty < 0 || ty >= n) continue // beyond the poles, no tile exists
+                for (tx in minTileX..maxTileX) add(tx to ty)
+            }
+        }
+        val tiles = coroutineScope {
+            wanted.map { (tx, ty) ->
+                async { Triple(tx, ty, fetchTile(zoom, ((tx % n) + n) % n, ty)) } // wrap across the antimeridian
+            }.awaitAll()
+        }
+        if (tiles.isEmpty() || tiles.any { it.third == null }) {
+            tiles.forEach { it.third?.recycle() }
+            return@withContext null
+        }
+
         val result = Bitmap.createBitmap(outPx, outPx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
         val paint = Paint(Paint.FILTER_BITMAP_FLAG)
-        var drewAny = false
-
-        for (ty in minTileY..maxTileY) {
-            if (ty < 0 || ty >= n) continue // above the north / below the south edge — no tile exists
-            for (tx in minTileX..maxTileX) {
-                val wrappedX = ((tx % n) + n) % n // wrap across the antimeridian
-                val tile = fetchTile(zoom, wrappedX, ty) ?: continue
-                val destLeft = (tx * TILE_PX - minX).toFloat()
-                val destTop = (ty * TILE_PX - minY).toFloat()
-                canvas.drawBitmap(tile, destLeft, destTop, paint)
-                tile.recycle()
-                drewAny = true
-            }
+        for ((tx, ty, tile) in tiles) {
+            canvas.drawBitmap(tile!!, (tx * TILE_PX - minX).toFloat(), (ty * TILE_PX - minY).toFloat(), paint)
+            tile.recycle()
         }
-
-        if (!drewAny) {
-            result.recycle()
-            return@withContext null
-        }
+        pruneCache()
 
         drawPin(canvas, outPx / 2f, outPx / 2f)
         result
@@ -113,7 +121,7 @@ class TileMapRepository(context: Context) {
             val conn = (URL(url).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 5_000
                 readTimeout = 5_000
-                setRequestProperty("User-Agent", "GeoTagCamera/1.1.0")
+                setRequestProperty("User-Agent", "GeoTagCamera/${BuildConfig.VERSION_NAME}")
             }
             try {
                 if (conn.responseCode != HttpURLConnection.HTTP_OK) return@runCatching null
@@ -124,6 +132,13 @@ class TileMapRepository(context: Context) {
                 conn.disconnect()
             }
         }.getOrNull()
+    }
+
+    /** Keeps the tile cache bounded: drops the oldest files beyond [MAX_CACHED_TILES]. */
+    private fun pruneCache() {
+        val files = cacheDir.listFiles() ?: return
+        if (files.size <= MAX_CACHED_TILES) return
+        files.sortedBy { it.lastModified() }.take(files.size - MAX_CACHED_TILES).forEach { it.delete() }
     }
 
     private fun drawPin(canvas: Canvas, cx: Float, cy: Float) {
@@ -141,6 +156,7 @@ class TileMapRepository(context: Context) {
     }
 
     private companion object {
+        const val MAX_CACHED_TILES = 400 // ~400 × 30-60 KB, a few tens of MB at most
         const val TILE_PX = 512.0 // @2x (retina) tile side in pixels
         const val STYLE = "alidade_smooth" // clean, legible OSM style, good at thumbnail size
         // accent/verified from the design system (oklch(0.76 0.13 162)) in sRGB

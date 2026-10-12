@@ -1,11 +1,15 @@
 package com.geotagcamera.geotagginglocationonphoto
 
+import android.content.ContentResolver
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,8 +22,17 @@ class MainActivity : ComponentActivity() {
     private var shareUri by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Every screen draws behind the system bars and pads itself by their
+        // insets (required from targetSdk 35 anyway). Transparent bars; each
+        // theme picks light or dark bar icons for its own background.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
-        shareUri = extractSharedImageUri(intent)
+        // Only on a fresh launch: after rotation the activity is recreated with
+        // the same intent, and re-reading it would push Verify a second time.
+        if (savedInstanceState == null) shareUri = extractSharedImageUri(intent)
         setContent {
             GeoTagCameraTheme {
                 GeoTagCameraApp(
@@ -45,6 +58,10 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             intent.getParcelableExtra(Intent.EXTRA_STREAM)
         }
-        return uri?.toString()
+        // Only content:// from another app. A file:// path or a Uri pointing at
+        // this app's own provider would be read with this app's privileges.
+        if (uri == null || uri.scheme != ContentResolver.SCHEME_CONTENT) return null
+        if (uri.authority?.startsWith(packageName) == true) return null
+        return uri.toString()
     }
 }
