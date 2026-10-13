@@ -1,5 +1,6 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.settings
 
+import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -123,6 +124,7 @@ fun SettingsScreen(
     onOpenVerify: () -> Unit = {},
     onOpenAboutLegal: () -> Unit = {},
     onOpenOfflineMaps: () -> Unit = {},
+    onOpenReport: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val loaded by viewModel.fields.collectAsStateWithLifecycle()
@@ -143,7 +145,8 @@ fun SettingsScreen(
             viewModel = viewModel,
             onOpenVerify = onOpenVerify,
             onOpenAboutLegal = onOpenAboutLegal,
-            onOpenOfflineMaps = onOpenOfflineMaps
+            onOpenOfflineMaps = onOpenOfflineMaps,
+            onOpenReport = onOpenReport
         )
     }
 }
@@ -158,7 +161,8 @@ private fun SettingsContent(
     viewModel: SettingsViewModel,
     onOpenVerify: () -> Unit,
     onOpenAboutLegal: () -> Unit,
-    onOpenOfflineMaps: () -> Unit
+    onOpenOfflineMaps: () -> Unit,
+    onOpenReport: () -> Unit
 ) {
     var showAll by rememberSaveable(profile) { mutableStateOf(profile.showsAllSettings) }
     val pickLogo = rememberPhotoPicker { uri -> viewModel.setOrgLogo(uri) }
@@ -314,7 +318,9 @@ private fun SettingsContent(
             HorizontalDivider(Modifier.padding(start = 56.dp))
             NavRow(Icons.Outlined.VerifiedUser, "Verify a photo", "Check any image's proof, even one you didn't take", onOpenVerify)
             HorizontalDivider(Modifier.padding(start = 56.dp))
-            NavRow(Icons.Outlined.Info, "About & legal", "Privacy, licenses, delete app data", onOpenAboutLegal)
+            NavRow(Icons.Outlined.Info, "About & legal", "Privacy, terms, licences, delete app data", onOpenAboutLegal)
+            HorizontalDivider(Modifier.padding(start = 56.dp))
+            NavRow(Icons.Outlined.BugReport, "Report a problem", "Email the developer, with device details if you like", onOpenReport)
         }
     }
 }

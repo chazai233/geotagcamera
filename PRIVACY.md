@@ -2,7 +2,7 @@
 
 **App:** GeoTag Camera (`com.geotagcamera.geotagginglocationonphoto`)
 **Developer:** Konko Maji, https://github.com/konkomaji
-**Last updated:** 12 October 2026
+**Last updated:** 14 October 2026
 
 GeoTag Camera is a camera app that puts the location and time on your photos. This policy explains, in plain terms, what the app does with your data. The short version: we don't collect anything. There's no account, no server of ours, no ads and no analytics. Your photos and their locations stay on your phone unless you share them or turn on one of the optional online features described below.
 
@@ -50,10 +50,16 @@ When you share a photo, the file you send contains:
 
 Anyone who receives the file can read all of this. If you don't want to share your precise location, don't share the original file.
 
+### Problem reports (only when you send one)
+
+Report a problem (in About & legal) opens your own email app with a message addressed to konkomaji@gmail.com. Nothing is sent until you press send there. The draft contains what you typed and, if you leave the box ticked, basic device facts: app version, Android version, phone model, CPU type and screen size. It never includes photos, locations or your capture list. If you choose "Attach app log", a short log of the app's own recent messages is attached; you can read it before sending.
+
+If the app crashes, the crash details are kept on the phone only. The next time you open the app it offers to send them the same way; if you decline, they are deleted.
+
 ## What we don't do
 
 - No ads.
-- No analytics, telemetry or crash reporting.
+- No analytics, telemetry or automatic crash reporting. Crash details are only sent if you choose to email them.
 - No account or sign-in.
 - No selling or sharing of data, because we don't have any.
 - No background location. Location is only used while the camera screen is visible.
@@ -63,6 +69,7 @@ Anyone who receives the file can read all of this. If you don't want to share yo
 - **Camera:** to take photos.
 - **Location:** to stamp and tag photos with where they were taken, only while the camera screen is visible.
 - **Internet and network state:** only for the stamp map, offline map downloads and the optional weather feature above (and the Android geocoder, which may use it on its own). Network state is used to warn you before a large download on mobile data.
+- **Photo location (Android 10 and newer):** so Verify can read the GPS data inside a photo you pick and check it against the signature. Without it Android hides that data from the app.
 - **Storage (Android 9 and older only):** to save photos to the gallery.
 
 ## Deleting your data
@@ -83,4 +90,4 @@ If the app's behaviour changes in a way that affects your privacy, this file wil
 
 ## Contact
 
-Questions about this policy: open an issue at https://github.com/konkomaji/geotagcamera/issues. For anything you'd rather not post publicly, use a [private security advisory](https://github.com/konkomaji/geotagcamera/security/advisories/new).
+Questions about this policy: email konkomaji@gmail.com, or open an issue at https://github.com/konkomaji/geotagcamera/issues. For anything you'd rather not post publicly, use a [private security advisory](https://github.com/konkomaji/geotagcamera/security/advisories/new).

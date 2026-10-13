@@ -1,5 +1,6 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.legal
 
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -48,7 +49,12 @@ private const val SOURCE_URL = "https://github.com/konkomaji/geotagcamera"
  * key signed it, never who was holding the phone.
  */
 @Composable
-fun AboutLegalScreen(onBack: () -> Unit, viewModel: AboutLegalViewModel = viewModel()) {
+fun AboutLegalScreen(
+    onBack: () -> Unit,
+    onOpenDoc: (LegalDoc) -> Unit = {},
+    onReport: () -> Unit = {},
+    viewModel: AboutLegalViewModel = viewModel()
+) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -95,11 +101,19 @@ fun AboutLegalScreen(onBack: () -> Unit, viewModel: AboutLegalViewModel = viewMo
                 )
             }
 
+            Section("Documents") {
+                LegalDoc.entries.take(4).forEach { doc -> DocRow(doc.title) { onOpenDoc(doc) } }
+                DocRow("Other licences") { onOpenDoc(LegalDoc.APACHE) }
+            }
+
+            Section("Help") {
+                DocRow("Report a problem") { onReport() }
+                Body("Opens your email app, addressed to ${com.geotagcamera.geotagginglocationonphoto.support.ProblemReport.EMAIL}. Nothing is sent unless you send it.")
+            }
+
             Section("Links") {
                 LinkRow("Source code", SOURCE_URL, context)
-                LinkRow("Privacy policy", "$SOURCE_URL/blob/main/PRIVACY.md", context)
-                LinkRow("Third-party notices", "$SOURCE_URL/blob/main/THIRD_PARTY_NOTICES.md", context)
-                LinkRow("Report a problem", "$SOURCE_URL/issues", context)
+                LinkRow("Privacy policy, online", "$SOURCE_URL/blob/main/PRIVACY.md", context)
             }
 
             Spacer(Modifier.height(28.dp))
@@ -170,6 +184,21 @@ private fun LinkRow(label: String, url: String, context: android.content.Context
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+    }
+}
+
+/** A row that opens an in-app page (chevron, not the external-link icon). */
+@Composable
+private fun DocRow(label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = "Open $label", onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

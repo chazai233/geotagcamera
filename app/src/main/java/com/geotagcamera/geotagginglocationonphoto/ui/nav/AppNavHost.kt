@@ -65,6 +65,11 @@ private object Routes {
     const val VERIFY = "verify?uri={uri}"
     const val ABOUT_LEGAL = "aboutLegal"
     const val OFFLINE_MAPS = "offlineMaps"
+    const val LEGAL_DOC = "legal/{doc}"
+    const val REPORT = "report?crash={crash}"
+
+    fun legal(doc: com.geotagcamera.geotagginglocationonphoto.ui.legal.LegalDoc) = "legal/${doc.name}"
+    fun report(crash: Boolean = false) = "report?crash=$crash"
 
     fun photoDetail(photoId: Long) = "photoDetail/$photoId"
     fun verify(uri: String? = null) = if (uri != null) "verify?uri=$uri" else "verify"
@@ -83,6 +88,30 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
     // Launch, onboarding and the camera are always dark; everything else follows the system theme.
     val chromeRoute = currentRoute == null || currentRoute in setOf(Routes.LAUNCH, Routes.ONBOARDING, Tab.Capture.route)
     SystemBarIcons(darkBackground = chromeRoute || isSystemInDarkTheme())
+
+    // After a crash, offer (never force) to email the details, once the camera is up.
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    var crashOffer by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(currentRoute == Tab.Capture.route) {
+        if (currentRoute == Tab.Capture.route && com.geotagcamera.geotagginglocationonphoto.support.CrashCatcher.pending(appContext) != null) crashOffer = true
+    }
+    if (crashOffer) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {},
+            title = { androidx.compose.material3.Text("GeoTag Camera closed unexpectedly") },
+            text = { androidx.compose.material3.Text("Send the crash details to the developer? You'll see the email before anything is sent. Your photos and locations are not included.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { crashOffer = false; navController.navigate(Routes.report(crash = true)) }) {
+                    androidx.compose.material3.Text("Write report")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { crashOffer = false; com.geotagcamera.geotagginglocationonphoto.support.CrashCatcher.clear(appContext) }) {
+                    androidx.compose.material3.Text("No, delete it")
+                }
+            }
+        )
+    }
 
     // A shared "verify this photo" image is held here (not threaded through the
     // route's query arg, which can't safely carry a content:// Uri) and read by
@@ -183,7 +212,8 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
                 SettingsScreen(
                     onOpenVerify = { navController.navigate(Routes.verify()) },
                     onOpenAboutLegal = { navController.navigate(Routes.ABOUT_LEGAL) },
-                    onOpenOfflineMaps = { navController.navigate(Routes.OFFLINE_MAPS) }
+                    onOpenOfflineMaps = { navController.navigate(Routes.OFFLINE_MAPS) },
+                    onOpenReport = { navController.navigate(Routes.report()) }
                 )
             }
             composable(
@@ -216,7 +246,25 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
                 VerifyScreen(uri = uri, onBack = { navController.popBackStack() })
             }
             composable(Routes.ABOUT_LEGAL) {
-                AboutLegalScreen(onBack = { navController.popBackStack() })
+                AboutLegalScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenDoc = { navController.navigate(Routes.legal(it)) },
+                    onReport = { navController.navigate(Routes.report()) }
+                )
+            }
+            composable(Routes.LEGAL_DOC) { entry ->
+                val doc = com.geotagcamera.geotagginglocationonphoto.ui.legal.LegalDoc.fromName(entry.arguments?.getString("doc"))
+                    ?: com.geotagcamera.geotagginglocationonphoto.ui.legal.LegalDoc.PRIVACY
+                com.geotagcamera.geotagginglocationonphoto.ui.legal.LegalDocScreen(doc, onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = Routes.REPORT,
+                arguments = listOf(androidx.navigation.navArgument("crash") { type = androidx.navigation.NavType.BoolType; defaultValue = false })
+            ) { entry ->
+                com.geotagcamera.geotagginglocationonphoto.support.ReportProblemScreen(
+                    onBack = { navController.popBackStack() },
+                    fromCrash = entry.arguments?.getBoolean("crash") == true
+                )
             }
             composable(Routes.OFFLINE_MAPS) {
                 com.geotagcamera.geotagginglocationonphoto.ui.maps.OfflineMapsScreen(onBack = { navController.popBackStack() })

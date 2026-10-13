@@ -55,6 +55,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Legal documents are read in-app from the same files the repository
+    // publishes, so the app and GitHub can never disagree (see copyLegalDocs).
+    sourceSets.getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/legal"))
+
     // Exported Room schemas feed MigrationTestHelper in androidTest.
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
 
@@ -86,6 +90,13 @@ android {
         }
     }
 }
+
+val copyLegalDocs by tasks.registering(Copy::class) {
+    from(rootProject.files("LICENSE", "PRIVACY.md", "TERMS.md", "THIRD_PARTY_NOTICES.md"))
+    from(rootProject.file("LICENSES")) { into("licenses") }
+    into(layout.buildDirectory.dir("generated/legal/legal"))
+}
+tasks.named("preBuild") { dependsOn(copyLegalDocs) }
 
 // Each ABI APK needs its own versionCode so stores and in-place updates can
 // tell them apart: universal = base*10, then 1 = armeabi-v7a, 2 = arm64-v8a, 3 = x86_64.

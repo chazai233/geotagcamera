@@ -14,6 +14,7 @@ class GeoTagCameraApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.geotagcamera.geotagginglocationonphoto.support.CrashCatcher.install(this)
         // Picks up offline map downloads that were cut off when the app last closed.
         appScope.launch { runCatching { OfflineMaps.load(this@GeoTagCameraApp) } }
     }
