@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
 import android.hardware.display.DisplayManager
@@ -33,12 +34,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -114,7 +118,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.platform.LocalConfiguration
@@ -252,7 +259,18 @@ private fun CameraContent(
     val lastCaptureUri by viewModel.lastCaptureUri.collectAsStateWithLifecycle()
     val autoDismiss by viewModel.autoDismissReview.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val configuration = LocalConfiguration.current
+    // Phones keep the camera screen portrait, like the stock camera: the layout
+    // never jumps, only the icons and the live stamp turn with the phone.
+    // Tablets and unfolded foldables keep free rotation and the side-rail layout.
+    val compactWindow = configuration.smallestScreenWidthDp < 600
+    DisposableEffect(compactWindow) {
+        val activity = context.findActivity()
+        val before = activity?.requestedOrientation
+        if (compactWindow) activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onDispose { if (before != null) activity.requestedOrientation = before }
+    }
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     var lensFacing by remember { mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA) }
     var hasFrontCamera by remember { mutableStateOf(false) }
@@ -305,7 +323,7 @@ private fun CameraContent(
     // with auto-rotate off does the motion sensor decide how the photo is saved.
     var autoRotate by remember { mutableStateOf(isAutoRotateOn(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { autoRotate = isAutoRotateOn(context) }
-    val captureRotation = if (autoRotate) displayRotation else deviceRotation
+    val captureRotation = if (autoRotate && !compactWindow) displayRotation else deviceRotation
     LaunchedEffect(imageCapture, captureRotation) { imageCapture.targetRotation = captureRotation }
     DisposableEffect(imageCapture) {
         val listener = object : OrientationEventListener(context) {
@@ -331,6 +349,28 @@ private fun CameraContent(
     )
     // Read in the draw phase only: the animation never recomposes the screen.
     val iconRotation = Modifier.graphicsLayer { rotationZ = iconAngle.value }
+    // The live stamp turns too, so it shows exactly where it will sit on the
+    // saved (rotated) photo. Snapped, not animated: its frame swaps width and height.
+    val stampAngle = uprightAngle(captureRotation, displayRotation)
+
+    // Freeze-frame: on a ratio or lens change, the last preview frame stays on
+    // screen (centre-cropped into the animating frame) until the rebound camera
+    // streams again, so there is never a black flash or a stretched frame.
+    var frozenFrame by remember { mutableStateOf<ImageBitmap?>(null) }
+    fun freeze() {
+        if (frozenFrame == null) frozenFrame = runCatching { previewView.bitmap?.asImageBitmap() }.getOrNull()
+    }
+    DisposableEffect(previewView, lifecycleOwner) {
+        val observer = androidx.lifecycle.Observer<PreviewView.StreamState> { state ->
+            if (state == PreviewView.StreamState.STREAMING) frozenFrame = null
+        }
+        previewView.previewStreamState.observe(lifecycleOwner, observer)
+        onDispose { previewView.previewStreamState.removeObserver(observer) }
+    }
+    LaunchedEffect(frozenFrame) {
+        // Never leave a stale frame up if the camera fails to come back.
+        if (frozenFrame != null) { delay(2500); frozenFrame = null }
+    }
 
     val shutterScale = remember { Animatable(1f) }
     val shutterFlash = remember { Animatable(0f) }
@@ -469,7 +509,12 @@ private fun CameraContent(
         }
         viewModel.capture(imageCapture, aspect, mirror = lensFacing == CameraSelector.DEFAULT_FRONT_CAMERA)
     }
+    val onAspect: () -> Unit = {
+        freeze()
+        aspect = nextAspect(aspect)
+    }
     val onSwitch: () -> Unit = {
+        freeze()
         lensFacing = if (lensFacing == CameraSelector.DEFAULT_BACK_CAMERA)
             CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
     }
@@ -478,7 +523,8 @@ private fun CameraContent(
     val viewfinder: @Composable (Modifier) -> Unit = { modifier ->
         Viewfinder(
             previewView = previewView,
-            ratio = viewfinderRatio(aspect, isLandscape),
+            // Portrait sizes the frame itself (animated); landscape keeps the ratio modifier.
+            ratio = if (isLandscape) viewfinderRatio(aspect, true) else null,
             onFrameSize = { frameSize = it },
             gridOn = gridOn,
             reticle = reticle,
@@ -489,6 +535,8 @@ private fun CameraContent(
             onLocationChipClick = onRequestLocation,
             processing = uiState is CaptureUiState.Processing,
             snackbarHostState = snackbarHostState,
+            frozenFrame = frozenFrame,
+            stampAngle = stampAngle,
             onTap = { offset ->
                 reticle = offset
                 exposureVisibleAt = System.currentTimeMillis()
@@ -530,7 +578,7 @@ private fun CameraContent(
                     ControlButtons(
                         iconRotation, hasFlash, flashMode, aspect, gridOn,
                         onFlash = { flashMode = nextFlash(flashMode) },
-                        onAspect = { aspect = nextAspect(aspect) },
+                        onAspect = onAspect,
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings
                     )
@@ -539,7 +587,7 @@ private fun CameraContent(
                     Modifier.weight(1f).fillMaxHeight()
                         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical)),
                     contentAlignment = Alignment.Center
-                ) { viewfinder(Modifier) }
+                ) { viewfinder(if (viewfinderRatio(aspect, true) == null) Modifier.fillMaxSize() else Modifier) }
                 SideRail(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -569,7 +617,7 @@ private fun CameraContent(
                     ControlButtons(
                         iconRotation, hasFlash, flashMode, aspect, gridOn,
                         onFlash = { flashMode = nextFlash(flashMode) },
-                        onAspect = { aspect = nextAspect(aspect) },
+                        onAspect = onAspect,
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings,
                         beforeSettings = { Spacer(Modifier.weight(1f)) }
@@ -583,12 +631,17 @@ private fun CameraContent(
                 ) {
                     val ratio = viewfinderRatio(aspect, landscape = false)
                     val roomForFrame = maxHeight - MIN_CONTROLS_HEIGHT
-                    val frameHeight = if (ratio == null) roomForFrame else minOf(maxWidth / ratio, roomForFrame)
+                    val targetHeight = if (ratio == null) roomForFrame else minOf(maxWidth / ratio, roomForFrame)
+                    val targetWidth = if (ratio == null) maxWidth else minOf(maxWidth, targetHeight * ratio)
+                    // The frame grows or shrinks from the top edge, the way the stock camera does it.
+                    val frameSpec = tween<androidx.compose.ui.unit.Dp>(durationMillis = 280, easing = FastOutSlowInEasing)
+                    val frameHeight by animateDpAsState(targetHeight, frameSpec, label = "frameHeight")
+                    val frameWidth by animateDpAsState(targetWidth, frameSpec, label = "frameWidth")
                     Column(Modifier.fillMaxSize()) {
                         Box(
                             Modifier.fillMaxWidth().height(frameHeight),
                             contentAlignment = Alignment.TopCenter
-                        ) { viewfinder(Modifier) }
+                        ) { viewfinder(Modifier.size(frameWidth, frameHeight)) }
                         Column(
                             modifier = Modifier.fillMaxWidth().weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -652,8 +705,11 @@ private fun Viewfinder(
     onPinch: (Float) -> Unit,
     onStampDrag: (StampAnchor) -> Unit,
     onStampDrop: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    frozenFrame: ImageBitmap? = null,
+    stampAngle: Float = 0f
 ) {
+    val currentAngle by rememberUpdatedState(stampAngle)
     val currentOnPinch by rememberUpdatedState(onPinch)
     val currentOnTap by rememberUpdatedState(onTap)
     val currentOnDrag by rememberUpdatedState(onStampDrag)
@@ -662,16 +718,16 @@ private fun Viewfinder(
     // overlay can never swallow a tap-to-focus again.
     Box(
         modifier = modifier
-            .then(if (ratio != null) Modifier.aspectRatio(ratio) else Modifier.fillMaxSize())
+            .then(if (ratio != null) Modifier.aspectRatio(ratio) else Modifier)
             .onSizeChanged(onFrameSize)
             .clip(RoundedCornerShape(4.dp))
             .background(Color.Black)
             .pointerInput(Unit) { detectTapGestures { currentOnTap(it) } }
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
-                    onDragStart = { off -> currentOnDrag(anchorForFraction(off.x / size.width, off.y / size.height)) },
+                    onDragStart = { off -> currentOnDrag(photoAnchor(off.x / size.width, off.y / size.height, currentAngle)) },
                     onDrag = { change, _ ->
-                        currentOnDrag(anchorForFraction(change.position.x / size.width, change.position.y / size.height))
+                        currentOnDrag(photoAnchor(change.position.x / size.width, change.position.y / size.height, currentAngle))
                     },
                     onDragEnd = { currentOnDrop() },
                     onDragCancel = { currentOnDrop() }
@@ -696,8 +752,9 @@ private fun Viewfinder(
             }
     ) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        frozenFrame?.let { Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
         if (gridOn || dragging) ThirdsGrid(strong = dragging)
-        liveSpec?.let { StampOverlay(it, Modifier.fillMaxSize()) }
+        liveSpec?.let { spec -> RotatedFrame(stampAngle, Modifier.fillMaxSize()) { StampOverlay(spec, Modifier.fillMaxSize()) } }
         reticle?.let { FocusReticle(it) }
         exposure?.let { ExposureSlider(it, Modifier.align(Alignment.CenterEnd).padding(end = 10.dp)) }
 
@@ -1287,6 +1344,33 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
+}
+
+/**
+ * Lays [content] out in the saved photo's own orientation: for a quarter turn
+ * it gets this box's height as its width (and vice versa), then is turned by
+ * [angle] around the centre, so a landscape shot's stamp previews along the
+ * edge that becomes the photo's bottom.
+ */
+@Composable
+private fun RotatedFrame(angle: Float, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val quarter = (kotlin.math.abs(angle.toInt()) / 90) % 2 == 1
+    Layout(content = content, modifier = modifier.graphicsLayer { rotationZ = angle }) { measurables, constraints ->
+        val w = constraints.maxWidth
+        val h = constraints.maxHeight
+        val cw = if (quarter) h else w
+        val ch = if (quarter) w else h
+        val placeable = measurables.firstOrNull()?.measure(androidx.compose.ui.unit.Constraints.fixed(cw, ch))
+        layout(w, h) { placeable?.place((w - cw) / 2, (h - ch) / 2) }
+    }
+}
+
+/** A point on the screen frame, as a fraction, mapped into the turned photo's own frame. */
+private fun photoAnchor(fx: Float, fy: Float, angle: Float): StampAnchor = when (((angle.toInt() % 360) + 360) % 360) {
+    90 -> anchorForFraction(fy, 1f - fx)
+    180 -> anchorForFraction(1f - fx, 1f - fy)
+    270 -> anchorForFraction(1f - fy, fx)
+    else -> anchorForFraction(fx, fy)
 }
 
 private fun shareImage(context: Context, uriString: String) {
