@@ -49,6 +49,7 @@ def app_version():
 
 
 VERSION = app_version()
+BUILD_DATE = datetime.date.today().isoformat()
 TODAY = datetime.date.today().isoformat()
 
 # --------------------------------------------------------------------------------------
@@ -95,6 +96,17 @@ FAQ = [
      "Not yet. The F-Droid and IzzyOnDroid listings are in progress, and the download page will link them once they're "
      "live. Until then, install the signed APK from GitHub, or let Obtainium keep it updated from there. A Play Store "
      "release may come later."),
+    ("How do I add GPS location and time to photos on Android?",
+     "Install GeoTag Camera, allow camera and location, wait for Location locked, and take the photo. The place, address, "
+     "coordinates, date and time (and a small map) are burned into the image, and the same location and time are written "
+     "to the photo's EXIF data. Photos are saved to your gallery in Pictures/GeoTagCamera."),
+    ("Is GeoTag Camera an alternative to GPS Map Camera or Timestamp Camera?",
+     "Yes, for the same job: a camera that puts location, address, map and time on the photo. The differences are that "
+     "GeoTag Camera is free and open source with no ads, subscriptions or trackers, works without Google Play services, "
+     "keeps its map available offline, and signs every photo so edits can be detected later."),
+    ("Can I export photo locations to Excel, Google Earth or QGIS?",
+     "Yes. In the gallery, choose a project or select photos, then Export locations: CSV opens in Excel and Google Sheets, "
+     "KML in Google Earth, and GeoJSON in QGIS or ArcGIS. You can also build a PDF site report with an overview map."),
     ("Who is it built for?",
      "College students documenting fieldwork, land and infrastructure surveyors, inspectors, NGO and government field "
      "staff, and anyone who needs to show exactly where and when a photo was taken. The Field and Professional setups "
@@ -125,15 +137,15 @@ NAV = [
 
 PAGES = [
     dict(slug="", src="home.html", name="Home",
-         title="GeoTag Camera: free, open-source GPS camera for Android",
-         desc="Free, open-source Android camera that stamps GPS location, address and time on photos and signs them "
-              "on the phone so edits show up. Works offline. No ads, no tracking, no Google Play services."),
+         title="GeoTag Camera: free GPS map stamp camera for Android",
+         desc="Free, open-source Android camera that stamps GPS location, address, map and time on photos and signs them. "
+              "Works offline. No ads or tracking."),
     dict(slug="download/", src="download.html", name="Download",
          title=f"Download GeoTag Camera {VERSION} for Android",
          desc=f"Download the signed GeoTag Camera {VERSION} APK: which file fits your phone, how to check its SHA-256, "
               "install and update steps, and system requirements."),
     dict(slug="changelog/", md="CHANGELOG.md", name="Changelog",
-         title="GeoTag Camera changelog",
+         title="GeoTag Camera changelog: release notes by version",
          desc="Every release of GeoTag Camera and what changed in it, from 1.0.0 to the current version.",
          lead=f"What changed in each release. The current version is {VERSION}. Generated from "
               f"<a href=\"{REPO_URL}/blob/main/CHANGELOG.md\">CHANGELOG.md</a>."),
@@ -147,7 +159,7 @@ PAGES = [
               "what leaves it, and when.",
          lead="The same policy that ships inside the app, under About &amp; legal."),
     dict(slug="terms/", md="TERMS.md", name="Terms",
-         title="Terms of use | GeoTag Camera",
+         title="Terms of use | GeoTag Camera for Android",
          desc="Terms of use for GeoTag Camera: GPL-3.0-or-later licence, no warranty, and what a verified photo does and doesn't prove.",
          lead="Short, because the app is free software with no account and no service behind it."),
     dict(slug="licenses/", md="THIRD_PARTY_NOTICES.md", name="Licences",
@@ -466,11 +478,76 @@ def json_ld(obj):
     return f'<script type="application/ld+json">\n{text}\n</script>'
 
 
+PERSON = {
+    "@type": "Person",
+    "@id": "https://konkomaji.com/#person",
+    "name": "Konko Maji",
+    "url": "https://konkomaji.com/",
+    "email": "mailto:konkomaji@gmail.com",
+    "sameAs": ["https://github.com/konkomaji"],
+}
+APP_ID = BASE_URL + "#app"
+
+FEATURES = [
+    "GPS location, address, map, date and time stamped on photos",
+    "Live stamp preview in the viewfinder",
+    "Each photo signed on the device (SHA-256, Android Keystore) so edits are detectable",
+    "Verify any GeoTag Camera photo offline",
+    "On-device OpenStreetMap map, offline areas",
+    "Projects, notes and custom text on the stamp",
+    "Export locations as CSV, KML or GeoJSON",
+    "PDF site report with overview map",
+    "Location and time written to EXIF",
+    "No ads, no tracking, no Google Play services",
+]
+
+
 def structured_data(page, screens):
+    if page["slug"] == "download/":
+        howto = {
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            "name": "How to install GeoTag Camera on Android",
+            "description": "Install the signed GeoTag Camera APK from GitHub on an Android 8.0 or newer phone.",
+            "totalTime": "PT3M",
+            "tool": [{"@type": "HowToTool", "name": "Android phone with Android 8.0 or newer"}],
+            "step": [
+                {"@type": "HowToStep", "position": 1, "name": "Pick the APK",
+                 "text": "Open the latest release on GitHub and download geotagcamera-v" + VERSION +
+                         "-arm64-v8a.apk (most phones), armeabi-v7a (older 32-bit phones) or universal (any phone).",
+                 "url": f"{REPO_URL}/releases/latest"},
+                {"@type": "HowToStep", "position": 2, "name": "Check the download (optional)",
+                 "text": "Compare the file's SHA-256 with the matching .sha256 file on the release page."},
+                {"@type": "HowToStep", "position": 3, "name": "Install",
+                 "text": "Open the APK on your phone and allow installs from your browser or file manager when Android asks."},
+                {"@type": "HowToStep", "position": 4, "name": "Start",
+                 "text": "Open GeoTag Camera, choose Field or Professional, and allow camera and location."},
+            ],
+        }
+        crumbs = {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "GeoTag Camera", "item": BASE_URL},
+                {"@type": "ListItem", "position": 2, "name": page["name"], "item": page_url(page["slug"])},
+            ],
+        }
+        return "\n".join(json_ld(x) for x in (howto, crumbs))
     if page["slug"] == "":
         app = {
             "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
+            "@type": ["SoftwareApplication", "MobileApplication"],
+            "@id": APP_ID,
+            "alternateName": ["GeoTag Camera for Android", "GPS map stamp camera"],
+            "keywords": "GPS camera, geotag photos, GPS map camera, timestamp camera, location stamp, field survey photos, "
+                        "tamper-evident photos, open source, Android",
+            "featureList": FEATURES,
+            "fileSize": "15MB",
+            "inLanguage": "en",
+            "datePublished": "2026-07-30",
+            "dateModified": BUILD_DATE,
+            "publisher": {"@id": PERSON["@id"]},
+            "codeRepository": REPO_URL,
             "name": "GeoTag Camera",
             "operatingSystem": "Android 8.0 or later",
             "applicationCategory": "MultimediaApplication",
@@ -485,7 +562,7 @@ def structured_data(page, screens):
             "license": "https://spdx.org/licenses/GPL-3.0-or-later.html",
             "isAccessibleForFree": True,
             "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-            "author": {"@type": "Person", "name": "Konko Maji", "url": "https://github.com/konkomaji"},
+            "author": PERSON,
             "sameAs": [REPO_URL],
         }
         if screens:
@@ -496,8 +573,10 @@ def structured_data(page, screens):
             "mainEntity": [{"@type": "Question", "name": q,
                             "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in FAQ],
         }
-        site = {"@context": "https://schema.org", "@type": "WebSite", "name": "GeoTag Camera",
-                "url": BASE_URL, "inLanguage": "en"}
+        site = {"@context": "https://schema.org", "@type": "WebSite", "@id": BASE_URL + "#website",
+                "name": "GeoTag Camera", "url": BASE_URL, "inLanguage": "en",
+                "description": PAGES[0]["desc"], "publisher": {"@id": PERSON["@id"]},
+                "about": {"@id": APP_ID}}
         return "\n".join(json_ld(x) for x in (app, faq, site))
     if page["slug"] == "404.html":
         return ""
@@ -528,7 +607,7 @@ def shell(page, body, screens, asset_v):
 <meta name="description" content="{d}">
 <meta name="author" content="Konko Maji">
 <meta name="robots" content="{robots}">
-<link rel="canonical" href="{canonical}">
+{"" if is404 else f'<link rel="canonical" href="{canonical}">'}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="GeoTag Camera">
 <meta property="og:url" content="{canonical}">
@@ -813,6 +892,8 @@ def check_site():
         for e in s.errors:
             errors.append(f"{rel}: {e}")
         for what, val in (("title", s.title), ("meta description", s.desc), ("canonical", s.canonical)):
+            if what == "canonical" and rel == "404.html":
+                continue  # noindex page: deliberately no canonical
             if not val or not val.strip():
                 errors.append(f"{rel}: missing {what}")
         if s.canonical and not s.canonical.startswith(BASE_URL):

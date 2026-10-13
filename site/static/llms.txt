@@ -52,3 +52,11 @@ At capture the app hashes the JPEG image data (metadata segments excluded) with 
 ## What leaves the phone
 
 Nothing goes to the developer. The stamp map downloads OpenStreetMap tiles from OpenFreeMap (tile coordinates and IP address). The optional weather chip (off by default) sends the position rounded to about 1 km to Open-Meteo. Address lookup uses the phone's built-in Android geocoder, which on phones with Google services is usually Google's. App data is excluded from cloud backup and device transfer.
+
+## Common questions
+
+- What is GeoTag Camera? A free, open-source Android camera that stamps GPS location, address, a map and the time onto photos and signs each photo so later edits can be detected.
+- Is it an alternative to GPS Map Camera or Timestamp Camera? Yes, for the same job, but free and open source with no ads, subscriptions or trackers, no Google Play services, an offline map, and signed photos.
+- How do I add location and time to photos on Android? Install GeoTag Camera, allow camera and location, wait for "Location locked" and take the photo; the stamp is burned into the image and the location is also written to EXIF.
+- Can I export photo locations? Yes: CSV (Excel, Google Sheets), KML (Google Earth) or GeoJSON (QGIS, ArcGIS), plus a PDF site report.
+- Where do I get it? https://konkomaji.com/geotagcamera/download/ (signed APKs from GitHub releases).
