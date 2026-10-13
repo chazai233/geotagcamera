@@ -676,6 +676,35 @@ private fun CameraContent(
             )
         }
 
+        (uiState as? CaptureUiState.AwaitingLocation)?.let { waiting ->
+            BackHandler { viewModel.discardHeldShot() }
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = {},
+                icon = { Icon(if (waiting.timedOut) Icons.Filled.LocationOff else Icons.Filled.MyLocation, contentDescription = null) },
+                title = { Text(if (waiting.timedOut) "Still no GPS fix" else "Waiting for GPS") },
+                text = {
+                    Column {
+                        Text(
+                            if (waiting.timedOut) "The photo is kept. Move to open sky and keep waiting, or discard it."
+                            else "Your photo is safe. It will be stamped and saved as soon as your location is found."
+                        )
+                        if (!waiting.timedOut) {
+                            Spacer(Modifier.height(16.dp))
+                            androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+                        }
+                    }
+                },
+                confirmButton = {
+                    if (waiting.timedOut) {
+                        androidx.compose.material3.TextButton(onClick = { viewModel.keepWaitingForLocation() }) { Text("Keep waiting") }
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { viewModel.discardHeldShot() }) { Text("Discard photo") }
+                }
+            )
+        }
+
         (uiState as? CaptureUiState.Review)?.let { review ->
             BackHandler { viewModel.dismissReview() }
             ReviewScreen(

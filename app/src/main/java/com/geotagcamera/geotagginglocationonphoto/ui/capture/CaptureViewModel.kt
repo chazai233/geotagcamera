@@ -67,6 +67,12 @@ sealed interface CaptureUiState {
     /** Post-capture review takeover: the saved, signed photo plus its quotable name/size. */
     data class Review(val photoId: Long, val uri: String, val filename: String, val sizeBytes: Long) : CaptureUiState
     data class Error(val message: String) : CaptureUiState
+    /**
+     * Shot taken but no GPS fix yet. The photo is held (not lost) and saved
+     * the moment a fix arrives within [CaptureViewModel.LATE_FIX_WINDOW_MS] of
+     * the shutter. [timedOut]: the window passed; the user can wait again or discard.
+     */
+    data class AwaitingLocation(val timedOut: Boolean) : CaptureUiState
 }
 
 /** Drives the viewfinder's location chip. */
@@ -211,6 +217,15 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 delay(NO_FIX_TIMEOUT_MS)
                 if (!hasRecentFix()) _locationChip.value = LocationChipState.Unavailable
             }
+            // "Locked" must never outlive the fix it describes (GPS lost, location switched off).
+            launch {
+                while (true) {
+                    delay(5_000)
+                    if (_locationChip.value is LocationChipState.Locked && !hasRecentFix()) {
+                        _locationChip.value = if (locationServicesOn()) LocationChipState.Locating else LocationChipState.Unavailable
+                    }
+                }
+            }
             locationProvider.updates().collect { fix ->
                 noFixTimeout.cancel()
                 _latestFix.value = fix
@@ -219,6 +234,11 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
+
+    private fun locationServicesOn(): Boolean = runCatching {
+        val lm = getApplication<Application>().getSystemService(android.location.LocationManager::class.java)
+        androidx.core.location.LocationManagerCompat.isLocationEnabled(lm)
+    }.getOrDefault(true)
 
     /** Re-resolves address/tile/weather when the user has moved or the data is old. */
     private fun resolve(fix: LocationFix, force: Boolean) {
@@ -358,19 +378,81 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun processCapturedPhoto(capture: PendingCapture, signature: Bitmap?) {
+    private var heldSignature: Bitmap? = null
+    private var waitJob: kotlinx.coroutines.Job? = null
+
+    /** Holds the shot and saves it as soon as a usable fix streams in. */
+    private fun holdForLocation(capture: PendingCapture, signature: Bitmap?) {
+        pending = capture
+        heldSignature = signature
+        _uiState.value = CaptureUiState.AwaitingLocation(timedOut = false)
+        waitJob?.cancel()
+        waitJob = viewModelScope.launch {
+            val deadline = capture.capturedAtEpochMs + LATE_FIX_WINDOW_MS
+            val remaining = (deadline - System.currentTimeMillis()).coerceAtLeast(10_000L)
+            val fix = kotlinx.coroutines.withTimeoutOrNull(remaining) {
+                // Streamed fixes, plus an active one-shot request in case streaming stalled.
+                launch { runCatching { locationProvider.getFreshFix() }.getOrNull()?.let { _latestFix.value = it } }
+                _latestFix.first { it != null && it.ageMs(capture.capturedAtEpochMs) <= MAX_FIX_AGE_MS && it.timestampEpochMs <= deadline }
+            }
+            if (fix != null) {
+                pending = null
+                val sig = heldSignature.also { heldSignature = null }
+                _uiState.value = CaptureUiState.Processing
+                processCapturedPhoto(capture, sig, fix)
+            } else {
+                _uiState.value = CaptureUiState.AwaitingLocation(timedOut = true)
+            }
+        }
+    }
+
+    /** "Keep waiting" after the window passed: accepts the next fix, whenever it comes. */
+    fun keepWaitingForLocation() {
+        val capture = pending ?: return
+        waitJob?.cancel()
+        _uiState.value = CaptureUiState.AwaitingLocation(timedOut = false)
+        waitJob = viewModelScope.launch {
+            launch { runCatching { locationProvider.getFreshFix() }.getOrNull()?.let { _latestFix.value = it } }
+            val fix = kotlinx.coroutines.withTimeoutOrNull(LATE_FIX_WINDOW_MS) {
+                _latestFix.first { it != null && it.ageMs() <= MAX_FIX_AGE_MS }
+            }
+            if (fix != null) {
+                pending = null
+                val sig = heldSignature.also { heldSignature = null }
+                _uiState.value = CaptureUiState.Processing
+                processCapturedPhoto(capture, sig, fix)
+            } else {
+                _uiState.value = CaptureUiState.AwaitingLocation(timedOut = true)
+            }
+        }
+    }
+
+    /** Give up on a held shot: the file is deleted, nothing is saved. */
+    fun discardHeldShot() {
+        waitJob?.cancel()
+        pending?.file?.delete()
+        pending = null
+        heldSignature?.recycle()
+        heldSignature = null
+        _uiState.value = CaptureUiState.Idle
+    }
+
+    private fun processCapturedPhoto(capture: PendingCapture, signature: Bitmap?, knownFix: LocationFix? = null) {
         val context = getApplication<Application>()
         val file = capture.file
         val capturedAtEpochMs = capture.capturedAtEpochMs
         viewModelScope.launch {
+            var held = false
             try {
-                val fix = pickFix(capturedAtEpochMs)
+                val fix = knownFix ?: pickFix(capturedAtEpochMs)
                 if (fix == null) {
-                    _uiState.value = CaptureUiState.Error(
-                        if (_locationChip.value == LocationChipState.PermissionDenied)
-                            "Location is off. Allow location to geotag photos."
-                        else "Couldn't get a GPS fix. Move to open sky and try again."
-                    )
+                    if (_locationChip.value == LocationChipState.PermissionDenied) {
+                        _uiState.value = CaptureUiState.Error("Location is off. Allow location to geotag photos.")
+                    } else {
+                        // Never lose the shot to a slow GPS: hold it and save when a fix lands.
+                        held = true
+                        holdForLocation(capture, signature)
+                    }
                     return@launch
                 }
                 // Reuse what the viewfinder showed only if it was resolved for
@@ -397,7 +479,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 _uiState.value = CaptureUiState.Error("Couldn't process the photo. Try again.")
             } finally {
-                withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) { file.delete() }
+                if (!held) withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) { file.delete() }
             }
         }
     }
@@ -478,6 +560,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     override fun onCleared() {
+        waitJob?.cancel()
+        heldSignature?.recycle()
         pending?.file?.delete()
         super.onCleared()
     }
@@ -486,6 +570,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         /** A streamed fix older than this at shutter time is not trusted; a fresh one is requested. */
         const val MAX_FIX_AGE_MS = 30_000L
         const val NO_FIX_TIMEOUT_MS = 15_000L
+        /** A fix this soon after the shutter still describes where the photo was taken. */
+        const val LATE_FIX_WINDOW_MS = 60_000L
         const val RERESOLVE_AFTER_M = 30f
         const val RERESOLVE_AFTER_MS = 5 * 60_000L
         const val MAP_RETRY_AFTER_MS = 20_000L

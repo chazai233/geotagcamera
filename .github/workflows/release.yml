@@ -83,16 +83,20 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace
-          apk=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | grep -v unsigned | head -n1 || true)
-          if [ -z "$apk" ]; then
+          apks=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | grep -v unsigned || true)
+          if [ -z "$apks" ]; then
             echo "::error::No signed release APK was produced. Does app/build.gradle.kts read the RELEASE_* env vars?"
             ls -la app/build/outputs/apk/release/ || true
             exit 1
           fi
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)/apksigner"
-          "$apksigner" verify --print-certs "$apk"
           mkdir -p dist
-          cp "$apk" "dist/geotagcamera-${TAG}.apk"
+          # One APK per CPU type plus a universal one (app-<abi>-release.apk).
+          for apk in $apks; do
+            "$apksigner" verify --print-certs "$apk"
+            abi=$(basename "$apk" .apk | sed -e 's/^app-//' -e 's/-release$//')
+            cp "$apk" "dist/geotagcamera-${TAG}-${abi}.apk"
+          done
 
       - name: Build debug APK (signing secrets not configured)
         if: env.HAS_SIGNING_KEY != 'true'
@@ -100,7 +104,10 @@ jobs:
           echo "::warning::Signing secrets are not set, publishing a debug-signed APK instead"
           ./gradlew assembleDebug --no-daemon --stacktrace
           mkdir -p dist
-          cp app/build/outputs/apk/debug/*.apk "dist/geotagcamera-${TAG}-debug.apk"
+          for apk in app/build/outputs/apk/debug/*.apk; do
+            abi=$(basename "$apk" .apk | sed -e 's/^app-//' -e 's/-debug$//')
+            cp "$apk" "dist/geotagcamera-${TAG}-${abi}-debug.apk"
+          done
           {
             echo
             echo "> **Note:** this APK is signed with a debug key because release signing was not configured for this build. It can't be installed over a release-signed copy of the app."

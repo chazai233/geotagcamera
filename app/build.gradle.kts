@@ -17,8 +17,9 @@ android {
         applicationId = "com.geotagcamera.geotagginglocationonphoto"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.2.0"
+        // Split APKs get versionCode * 10 + ABI digit (see androidComponents below).
+        versionCode = 5
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,7 +37,10 @@ android {
 
     buildTypes {
         release {
-            signingConfigs.findByName("release")?.let { signingConfig = it }
+            // Without release secrets, sign with this machine's debug key: same
+            // certificate every earlier GitHub release used, so users update in
+            // place, but shrunk by R8 (a fraction of the debug APK's size).
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -56,6 +60,17 @@ android {
         buildConfig = true
     }
 
+    // MapLibre ships ~8-11 MB of native code per CPU type. One APK per ABI keeps
+    // downloads small; the universal APK stays for anyone unsure which to pick.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     // F-Droid can't verify the encrypted dependency metadata blob, so leave it out.
     dependenciesInfo {
         includeInApk = false
@@ -65,6 +80,19 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+// Each ABI APK needs its own versionCode so stores and in-place updates can
+// tell them apart: universal = base*10, then 1 = armeabi-v7a, 2 = arm64-v8a, 3 = x86_64.
+val abiDigit = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier
+            val base = output.versionCode.orNull ?: 0
+            output.versionCode.set(base * 10 + (abi?.let { abiDigit[it] } ?: 0))
         }
     }
 }
