@@ -37,6 +37,7 @@ import com.geotagcamera.geotagginglocationonphoto.ui.theme.StampType
  *   [tile] [ Plus code, full address on one line…  | signature   ]
  *   [    ] [ Lat 22.834455°  Long 87.970336°       | org name    ]
  *   [    ] [ Tue, 13/10/2026 12:35 am GMT +05:30   |             ]
+ *   [    ] [ Pole 12  ·  Contract A-123            |             ]
  *   [    ] [ ±5 m · ALT 34 m · 312°      SIGNED · GEOTAG        ]
  *
  * Every text line is single-line and ellipsized, so a long address costs
@@ -121,6 +122,7 @@ object StampPainter {
         spec.addressLine?.let { y += drawLine(tm, it, StampType.Body, textX, y, textWidth) + lineGap }
         spec.coordinatesText?.let { y += drawLine(tm, it, StampType.Data, textX, y, textWidth) + lineGap }
         dateTimeLine(spec)?.let { y += drawLine(tm, it, StampType.Body, textX, y, textWidth) + lineGap }
+        spec.noteLine?.let { y += drawLine(tm, it, StampType.Note, textX, y, textWidth) + lineGap }
 
         // Last line: meta chips as one dotted run on the left, marks on the right.
         val marks = marksText(spec)
@@ -169,6 +171,7 @@ object StampPainter {
             if (spec.addressLine != null) add(tm.measure("Ag", StampType.Body, maxLines = 1).size.height)
             if (spec.coordinatesText != null) add(tm.measure("Ag", StampType.Data, maxLines = 1).size.height)
             if (dateTimeLine(spec) != null) add(tm.measure("Ag", StampType.Body, maxLines = 1).size.height)
+            if (spec.noteLine != null) add(tm.measure("Ag", StampType.Note, maxLines = 1).size.height)
             if (spec.chips.isNotEmpty() || marksText(spec) != null) {
                 add(maxOf(tm.measure("Ag", StampType.Meta, maxLines = 1).size.height, tm.measure("AG", StampType.Mark, maxLines = 1).size.height))
             }

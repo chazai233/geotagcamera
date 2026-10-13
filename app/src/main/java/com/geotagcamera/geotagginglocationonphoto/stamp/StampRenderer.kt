@@ -53,9 +53,10 @@ object StampRenderer {
         orgLogo: Bitmap? = null,
         hasSignature: Boolean = false,
         weatherChipText: String? = null,
-        signature: Bitmap? = null
+        signature: Bitmap? = null,
+        note: String? = null
     ): Bitmap {
-        val spec = buildStampSpec(fix, addressParts, capturedAtEpochMs, fields, mapTile, orgLogo, hasSignature, weatherChipText, signature)
+        val spec = buildStampSpec(fix, addressParts, capturedAtEpochMs, fields, mapTile, orgLogo, hasSignature, weatherChipText, signature, note)
 
         // Draw in place when we can: a full-resolution copy is tens of MB, and
         // the caller already owns [source]. Returns [source] itself in that case.

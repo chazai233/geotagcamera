@@ -55,6 +55,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Exported Room schemas feed MigrationTestHelper in androidTest.
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -124,6 +127,7 @@ dependencies {
     // Vector icons only, no emoji glyphs anywhere in the UI. R8 strips the unused ones.
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    implementation(platform(libs.kotlinx.serialization.bom))
 
     // Manifest theme (android:theme="@style/Theme.Material3...") needs the
     // classic Material Components XML styles, Compose material3 alone doesn't ship them
@@ -167,6 +171,7 @@ dependencies {
     // "not mocked", so JVM tests of UserCommentCodec need the actual impl.
     testImplementation(libs.org.json)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

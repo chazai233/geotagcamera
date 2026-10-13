@@ -84,6 +84,7 @@ import androidx.compose.material.icons.filled.GridOff
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.NoPhotography
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Settings
@@ -179,7 +180,7 @@ private val MAX_CAPTURE_4_3 = Size(4032, 3024)
 private val MAX_CAPTURE_16_9 = Size(4032, 2268)
 
 /** Zoom chip + shutter row, with breathing room. The frame shrinks before these do. */
-private val MIN_CONTROLS_HEIGHT = 150.dp
+private val MIN_CONTROLS_HEIGHT = 196.dp
 
 @Composable
 fun CaptureScreen(
@@ -260,6 +261,10 @@ private fun CameraContent(
     val liveSpec by viewModel.liveSpec.collectAsStateWithLifecycle()
     val lastCaptureUri by viewModel.lastCaptureUri.collectAsStateWithLifecycle()
     val autoDismiss by viewModel.autoDismissReview.collectAsStateWithLifecycle()
+    val activeProject by viewModel.activeProject.collectAsStateWithLifecycle()
+    val captureNote by viewModel.captureNote.collectAsStateWithLifecycle()
+    val projects by viewModel.projects.collectAsStateWithLifecycle()
+    var showContextSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val configuration = LocalConfiguration.current
     // Phones keep the camera screen portrait, like the stock camera: the layout
@@ -584,6 +589,7 @@ private fun CameraContent(
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings
                     )
+                    GlassIconButton(Icons.Outlined.Folder, "Project and note: ${activeProject?.name ?: "none"}", { showContextSheet = true }, iconRotation)
                 }
                 Box(
                     Modifier.weight(1f).fillMaxHeight()
@@ -649,6 +655,7 @@ private fun CameraContent(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)
                         ) {
+                            CaptureContextRow(activeProject, captureNote, onClick = { showContextSheet = true }, modifier = Modifier.padding(horizontal = 16.dp))
                             ZoomPresets(zoomRatio, minZoom, maxZoom, vertical = false, onZoom = { applyZoom(it) })
                             ModePicker(availableModes, cameraMode, vertical = false) { cameraMode = it }
                             Row(
@@ -664,6 +671,18 @@ private fun CameraContent(
                     }
                 }
             }
+        }
+
+        if (showContextSheet) {
+            CaptureContextSheet(
+                projects = projects,
+                activeProjectId = activeProject?.id,
+                note = captureNote,
+                onSelectProject = { viewModel.selectProject(it) },
+                onCreateProject = { name -> viewModel.createProject(name) },
+                onNoteChange = { viewModel.setCaptureNote(it) },
+                onDismiss = { showContextSheet = false }
+            )
         }
 
         val awaiting = uiState as? CaptureUiState.AwaitingSignature

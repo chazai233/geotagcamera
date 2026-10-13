@@ -24,6 +24,9 @@ val CAPTURE_PERMISSIONS: Array<String>
         add(Manifest.permission.ACCESS_COARSE_LOCATION)
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            // Lets Verify read the GPS in photos unredacted; no extra dialog on most phones.
+            add(Manifest.permission.ACCESS_MEDIA_LOCATION)
         }
     }.toTypedArray()
 

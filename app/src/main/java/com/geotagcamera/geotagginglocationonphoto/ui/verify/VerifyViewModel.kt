@@ -35,7 +35,7 @@ class VerifyViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             val outcome = withContext(Dispatchers.IO) {
                 val bytes = runCatching {
-                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    com.geotagcamera.geotagginglocationonphoto.security.OriginalBytes.read(context, uri)
                 }.getOrNull() ?: return@withContext VerificationOutcome.Unreadable
                 PhotoVerification.verify(bytes)
             }

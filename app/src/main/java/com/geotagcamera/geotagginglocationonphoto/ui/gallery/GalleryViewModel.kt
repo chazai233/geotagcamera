@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.geotagcamera.geotagginglocationonphoto.data.AppDatabase
 import com.geotagcamera.geotagginglocationonphoto.data.PhotoEntity
+import com.geotagcamera.geotagginglocationonphoto.data.ProjectWithCount
 import com.geotagcamera.geotagginglocationonphoto.security.PhotoVerification
 import com.geotagcamera.geotagginglocationonphoto.security.VerificationOutcome
 import com.geotagcamera.geotagginglocationonphoto.storage.MediaStoreImageSaver
@@ -21,15 +22,132 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Which photos the gallery shows. */
+sealed interface GalleryFilter {
+    data object All : GalleryFilter
+    data object Unfiled : GalleryFilter
+    data class Project(val id: Long) : GalleryFilter
+}
+
+/** A long-running export or report, surfaced as a dialog. */
+sealed interface ExportState {
+    data object Idle : ExportState
+    data class Working(val label: String, val done: Int = 0, val total: Int = 0) : ExportState
+    data class Ready(val file: java.io.File, val mimeType: String, val title: String) : ExportState
+    data class Failed(val message: String) : ExportState
+}
+
 /** Per-tile trust badge. UNSIGNED/UNKNOWN draw nothing — only real signals are surfaced. */
 enum class TileStatus { VERIFIED, TAMPERED, UNSIGNED, UNKNOWN }
 
 class GalleryViewModel(application: Application) : AndroidViewModel(application) {
+    // First: visiblePhotos below reads it during construction.
+    private val _filter = MutableStateFlow<GalleryFilter>(GalleryFilter.All)
+    val filter: StateFlow<GalleryFilter> = _filter.asStateFlow()
     private val photoDao = AppDatabase.get(application).photoDao()
+    private val projectDao = AppDatabase.get(application).projectDao()
+
+    val projects: StateFlow<List<ProjectWithCount>> = projectDao.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setFilter(filter: GalleryFilter) { _filter.value = filter }
+
+    private val _export = MutableStateFlow<ExportState>(ExportState.Idle)
+    val export: StateFlow<ExportState> = _export.asStateFlow()
+    private var exportJob: kotlinx.coroutines.Job? = null
+
+    fun dismissExport() { exportJob?.cancel(); _export.value = ExportState.Idle }
+
+    /** What the current filter is called, for file names and report titles. */
+    fun scopeTitle(): String = when (val f = _filter.value) {
+        GalleryFilter.All -> "All photos"
+        GalleryFilter.Unfiled -> "Photos without a project"
+        is GalleryFilter.Project -> projects.value.firstOrNull { it.id == f.id }?.name ?: "Project"
+    }
+
+    fun exportLocations(format: com.geotagcamera.geotagginglocationonphoto.export.ExportFormat, photos: List<PhotoEntity>, title: String) {
+        if (photos.isEmpty()) return
+        exportJob?.cancel()
+        _export.value = ExportState.Working("Exporting ${photos.size} location" + if (photos.size == 1) "" else "s")
+        exportJob = viewModelScope.launch {
+            _export.value = runCatching {
+                withContext(Dispatchers.IO) {
+                    val context = getApplication<Application>()
+                    val names = projects.value.associate { it.id to it.name }
+                    val text = com.geotagcamera.geotagginglocationonphoto.export.PhotoExport.render(format, photos.sortedBy { it.capturedAtEpochMs }, names, title)
+                    val file = com.geotagcamera.geotagginglocationonphoto.export.ExportFiles.newFile(context, title, format.extension)
+                    file.writeText(text, Charsets.UTF_8)
+                    ExportState.Ready(file, format.mimeType, "$title (${format.label})")
+                }
+            }.getOrElse { ExportState.Failed("Couldn't write the export. Check free storage and try again.") }
+        }
+    }
+
+    fun buildReport(photos: List<PhotoEntity>, title: String, organisation: String?) {
+        if (photos.isEmpty()) return
+        exportJob?.cancel()
+        _export.value = ExportState.Working("Building report", 0, photos.size)
+        exportJob = viewModelScope.launch {
+            _export.value = runCatching {
+                val context = getApplication<Application>()
+                val file = com.geotagcamera.geotagginglocationonphoto.export.ExportFiles.newFile(context, title, "pdf")
+                com.geotagcamera.geotagginglocationonphoto.export.ProjectReport(context).build(
+                    com.geotagcamera.geotagginglocationonphoto.export.ProjectReport.Input(
+                        title = title, subtitle = "Site photo report", organisation = organisation, photos = photos
+                    ),
+                    file
+                ) { done, total -> _export.value = ExportState.Working("Building report", done, total) }
+                ExportState.Ready(file, "application/pdf", "$title (PDF report)")
+            }.getOrElse { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                if (e is OutOfMemoryError) ExportState.Failed("Not enough memory for this report. Try fewer photos.")
+                else ExportState.Failed("Couldn't build the report. Check free storage and try again.")
+            }
+        }
+    }
+
+    fun moveToProject(ids: Collection<Long>, projectId: Long?) {
+        viewModelScope.launch { photoDao.moveToProject(ids.toList(), projectId) }
+    }
+
+    /** Creates a project and moves [ids] into it. Returns an error message or null. */
+    suspend fun createProjectAndMove(name: String, ids: Collection<Long>): String? {
+        val clean = name.trim().take(80)
+        if (clean.isEmpty()) return "Give the project a name."
+        if (projectDao.countWithName(clean) > 0) return "A project with that name already exists."
+        val id = projectDao.insert(com.geotagcamera.geotagginglocationonphoto.data.ProjectEntity(name = clean, createdAtEpochMs = System.currentTimeMillis()))
+        photoDao.moveToProject(ids.toList(), id)
+        return null
+    }
+
+    fun renameProject(id: Long, name: String) {
+        val clean = name.trim().take(80)
+        if (clean.isNotEmpty()) viewModelScope.launch { projectDao.rename(id, clean) }
+    }
+
+    fun setArchived(id: Long, archived: Boolean) { viewModelScope.launch { projectDao.setArchived(id, archived) } }
+
+    fun deleteProject(id: Long) {
+        viewModelScope.launch {
+            projectDao.delete(id)
+            if ((_filter.value as? GalleryFilter.Project)?.id == id) _filter.value = GalleryFilter.All
+        }
+    }
 
     /** Null until the first database emission, so the screen can tell "loading" from "empty". */
     val photos: StateFlow<List<PhotoEntity>?> = photoDao.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** [photos] narrowed to the current filter. */
+    val visiblePhotos: StateFlow<List<PhotoEntity>?> = kotlinx.coroutines.flow.combine(photos, _filter) { list, f ->
+        list?.filter { p ->
+            when (f) {
+                GalleryFilter.All -> true
+                GalleryFilter.Unfiled -> p.projectId == null
+                is GalleryFilter.Project -> p.projectId == f.id
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _tileStatus = MutableStateFlow<Map<Long, TileStatus>>(emptyMap())
     val tileStatus: StateFlow<Map<Long, TileStatus>> = _tileStatus.asStateFlow()

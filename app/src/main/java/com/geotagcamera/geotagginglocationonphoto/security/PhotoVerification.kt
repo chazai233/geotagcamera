@@ -26,9 +26,7 @@ object PhotoVerification {
     }
 
     fun verifyUri(context: Context, uri: Uri): VerificationOutcome {
-        val bytes = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull() ?: return VerificationOutcome.Unreadable
+        val bytes = OriginalBytes.read(context, uri) ?: return VerificationOutcome.Unreadable
         return verify(bytes)
     }
 }

@@ -49,7 +49,7 @@ class PhotoDetailViewModel(application: Application) : AndroidViewModel(applicat
             val context = getApplication<Application>()
             val read = withContext(Dispatchers.IO) {
                 val bytes = runCatching {
-                    context.contentResolver.openInputStream(Uri.parse(photo.filePath))?.use { it.readBytes() }
+                    com.geotagcamera.geotagginglocationonphoto.security.OriginalBytes.read(context, Uri.parse(photo.filePath))
                 }.getOrNull() ?: return@withContext null
 
                 val exif = runCatching { ExifInterface(ByteArrayInputStream(bytes)) }.getOrNull()

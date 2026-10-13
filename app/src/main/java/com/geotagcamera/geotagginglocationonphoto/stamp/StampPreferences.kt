@@ -52,6 +52,8 @@ class StampPreferences(private val context: Context) {
         val REQUIRE_SIGNATURE = booleanPreferencesKey("require_signature")
         val BRAND_MARK = booleanPreferencesKey("show_brand_mark")
         val AUTO_DISMISS_REVIEW = booleanPreferencesKey("auto_dismiss_review")
+        val CUSTOM_TEXT = stringPreferencesKey("custom_text")
+        val CUSTOM_TEXT_TOGGLE = booleanPreferencesKey("show_custom_text")
     }
 
     val fields: Flow<StampFields> = context.stampDataStore.data.map { it.toFields() }
@@ -79,7 +81,9 @@ class StampPreferences(private val context: Context) {
             orgLogoUri = prefs[Keys.ORG_LOGO_URI],
             showSignatureField = prefs[Keys.SIGNATURE_FIELD] ?: true,
             requireSignature = prefs[Keys.REQUIRE_SIGNATURE] ?: false,
-            showBrandMark = prefs[Keys.BRAND_MARK] ?: true
+            showBrandMark = prefs[Keys.BRAND_MARK] ?: true,
+            customText = prefs[Keys.CUSTOM_TEXT] ?: "",
+            showCustomText = prefs[Keys.CUSTOM_TEXT_TOGGLE] ?: true
         )
     }
 
@@ -136,5 +140,7 @@ class StampPreferences(private val context: Context) {
         prefs[Keys.SIGNATURE_FIELD] = fields.showSignatureField
         prefs[Keys.REQUIRE_SIGNATURE] = fields.requireSignature
         prefs[Keys.BRAND_MARK] = fields.showBrandMark
+        prefs[Keys.CUSTOM_TEXT] = fields.customText
+        prefs[Keys.CUSTOM_TEXT_TOGGLE] = fields.showCustomText
     }
 }

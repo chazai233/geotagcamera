@@ -1,6 +1,7 @@
 package com.geotagcamera.geotagginglocationonphoto.data
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -9,7 +10,7 @@ import androidx.room.PrimaryKey
  * checking it against the stored, key-signed value is how "unedited since
  * capture" gets verified later.
  */
-@Entity(tableName = "photos")
+@Entity(tableName = "photos", indices = [Index("projectId")])
 data class PhotoEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -26,5 +27,11 @@ data class PhotoEntity(
     val sha256Hash: String,
     val signatureBase64: String,
     val signingKeyAlias: String,
-    val fieldWorkerSignature: Boolean
+    val fieldWorkerSignature: Boolean,
+    /** The project this photo was taken under, or null. Schema v2. */
+    val projectId: Long? = null,
+    /** Note burned into the stamp at capture time (part of the signed pixels). Schema v2. */
+    val note: String? = null,
+    /** Place name shown on the stamp ("Champadanga, West Bengal"), for lists and reports. Schema v2. */
+    val placeName: String? = null
 )

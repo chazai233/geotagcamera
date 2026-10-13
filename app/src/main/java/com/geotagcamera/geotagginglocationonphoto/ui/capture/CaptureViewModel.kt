@@ -1,5 +1,10 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.capture
 
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flatMapLatest
+import com.geotagcamera.geotagginglocationonphoto.data.ProjectWithCount
+import com.geotagcamera.geotagginglocationonphoto.data.ProjectEntity
+import com.geotagcamera.geotagginglocationonphoto.data.CapturePreferences
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -119,6 +124,40 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     private val weatherRepository = WeatherRepository()
     private val stampPreferences = StampPreferences(application)
     private val photoDao = AppDatabase.get(application).photoDao()
+    private val projectDao = AppDatabase.get(application).projectDao()
+    private val capturePreferences = CapturePreferences(application)
+
+    /** The sticky note burned into every stamp until the user changes it. */
+    val captureNote: StateFlow<String> = capturePreferences.note
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    /** All projects (archived last), for the picker. */
+    val projects: StateFlow<List<ProjectWithCount>> = projectDao.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The project new photos go into; null = none. A deleted project quietly becomes none. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val activeProject: StateFlow<ProjectEntity?> = capturePreferences.activeProjectId
+        .flatMapLatest { id -> if (id == null) flowOf(null) else projectDao.observeById(id) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setCaptureNote(note: String) {
+        viewModelScope.launch { capturePreferences.setNote(note) }
+    }
+
+    fun selectProject(id: Long?) {
+        viewModelScope.launch { capturePreferences.setActiveProject(id) }
+    }
+
+    /** Creates a project and makes it active. Returns an error message, or null. */
+    suspend fun createProject(name: String): String? {
+        val clean = name.trim().take(80)
+        if (clean.isEmpty()) return "Give the project a name."
+        if (projectDao.countWithName(clean) > 0) return "A project with that name already exists."
+        val id = projectDao.insert(ProjectEntity(name = clean, createdAtEpochMs = System.currentTimeMillis()))
+        capturePreferences.setActiveProject(id)
+        return null
+    }
 
     val stampFields: StateFlow<StampFields> = stampPreferences.fields
         .stateIn(viewModelScope, SharingStarted.Eagerly, StampFields())
@@ -166,7 +205,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
      * weather from the last resolve near it.
      */
     val liveSpec: StateFlow<StampSpec?> =
-        combine(stampFields, _liveData, _latestFix, orgLogo, minuteTicker) { fields, data, latest, logo, now ->
+        combine(combine(stampFields, captureNote) { f, n -> f to n }, _liveData, _latestFix, orgLogo, minuteTicker) { (fields, note), data, latest, logo, now ->
             val fix = latest ?: data?.fix ?: return@combine null
             val near = data?.takeIf { distanceMeters(it.fix, fix) <= REUSE_RESOLVE_WITHIN_M }
             runCatching { buildStampSpec(
@@ -177,14 +216,22 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 mapTile = if (fields.showMap) near?.mapTile else null,
                 orgLogo = if (fields.showOrgLogo) logo else null,
                 hasSignature = false,
-                weatherChipText = near?.weather?.chipText
+                weatherChipText = near?.weather?.chipText,
+                note = note
             ) }.getOrNull()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private var resolveJob: Job? = null
     private var pending: PendingCapture? = null
 
-    private data class PendingCapture(val file: File, val capturedAtEpochMs: Long, val squareCrop: Boolean)
+    /** [note] and [projectId] are read at the shutter press, like the capture time. */
+    private data class PendingCapture(
+        val file: File,
+        val capturedAtEpochMs: Long,
+        val squareCrop: Boolean,
+        val note: String? = null,
+        val projectId: Long? = null
+    )
 
     init {
         // Turning the map or weather on in Settings should show up on the next
@@ -303,7 +350,11 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val outputOptions = ImageCapture.OutputFileOptions.Builder(file)
             .setMetadata(ImageCapture.Metadata().apply { isReversedHorizontal = mirror })
             .build()
-        val capture = PendingCapture(file, capturedAt, squareCrop = aspect == CaptureAspect.RATIO_1_1)
+        val capture = PendingCapture(
+            file, capturedAt, squareCrop = aspect == CaptureAspect.RATIO_1_1,
+            note = captureNote.value.trim().ifEmpty { null },
+            projectId = activeProject.value?.id
+        )
 
         _uiState.value = CaptureUiState.Processing
         try {
@@ -463,7 +514,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 val fields = stampPreferences.fields.first()
 
                 val saved = withContext(Dispatchers.IO) {
-                    saveStampedPhoto(file, capture.squareCrop, fix, geocode, near, fields, signature, capturedAtEpochMs)
+                    saveStampedPhoto(file, capture, fix, geocode, near, fields, signature, capturedAtEpochMs)
                 }
                 if (saved == null) {
                     _uiState.value = CaptureUiState.Error("Couldn't save the photo to your gallery.")
@@ -494,7 +545,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
     private suspend fun saveStampedPhoto(
         file: File,
-        squareCrop: Boolean,
+        capture: PendingCapture,
         fix: LocationFix,
         geocode: AddressParts?,
         near: LiveStampData?,
@@ -504,7 +555,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     ): CaptureUiState.Review? {
         val context = getApplication<Application>()
         var image = loadUprightBitmap(file) ?: return null
-        if (squareCrop) image = centerSquare(image)
+        if (capture.squareCrop) image = centerSquare(image)
 
         // Both draws go into the same bitmap when it is mutable: no extra
         // full-resolution copies (the old pipeline held two at once).
@@ -519,7 +570,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             orgLogo = if (fields.showOrgLogo) orgLogo.value else null,
             hasSignature = signature != null,
             weatherChipText = if (fields.showWeather) near?.weather?.chipText else null,
-            signature = signature
+            signature = signature,
+            note = capture.note
         ).also { if (it !== image) image.recycle() }
         signature?.recycle()
 
@@ -553,7 +605,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 sha256Hash = integrity.sha256Hex,
                 signatureBase64 = integrity.signatureBase64,
                 signingKeyAlias = integrity.keyAlias,
-                fieldWorkerSignature = signature != null
+                fieldWorkerSignature = signature != null,
+                projectId = capture.projectId,
+                note = capture.note,
+                placeName = geocode?.place
             )
         )
         return CaptureUiState.Review(id, uri.toString(), filename, sizeBytes)

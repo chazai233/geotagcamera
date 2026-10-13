@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Verify: read GPS EXIF of gallery photos unredacted (Android 10+), so signed locations can be checked. -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!--
       INTERNET (1.1.0): used ONLY by the stamp map (OpenStreetMap vector tiles
       from OpenFreeMap, rendered on the phone, cached for offline use) and the
@@ -49,5 +51,15 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+        <!-- Shares exported CSV/KML/GeoJSON and PDF reports from cache/exports only. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.exports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

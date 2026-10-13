@@ -1,5 +1,13 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.gallery
 
+import kotlinx.coroutines.flow.first
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.DriveFileMove
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -87,7 +95,19 @@ fun GalleryScreen(
     viewModel: GalleryViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val loaded by viewModel.photos.collectAsStateWithLifecycle()
+    val allPhotos by viewModel.photos.collectAsStateWithLifecycle()
+    val loaded by viewModel.visiblePhotos.collectAsStateWithLifecycle()
+    val projects by viewModel.projects.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val exportState by viewModel.export.collectAsStateWithLifecycle()
+    var menuOpen by remember { mutableStateOf(false) }
+    var pickFormat by remember { mutableStateOf(false) }
+    var moveDialog by remember { mutableStateOf(false) }
+    var manageProjects by remember { mutableStateOf(false) }
+    val orgLabel by androidx.compose.runtime.produceState<String?>(null) {
+        value = com.geotagcamera.geotagginglocationonphoto.stamp.StampPreferences(context).fields
+            .first().orgLabel.ifBlank { null }
+    }
     val tileStatus by viewModel.tileStatus.collectAsStateWithLifecycle()
     val consent by viewModel.deleteConsent.collectAsStateWithLifecycle()
     var selected by rememberSaveable { mutableStateOf<Set<Long>>(emptySet()) }
@@ -95,7 +115,7 @@ fun GalleryScreen(
     val selecting = selected.isNotEmpty()
     val photos = loaded
 
-    val pickToVerify = rememberPhotoPicker { uri -> onVerifyExternal(uri.toString()) }
+    val pickToVerify = com.geotagcamera.geotagginglocationonphoto.ui.common.rememberVerifyPicker { uri -> onVerifyExternal(uri.toString()) }
     val consentLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         viewModel.onDeleteConsentResult(result.resultCode == Activity.RESULT_OK)
     }
@@ -115,7 +135,12 @@ fun GalleryScreen(
         backIcon = Icons.Filled.Close,
         backDescription = "Clear selection",
         actions = {
+            // Export and report act on the selection if there is one, else on what the filter shows.
+            val scope = photos.orEmpty().let { list -> if (selecting) list.filter { it.id in selected } else list }
             if (selecting) {
+                IconButton(onClick = { moveDialog = true }) {
+                    Icon(Icons.Outlined.DriveFileMove, contentDescription = "Move to project")
+                }
                 IconButton(onClick = { selected = photos.orEmpty().map { it.id }.toSet() }) {
                     Icon(Icons.Outlined.SelectAll, contentDescription = "Select all")
                 }
@@ -125,6 +150,30 @@ fun GalleryScreen(
                 }) { Icon(Icons.Outlined.Share, contentDescription = "Share") }
                 IconButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                }
+            }
+            if (!allPhotos.isNullOrEmpty()) {
+                Box {
+                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Export locations") },
+                            leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                            enabled = scope.isNotEmpty(),
+                            onClick = { menuOpen = false; pickFormat = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("PDF report") },
+                            leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, contentDescription = null) },
+                            enabled = scope.isNotEmpty(),
+                            onClick = { menuOpen = false; viewModel.buildReport(scope, viewModel.scopeTitle(), orgLabel) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Manage projects") },
+                            leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
+                            onClick = { menuOpen = false; manageProjects = true }
+                        )
+                    }
                 }
             }
         },
@@ -137,9 +186,27 @@ fun GalleryScreen(
                 )
             }
         }
-    ) { padding ->
+    ) { scaffoldPadding ->
+        // With projects, a chip row sits under the top bar and the grid starts below it.
+        val showFilters = projects.isNotEmpty() && !allPhotos.isNullOrEmpty()
+        if (showFilters) {
+            Box(Modifier.padding(top = scaffoldPadding.calculateTopPadding())) {
+                ProjectFilterRow(projects, filter, viewModel::setFilter)
+            }
+        }
+        val padding = if (!showFilters) scaffoldPadding else PaddingValues(
+            top = scaffoldPadding.calculateTopPadding() + FILTER_ROW_HEIGHT,
+            bottom = scaffoldPadding.calculateBottomPadding()
+        )
         when {
             photos == null -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
+            photos.isEmpty() && filter != GalleryFilter.All -> Box(Modifier.fillMaxSize().padding(padding).padding(32.dp), Alignment.Center) {
+                Text(
+                    "No photos here yet. Choose this project under the viewfinder before shooting, or select photos and move them here.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             photos.isEmpty() -> EmptyGallery(
                 modifier = Modifier.padding(padding),
                 onOpenCamera = onOpenCamera,
@@ -186,6 +253,41 @@ fun GalleryScreen(
             }
         }
     }
+
+    if (pickFormat) {
+        val scope = photos.orEmpty().let { list -> if (selecting) list.filter { it.id in selected } else list }
+        ExportFormatDialog(
+            count = scope.size,
+            onPick = { format -> pickFormat = false; viewModel.exportLocations(format, scope, viewModel.scopeTitle()) },
+            onDismiss = { pickFormat = false }
+        )
+    }
+    if (moveDialog) {
+        MoveToProjectDialog(
+            projects = projects,
+            count = selected.size,
+            onMove = { id -> viewModel.moveToProject(selected, id); moveDialog = false; selected = emptySet() },
+            onCreate = { name -> viewModel.createProjectAndMove(name, selected).also { if (it == null) selected = emptySet() } },
+            onDismiss = { moveDialog = false }
+        )
+    }
+    if (manageProjects) {
+        ManageProjectsDialog(
+            projects = projects,
+            onRename = viewModel::renameProject,
+            onArchive = viewModel::setArchived,
+            onDelete = viewModel::deleteProject,
+            onDismiss = { manageProjects = false }
+        )
+    }
+    ExportProgressDialog(
+        state = exportState,
+        onShare = { ready ->
+            runCatching { com.geotagcamera.geotagginglocationonphoto.export.ExportFiles.share(context, ready.file, ready.mimeType, ready.title) }
+            viewModel.dismissExport()
+        },
+        onDismiss = viewModel::dismissExport
+    )
 
     if (confirmDelete) {
         val count = selected.size
@@ -313,6 +415,8 @@ private fun androidx.compose.foundation.layout.BoxScope.StatusBadge(
         Icon(icon, contentDescription = description, tint = tint, modifier = Modifier.size(16.dp))
     }
 }
+
+private val FILTER_ROW_HEIGHT = 52.dp
 
 private fun Set<Long>.toggle(id: Long): Set<Long> = if (id in this) this - id else this + id
 

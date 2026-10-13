@@ -61,7 +61,7 @@ fun VerifyScreen(
         if (!uri.isNullOrBlank()) viewModel.verify(Uri.parse(uri))
     }
 
-    val pickPhoto = rememberPhotoPicker { picked -> viewModel.verify(picked) }
+    val pickPhoto = com.geotagcamera.geotagginglocationonphoto.ui.common.rememberVerifyPicker { picked -> viewModel.verify(picked) }
 
     AppScaffold(title = "Verify a photo", onBack = onBack) { padding ->
         Column(

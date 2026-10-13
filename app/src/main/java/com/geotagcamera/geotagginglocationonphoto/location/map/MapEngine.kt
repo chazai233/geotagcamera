@@ -74,6 +74,74 @@ class MapEngine(context: Context) {
     }
 
     /**
+     * Overview map for reports: every point as a numbered pin (1-based, in list
+     * order), framed to fit them all. Null when the map can't be drawn.
+     */
+    suspend fun overview(points: List<Pair<Double, Double>>, widthPx: Int, heightPx: Int): Bitmap? {
+        if (points.isEmpty()) return null
+        return withTimeoutOrNull(SNAPSHOT_TIMEOUT_MS) {
+            withContext(Dispatchers.Main) {
+                ensureInit(appContext)
+                val ratio = 2f
+                val wDp = (widthPx / ratio).toInt().coerceAtLeast(64)
+                val hDp = (heightPx / ratio).toInt().coerceAtLeast(64)
+                val options = MapSnapshotter.Options(wDp, hDp)
+                    .withStyle(STYLE_URL)
+                    .withPixelRatio(ratio)
+                    .withLogo(false)
+                    .withAttribution(false)
+                if (points.size == 1 || points.all { it == points.first() }) {
+                    options.withCameraPosition(CameraPosition.Builder().target(LatLng(points[0].first, points[0].second)).zoom(15.0).build())
+                } else {
+                    val bounds = org.maplibre.android.geometry.LatLngBounds.Builder().apply {
+                        points.forEach { include(LatLng(it.first, it.second)) }
+                    }.build()
+                    val pad = (minOf(wDp, hDp) * 0.12f).toInt()
+                    options.withRegion(bounds).withPadding(pad, pad, pad, pad)
+                }
+                val snapshotter = MapSnapshotter(appContext, options)
+                suspendCancellableCoroutine<Bitmap?> { cont ->
+                    cont.invokeOnCancellation { runCatching { snapshotter.cancel() } }
+                    runCatching {
+                        snapshotter.start(
+                            { snap ->
+                                val bmp = snap.bitmap.copy(Bitmap.Config.ARGB_8888, true)
+                                val pins = points.map { (lat, lon) -> snap.pixelForLatLng(LatLng(lat, lon)) }
+                                if (cont.isActive) cont.resume(drawNumberedPins(bmp, pins.map { it.x * 1f to it.y * 1f }))
+                            },
+                            { error -> android.util.Log.w(TAG, "overview failed: $error"); if (cont.isActive) cont.resume(null) }
+                        )
+                    }.onFailure { if (cont.isActive) cont.resume(null) }
+                }
+            }
+        }
+    }
+
+    private fun drawNumberedPins(bmp: Bitmap, pins: List<Pair<Float, Float>>): Bitmap {
+        val canvas = Canvas(bmp)
+        val r = minOf(bmp.width, bmp.height) * 0.028f
+        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = PIN_COLOR }
+        val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; style = Paint.Style.STROKE; strokeWidth = r * 0.22f }
+        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE; textAlign = Paint.Align.CENTER; textSize = r * 1.05f
+            typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+        }
+        // Draw in reverse so pin 1 sits on top where pins overlap.
+        pins.withIndex().reversed().forEach { (i, p) ->
+            canvas.drawCircle(p.first, p.second, r, fill)
+            canvas.drawCircle(p.first, p.second, r, ring)
+            canvas.drawText((i + 1).toString(), p.first, p.second + text.textSize * 0.36f, text)
+        }
+        val label = "© OpenStreetMap contributors, OpenFreeMap"
+        val small = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(210, 40, 40, 40); textSize = bmp.height * 0.03f }
+        val tw = small.measureText(label)
+        val pad = small.textSize * 0.4f
+        canvas.drawRect(bmp.width - tw - pad * 2, bmp.height - small.textSize - pad * 2, bmp.width.toFloat(), bmp.height.toFloat(), Paint().apply { color = Color.argb(170, 255, 255, 255) })
+        canvas.drawText(label, bmp.width - tw - pad, bmp.height - pad * 1.4f, small)
+        return bmp
+    }
+
+    /**
      * A render with no tiles (offline, never cached) is the style's flat
      * background colour. Burning that in would be a lie, so treat it as no map.
      */

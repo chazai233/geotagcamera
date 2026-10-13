@@ -56,7 +56,10 @@ data class StampFields(
     val orgLogoUri: String? = null,
     val showSignatureField: Boolean = true,
     val requireSignature: Boolean = false,
-    val showBrandMark: Boolean = true
+    val showBrandMark: Boolean = true,
+    /** A fixed line on every photo ("Contract A-123", "Inspector: R. Das"). */
+    val customText: String = "",
+    val showCustomText: Boolean = true
 ) {
     /** Never show an empty line even if the toggle is on and the label is blank. */
     val showOrgLabel: Boolean get() = showOrgLabelToggle && orgLabel.isNotBlank()

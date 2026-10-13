@@ -34,6 +34,8 @@ object StampType {
     val Data = TextStyle(fontFamily = RobotoMono, fontWeight = FontWeight.Medium, fontSize = 8.5.sp, lineHeight = 11.sp, color = StampColors.TextPrimary, fontFeatureSettings = "tnum", lineHeightStyle = Tight)
     val Meta = TextStyle(fontFamily = RobotoMono, fontWeight = FontWeight.Medium, fontSize = 7.5.sp, lineHeight = 10.sp, color = StampColors.TextSecondary, fontFeatureSettings = "tnum", lineHeightStyle = Tight)
     val Mark = TextStyle(fontFamily = RobotoMono, fontWeight = FontWeight.Medium, fontSize = 6.5.sp, lineHeight = 10.sp, color = StampColors.TextMuted, letterSpacing = 0.6.sp, lineHeightStyle = Tight)
+    /** Capture note / custom text: same size as body, full white so it reads as the user's own words. */
+    val Note = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Medium, fontSize = 8.5.sp, lineHeight = 11.sp, color = StampColors.TextPrimary, lineHeightStyle = Tight)
     val Caption = TextStyle(fontFamily = Poppins, fontWeight = FontWeight.Medium, fontSize = 7.sp, lineHeight = 9.sp, color = StampColors.TextSecondary, lineHeightStyle = Tight)
     val Country = TextStyle(fontFamily = RobotoMono, fontWeight = FontWeight.Bold, fontSize = 7.sp, lineHeight = 10.sp, color = StampColors.CountryText, lineHeightStyle = Tight)
 }

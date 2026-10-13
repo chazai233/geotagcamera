@@ -27,4 +27,13 @@ interface PhotoDao {
 
     @Query("DELETE FROM photos")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM photos WHERE projectId = :projectId ORDER BY capturedAtEpochMs ASC")
+    suspend fun getForProject(projectId: Long): List<PhotoEntity>
+
+    @Query("SELECT * FROM photos WHERE id IN (:ids) ORDER BY capturedAtEpochMs ASC")
+    suspend fun getByIds(ids: List<Long>): List<PhotoEntity>
+
+    @Query("UPDATE photos SET projectId = :projectId WHERE id IN (:ids)")
+    suspend fun moveToProject(ids: List<Long>, projectId: Long?)
 }

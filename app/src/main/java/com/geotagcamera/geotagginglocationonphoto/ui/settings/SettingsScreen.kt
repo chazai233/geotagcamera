@@ -103,7 +103,8 @@ private val MORE = listOf(
     StampToggle("Organisation name", "Your organisation's name in the footer", { it.showOrgLabelToggle }, { f, v -> f.copy(showOrgLabelToggle = v) }),
     StampToggle("Organisation logo", "Your logo in the footer", { it.showOrgLogo }, { f, v -> f.copy(showOrgLogo = v) }),
     StampToggle("Signed mark", "Shows SIGNED when a signature is attached", { it.showSignatureField }, { f, v -> f.copy(showSignatureField = v) }),
-    StampToggle("App mark", "Small GeoTag Camera mark", { it.showBrandMark }, { f, v -> f.copy(showBrandMark = v) })
+    StampToggle("App mark", "Small GeoTag Camera mark", { it.showBrandMark }, { f, v -> f.copy(showBrandMark = v) }),
+    StampToggle("Custom text", "Your fixed line from Organisation", { it.showCustomText }, { f, v -> f.copy(showCustomText = v) })
 )
 
 /** A fixed, recognisable sample so the preview shows every enabled field. */
@@ -241,6 +242,19 @@ private fun SettingsContent(
                         viewModel.update { it.copy(orgLabel = value) }
                     },
                     label = { Text("College, company or project name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(Modifier.height(12.dp))
+                var customText by rememberSaveable { mutableStateOf(fields.customText) }
+                OutlinedTextField(
+                    value = customText,
+                    onValueChange = { value ->
+                        customText = value.take(120)
+                        viewModel.update { it.copy(customText = customText) }
+                    },
+                    label = { Text("Text on every photo (optional)") },
+                    supportingText = { Text("For example a contract number or inspector name. Per-shot notes are set on the camera screen.") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
