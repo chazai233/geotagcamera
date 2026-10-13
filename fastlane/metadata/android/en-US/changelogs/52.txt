@@ -1,0 +1,5 @@
+- Compact stamp: about a sixth of the photo, every line on one line
+- Map on the stamp with no API key (OpenStreetMap), works offline; save areas before a trip
+- Field and Professional setups
+- Camera stays upright, only icons turn; smooth ratio switch
+- Photos are kept when GPS is slow and saved once a fix arrives

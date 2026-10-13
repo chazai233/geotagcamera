@@ -5,9 +5,16 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// Release signing comes from env vars (CI secrets, see .github/workflows/release.yml).
-// Without them assembleRelease still works and produces an unsigned APK.
-val releaseStoreFile: String? = System.getenv("RELEASE_STORE_FILE")
+// Release signing: env vars in CI (secrets, see .github/workflows/release.yml), or a
+// gitignored keystore.properties in the project root on the maintainer's PC
+// (storeFile, storePassword, keyAlias, keyPassword). Without either, release
+// builds fall back to the debug key so they still install for testing.
+val keystoreProps = java.util.Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun signingValue(env: String, prop: String): String? = System.getenv(env) ?: keystoreProps.getProperty(prop)
+val releaseStoreFile: String? = signingValue("RELEASE_STORE_FILE", "storeFile")
 
 android {
     namespace = "com.geotagcamera.geotagginglocationonphoto"
@@ -18,8 +25,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // Split APKs get versionCode * 10 + ABI digit (see androidComponents below).
-        versionCode = 5
-        versionName = "1.3.0"
+        versionCode = 6
+        versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -37,9 +44,9 @@ android {
         if (releaseStoreFile != null) {
             create("release") {
                 storeFile = file(releaseStoreFile)
-                storePassword = System.getenv("RELEASE_STORE_PASSWORD")
-                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
-                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+                storePassword = signingValue("RELEASE_STORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("RELEASE_KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("RELEASE_KEY_PASSWORD", "keyPassword")
             }
         }
     }

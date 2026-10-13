@@ -1,0 +1,7 @@
+- Projects: shoot into a project, filter the gallery, move photos
+- A note on the stamp (for example Pole 12), plus fixed custom text
+- Export locations as CSV, KML or GeoJSON
+- PDF site report with an overview map and re-verified photos
+- Verify checks the signed location of photos picked from the gallery
+- Flash setting is remembered; clearer stamp map
+- In-app privacy, terms and licences; report a problem by email

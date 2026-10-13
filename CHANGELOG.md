@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-10-14
+
+The first full release. Projects, notes, exports and reports for professional work, a build without Google Play services, and the legal and support pages a published app needs.
+
+### Added
+- **Projects.** Pick or create a project under the viewfinder; photos taken go into it. The gallery filters by project, photos can be moved between projects, and projects can be renamed, archived or deleted (photos are never deleted with a project).
+- **Note on the stamp.** A sticky note such as "Pole 12, north wall" is burned into every photo until you change it, and saved with the photo.
+- **Custom text.** A fixed line on every photo, for example a contract number or inspector name (Settings, Organisation).
+- **Export locations** of a project, a selection or all photos as **CSV** (opens in Excel and Sheets, UTF-8), **KML** (Google Earth) or **GeoJSON** (QGIS, ArcGIS).
+- **PDF site report**: a cover with an overview map of numbered photo locations and an index, then two photos per page with time, place, address, coordinates, note and a fresh verification of each file.
+- **In-app legal pages**: privacy policy, terms of use, open-source notices and every licence, readable offline.
+- **Report a problem**: write a report in the app and send it from your email app, with optional device details and app log. After a crash the app offers to send the details; nothing is ever sent automatically.
+
+### Changed
+- **No Google Play services.** Location now comes from Android's own location services, so the app runs on phones without Google and qualifies for F-Droid. (A Play Store build will keep using Google's fused location.)
+- **Verify** now opens photos through the document picker and asks for photo-location access, so photos picked from the gallery keep their GPS data and the signed location can be checked. The system photo picker always removes it.
+- The flash setting is remembered instead of resetting to Auto every time you return to the camera.
+- The stamp map is drawn closer (zoom 16) with larger labels, so streets, buildings and road names are readable.
+
+### Signing
+- 1.4.0 is signed with the project's permanent release key. Earlier builds used a development key, so Android can't update them in place: **uninstall the old version first, then install 1.4.0.** Photos in your gallery are not affected and still verify. Export your photo locations first if you want to keep the in-app list.
+
 ## [1.3.0] - 2026-10-13
 
 A redesign release: a compact stamp, a map that works without a key and offline, a calmer camera, and a choice between a simple and a professional setup. Still a preview: not yet tested on a range of real phones.

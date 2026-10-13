@@ -52,6 +52,12 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 - Choose exactly which fields show on the stamp, with a live preview in Settings
 - Add your college, company or project name and logo to the stamp, free, no paywall
 
+**Projects, exports and reports**
+- Shoot into a project (a site, job or assignment) picked under the viewfinder; filter the gallery by project and move photos between projects
+- A sticky note on the stamp (for example "Pole 12, north wall") and an optional fixed custom line (contract number, inspector)
+- Export the locations of a project or a selection as CSV, KML or GeoJSON, with time, place, note and each photo's SHA-256
+- Build a PDF site report: overview map with numbered pins, an index, and two photos per page with their details and a fresh verification result
+
 **Trust and verification**
 - Every photo is hashed with SHA-256 and signed on-device with a key kept in the Android Keystore. The signature also covers the capture latitude, longitude and time, so rewriting the photo's GPS or time EXIF fails verification. See [How photo verification works](#how-photo-verification-works) for exactly what that does and does not prove
 - Verify any photo that carries a GeoTag Camera proof, including one someone else sent you, from the "Verify a photo" screen or via Share → Verify with GeoTag Camera. The result shows the signing key's fingerprint and whether it is this phone's key
@@ -68,7 +74,7 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 
 - Kotlin, Jetpack Compose, Material 3 and Material icons
 - CameraX for capture, with CameraX Extensions for the phone maker's camera modes
-- Fused Location Provider (Google Play services) for GPS
+- Android's own location services (no Google Play services)
 - Android's built-in Geocoder for reverse geocoding
 - Room and DataStore for local storage
 - Android Keystore for on-device photo signing
@@ -77,16 +83,16 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 
 ## Project status
 
-Version 1.3.0 is out as a **pre-release**. It is a redesign release: a compact stamp, a map that needs no API key and works offline, a camera that stays upright and only turns its icons, smooth ratio changes, Field and Professional setups, and photos that are no longer lost when GPS is slow. It has not yet been tested across many real phones, so expect rough edges on some devices and please [report what you find](https://github.com/konkomaji/geotagcamera/issues). See [CHANGELOG.md](CHANGELOG.md) for the full list.
+Version 1.4.0 is the first full release. It adds projects, notes on the stamp, CSV/KML/GeoJSON export and PDF site reports, drops Google Play services, and includes in-app legal pages and problem reporting. Please [report what you find](https://github.com/konkomaji/geotagcamera/issues), or use Report a problem in the app. See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## Install
 
-1. Download the APK for your phone from the [1.3.0 release](https://github.com/konkomaji/geotagcamera/releases/tag/v1.3.0) (or the newest release on the [Releases page](https://github.com/konkomaji/geotagcamera/releases)). Most phones from the last several years want `geotagcamera-1.3.0-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-1.3.0-universal.apk`, which works everywhere but is bigger.
+1. Download the APK for your phone from the [latest release](https://github.com/konkomaji/geotagcamera/releases/latest). Most phones from the last several years want `geotagcamera-1.4.0-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-1.4.0-universal.apk`, which works everywhere but is bigger.
 2. Optional: check the download against the SHA-256 listed on the release page.
 3. Open the APK on your phone. Android asks you to allow installs from your browser or file manager the first time; allow it for that app only.
 4. Open GeoTag Camera and allow camera and location when asked.
 
-Already on 1.1.0 or 1.2.0? Install 1.3.0 over it; your photos, settings and signing key are kept. The APKs are signed with the same development key as earlier releases. Android 8.0 or newer is required.
+Coming from 1.3.0 or older? Those builds were signed with a development key, so **uninstall the old version first**, then install 1.4.0. Photos already in your gallery stay there and still verify. From 1.4.0 on, every release is signed with the same permanent key and updates in place. Android 8.0 or newer is required; Google Play services are not needed.
 
 ## Using the app
 
@@ -94,23 +100,25 @@ Already on 1.1.0 or 1.2.0? Install 1.3.0 over it; your photos, settings and sign
 2. **Move the stamp if you need to.** Long-press it and drag. Bar snaps to the top or bottom edge, Minimal to any of nine spots.
 3. **Take the photo.** Wait for "Location locked" in the corner of the frame; it shows the GPS accuracy.
 4. **Review.** Share it straight away, keep it with Done, or Retake (which deletes that photo).
-5. **Later:** the Gallery tab shows every photo with a verified badge. Open one to share it, delete it, open its location in a maps app or copy the coordinates.
-6. **Check a photo someone sent you:** Settings, then Verify a photo, or share the photo to GeoTag Camera from any app.
+5. **Projects and notes.** Tap the row under the viewfinder to pick or create a project and set a note for the stamp. Both stay until you change them.
+6. **Later:** the Gallery tab shows every photo with a verified badge, filtered by project. Open one to share it, delete it, open its location in a maps app or copy the coordinates. The menu exports locations (CSV, KML, GeoJSON) or builds a PDF report of what is shown or selected.
+7. **Check a photo someone sent you:** Settings, then Verify a photo, or share the photo to GeoTag Camera from any app.
 
 Settings is where you switch between Field and Professional, choose the stamp style and fields, add your organization's name and logo, save areas for offline maps, and turn on the optional weather.
 
 ## Roadmap
 
 **Next**
-- A free-text line on the stamp (site ID, inspector name, notes)
-- CSV, KML and GeoJSON export for GIS workflows
-- Project and site folders to organize captures
 - Quick-capture shortcut from the home screen
-- A build without Google Play services for F-Droid
+- Batch mode with auto-numbered notes
+- Proof pack: photos, a manifest and signatures in one zip
+- A web page that verifies a photo without the app
+- Before and after photo pairing
+- Hindi and Bengali
 
 **Later**
 - Video geotagging
-- Batch export to PDF report per site visit
+- Track log and distance/area tool
 - Voice notes attached to photos
 - Before and after photo pairing
 - Home screen widget
