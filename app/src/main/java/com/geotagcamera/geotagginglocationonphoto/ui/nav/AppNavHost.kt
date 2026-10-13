@@ -64,6 +64,7 @@ private object Routes {
     const val PHOTO_DETAIL = "photoDetail/{photoId}"
     const val VERIFY = "verify?uri={uri}"
     const val ABOUT_LEGAL = "aboutLegal"
+    const val OFFLINE_MAPS = "offlineMaps"
 
     fun photoDetail(photoId: Long) = "photoDetail/$photoId"
     fun verify(uri: String? = null) = if (uri != null) "verify?uri=$uri" else "verify"
@@ -181,7 +182,8 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
             composable(Tab.Settings.route) {
                 SettingsScreen(
                     onOpenVerify = { navController.navigate(Routes.verify()) },
-                    onOpenAboutLegal = { navController.navigate(Routes.ABOUT_LEGAL) }
+                    onOpenAboutLegal = { navController.navigate(Routes.ABOUT_LEGAL) },
+                    onOpenOfflineMaps = { navController.navigate(Routes.OFFLINE_MAPS) }
                 )
             }
             composable(
@@ -215,6 +217,9 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
             }
             composable(Routes.ABOUT_LEGAL) {
                 AboutLegalScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.OFFLINE_MAPS) {
+                com.geotagcamera.geotagginglocationonphoto.ui.maps.OfflineMapsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

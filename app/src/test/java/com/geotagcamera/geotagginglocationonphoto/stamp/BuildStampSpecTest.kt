@@ -77,7 +77,7 @@ class BuildStampSpecTest {
 
     @Test
     fun `map is off by default`() {
-        assertFalse(StampFields().showMap)
+        assertTrue(StampFields().showMap)
     }
 
     @Test

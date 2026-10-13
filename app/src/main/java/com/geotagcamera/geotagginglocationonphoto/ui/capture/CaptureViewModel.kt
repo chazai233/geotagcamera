@@ -21,13 +21,12 @@ import com.geotagcamera.geotagginglocationonphoto.location.AddressParts
 import com.geotagcamera.geotagginglocationonphoto.location.GeocoderRepository
 import com.geotagcamera.geotagginglocationonphoto.location.LocationFix
 import com.geotagcamera.geotagginglocationonphoto.location.LocationProvider
-import com.geotagcamera.geotagginglocationonphoto.location.TileMapRepository
+import com.geotagcamera.geotagginglocationonphoto.location.map.MapEngine
 import com.geotagcamera.geotagginglocationonphoto.location.WeatherReading
 import com.geotagcamera.geotagginglocationonphoto.location.WeatherRepository
 import com.geotagcamera.geotagginglocationonphoto.location.ageMs
 import com.geotagcamera.geotagginglocationonphoto.security.PhotoIntegrity
 import com.geotagcamera.geotagginglocationonphoto.security.ProofClaims
-import com.geotagcamera.geotagginglocationonphoto.signature.SignatureOverlay
 import com.geotagcamera.geotagginglocationonphoto.stamp.LogoDecoder
 import com.geotagcamera.geotagginglocationonphoto.stamp.StampAnchor
 import com.geotagcamera.geotagginglocationonphoto.stamp.StampFields
@@ -110,7 +109,7 @@ data class LiveStampData(
 class CaptureViewModel(application: Application) : AndroidViewModel(application) {
     private val locationProvider = LocationProvider(application)
     private val geocoderRepository = GeocoderRepository(application, AppDatabase.get(application).geoCacheDao())
-    private val tileRepository = TileMapRepository(application)
+    private val mapEngine = MapEngine(application)
     private val weatherRepository = WeatherRepository()
     private val stampPreferences = StampPreferences(application)
     private val photoDao = AppDatabase.get(application).photoDao()
@@ -227,7 +226,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         // A failed lookup (offline start) is retried on the next fix, not in 5 minutes.
         val fresh = current != null && current.geocode != null &&
             distanceMeters(current.fix, fix) <= RERESOLVE_AFTER_M &&
-            System.currentTimeMillis() - current.resolvedAtEpochMs <= RERESOLVE_AFTER_MS
+            System.currentTimeMillis() - current.resolvedAtEpochMs <= RERESOLVE_AFTER_MS &&
+            // A map that failed (offline, slow network) is retried after a short wait.
+            (!stampFields.value.showMap || current.mapTile != null ||
+                System.currentTimeMillis() - current.resolvedAtEpochMs <= MAP_RETRY_AFTER_MS)
         if (!force && (fresh || resolveJob?.isActive == true)) return
 
         resolveJob?.cancel()
@@ -240,7 +242,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
             val (tile, weather) = coroutineScope {
                 val t = async {
-                    if (fields.showMap) runCatching { tileRepository.mapThumbnail(fix.latitude, fix.longitude) }.getOrNull()
+                    if (fields.showMap) runCatching { mapEngine.thumbnail(fix.latitude, fix.longitude) }.getOrNull()
                     else null
                 }
                 val w = async {
@@ -420,12 +422,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             mapTile = if (fields.showMap) near?.mapTile else null,
             orgLogo = if (fields.showOrgLogo) orgLogo.value else null,
             hasSignature = signature != null,
-            weatherChipText = if (fields.showWeather) near?.weather?.chipText else null
+            weatherChipText = if (fields.showWeather) near?.weather?.chipText else null,
+            signature = signature
         ).also { if (it !== image) image.recycle() }
-        if (signature != null) {
-            image = SignatureOverlay.apply(image, signature).also { if (it !== image) image.recycle() }
-            signature.recycle()
-        }
+        signature?.recycle()
 
         FileOutputStream(file).use { out -> image.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
         image.recycle()
@@ -474,6 +474,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         const val NO_FIX_TIMEOUT_MS = 15_000L
         const val RERESOLVE_AFTER_M = 30f
         const val RERESOLVE_AFTER_MS = 5 * 60_000L
+        const val MAP_RETRY_AFTER_MS = 20_000L
         /** Address/tile resolved within this distance of the capture point still describe it. */
         const val REUSE_RESOLVE_WITHIN_M = 50f
         const val WEATHER_REUSE_MS = 10 * 60_000L

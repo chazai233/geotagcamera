@@ -1,19 +1,9 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
-
-// Stadia Maps tile key lives in the gitignored local.properties (same pattern
-// as sdk.dir), never in version control. Absent key -> empty string; the map
-// feature degrades to "no tile" rather than failing the build.
-val stadiaApiKey: String = Properties().apply {
-    val f = rootProject.file("local.properties")
-    if (f.exists()) f.inputStream().use { load(it) }
-}.getProperty("stadiaMaps.apiKey", "")
 
 // Release signing comes from env vars (CI secrets, see .github/workflows/release.yml).
 // Without them assembleRelease still works and produces an unsigned APK.
@@ -31,8 +21,6 @@ android {
         versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "STADIA_API_KEY", "\"$stadiaApiKey\"")
     }
 
     signingConfigs {
@@ -123,6 +111,10 @@ dependencies {
 
     // Location
     implementation(libs.play.services.location)
+
+    // Map thumbnail + offline maps: MapLibre renders OpenFreeMap vector tiles
+    // on the phone. No API key, no Google services, works offline.
+    implementation(libs.maplibre.android)
 
     // Room
     implementation(libs.androidx.room.runtime)

@@ -8,7 +8,15 @@ package com.geotagcamera.geotagginglocationonphoto.stamp
 enum class StampTemplate { BAR, MINIMAL }
 
 /** Where the stamp sits: Minimal uses all nine, Bar only the top or bottom row. Set by dragging on the viewfinder. */
-enum class StampAnchor { TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, MID_RIGHT, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT }
+enum class StampAnchor {
+    TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, MID_RIGHT, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT;
+
+    /** 0 = top, 1 = middle, 2 = bottom. */
+    val row: Int get() = ordinal / 3
+
+    /** 0 = left, 1 = centre, 2 = right. */
+    val column: Int get() = ordinal % 3
+}
 
 /**
  * Which fields the field worker/student wants burned into the stamp, and how
@@ -32,7 +40,7 @@ enum class StampAnchor { TOP_LEFT, TOP_CENTER, TOP_RIGHT, MID_LEFT, MID_CENTER, 
 data class StampFields(
     val template: StampTemplate = StampTemplate.BAR,
     val position: StampAnchor = StampAnchor.BOTTOM_LEFT,
-    val showMap: Boolean = false,
+    val showMap: Boolean = true,
     val showCountry: Boolean = true,
     val showAddress: Boolean = true,
     val showCoordinates: Boolean = true,

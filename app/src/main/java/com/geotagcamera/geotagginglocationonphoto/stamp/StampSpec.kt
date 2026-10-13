@@ -41,7 +41,9 @@ data class StampSpec(
     val orgLogo: ImageBitmap?,
     val showSignedMark: Boolean,
     val showBrandMark: Boolean,
-    val mapTile: ImageBitmap?
+    val mapTile: ImageBitmap?,
+    /** The field worker's drawn signature, shown in the Bar's right column. */
+    val signature: ImageBitmap? = null
 ) {
     val hasFooterRow: Boolean get() = orgLabel != null || orgLogo != null || showSignedMark || showBrandMark
 }
@@ -60,7 +62,8 @@ fun buildStampSpec(
     mapTile: Bitmap?,
     orgLogo: Bitmap?,
     hasSignature: Boolean,
-    weatherChipText: String? = null
+    weatherChipText: String? = null,
+    signature: Bitmap? = null
 ): StampSpec {
     val countryCode = if (fields.showCountry) {
         addressParts?.countryCode?.let { code ->
@@ -114,9 +117,10 @@ fun buildStampSpec(
         chips = chips,
         orgLabel = if (fields.showOrgLabel) fields.orgLabel else null,
         orgLogo = if (fields.showOrgLogo) orgLogo?.asImageBitmap() else null,
-        showSignedMark = fields.showSignatureField && hasSignature,
+        showSignedMark = fields.showSignatureField && (hasSignature || signature != null),
         showBrandMark = fields.showBrandMark,
-        mapTile = if (fields.showMap) mapTile?.asImageBitmap() else null
+        mapTile = if (fields.showMap) mapTile?.asImageBitmap() else null,
+        signature = signature?.asImageBitmap()
     )
 }
 

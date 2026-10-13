@@ -51,16 +51,6 @@ jobs:
             exit 1
           fi
 
-      # Published APKs never carry a Stadia Maps key (it could be extracted
-      # from the APK), so the map thumbnail is disabled in release builds.
-      - name: Make sure no Stadia Maps key is present
-        run: |
-          rm -f local.properties
-          if grep -qs "stadiaMaps.apiKey" gradle.properties; then
-            echo "::error::A Stadia Maps key is configured in gradle.properties"
-            exit 1
-          fi
-
       - name: Extract release notes from CHANGELOG.md
         run: |
           version="${TAG#v}"

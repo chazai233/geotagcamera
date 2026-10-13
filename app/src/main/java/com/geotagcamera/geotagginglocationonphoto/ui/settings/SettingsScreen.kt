@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,6 +120,7 @@ private val SAMPLE_ADDRESS = AddressParts(
 fun SettingsScreen(
     onOpenVerify: () -> Unit = {},
     onOpenAboutLegal: () -> Unit = {},
+    onOpenOfflineMaps: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val loaded by viewModel.fields.collectAsStateWithLifecycle()
@@ -136,7 +138,8 @@ fun SettingsScreen(
             contentPadding = padding,
             viewModel = viewModel,
             onOpenVerify = onOpenVerify,
-            onOpenAboutLegal = onOpenAboutLegal
+            onOpenAboutLegal = onOpenAboutLegal,
+            onOpenOfflineMaps = onOpenOfflineMaps
         )
     }
 }
@@ -149,7 +152,8 @@ private fun SettingsContent(
     contentPadding: PaddingValues,
     viewModel: SettingsViewModel,
     onOpenVerify: () -> Unit,
-    onOpenAboutLegal: () -> Unit
+    onOpenAboutLegal: () -> Unit,
+    onOpenOfflineMaps: () -> Unit
 ) {
     var showAll by rememberSaveable { mutableStateOf(false) }
     val pickLogo = rememberPhotoPicker { uri -> viewModel.setOrgLogo(uri) }
@@ -266,6 +270,8 @@ private fun SettingsContent(
         }
 
         SettingsCard("More") {
+            NavRow(Icons.Outlined.Map, "Offline maps", "Save areas so the stamp map works without signal", onOpenOfflineMaps)
+            HorizontalDivider(Modifier.padding(start = 56.dp))
             NavRow(Icons.Outlined.VerifiedUser, "Verify a photo", "Check any image's proof, even one you didn't take", onOpenVerify)
             HorizontalDivider(Modifier.padding(start = 56.dp))
             NavRow(Icons.Outlined.Info, "About & legal", "Privacy, licenses, delete app data", onOpenAboutLegal)
@@ -285,7 +291,7 @@ private fun StampPreview(fields: StampFields) {
             addressParts = SAMPLE_ADDRESS,
             capturedAtEpochMs = System.currentTimeMillis(),
             fields = fields,
-            mapTile = null,
+            mapTile = SampleMap.tile,
             orgLogo = logo,
             hasSignature = fields.requireSignature,
             weatherChipText = "31°C CLEAR"
@@ -307,7 +313,7 @@ private fun StampPreview(fields: StampFields) {
             StampOverlay(spec, Modifier.fillMaxSize())
         }
         Text(
-            "Preview with a sample location" + if (fields.showMap) ". The map appears on real photos." else "",
+            "Preview with a sample location and map",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp, start = 4.dp)

@@ -33,7 +33,8 @@ class StampPreferences(private val context: Context) {
     private object Keys {
         val TEMPLATE = stringPreferencesKey("template")
         val POSITION = stringPreferencesKey("position")
-        val MAP = booleanPreferencesKey("show_map")
+        // v2 (1.3): the map became keyless and default-on; the old key held "off" for everyone.
+        val MAP = booleanPreferencesKey("show_map_v2")
         val COUNTRY = booleanPreferencesKey("show_country")
         val COORDINATES = booleanPreferencesKey("show_coordinates")
         val ADDRESS = booleanPreferencesKey("show_address")
@@ -62,7 +63,7 @@ class StampPreferences(private val context: Context) {
                 ?: StampTemplate.BAR,
             position = prefs[Keys.POSITION]?.let { runCatching { StampAnchor.valueOf(it) }.getOrNull() }
                 ?: StampAnchor.BOTTOM_LEFT,
-            showMap = prefs[Keys.MAP] ?: false,
+            showMap = prefs[Keys.MAP] ?: true,
             showCountry = prefs[Keys.COUNTRY] ?: true,
             showAddress = prefs[Keys.ADDRESS] ?: true,
             showCoordinates = prefs[Keys.COORDINATES] ?: true,
