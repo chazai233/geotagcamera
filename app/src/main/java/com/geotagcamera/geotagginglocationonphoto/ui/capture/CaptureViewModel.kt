@@ -274,6 +274,11 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         // The moment the shutter was pressed is the capture time, for the
         // stamp, the EXIF and the signed proof alike.
         val capturedAt = System.currentTimeMillis()
+        // A full phone fails late and silently in the camera HAL; say so up front.
+        if (lowOnStorage(context)) {
+            _uiState.value = CaptureUiState.Error(STORAGE_FULL)
+            return
+        }
         val file = File(context.cacheDir, "capture_$capturedAt.jpg")
         val outputOptions = ImageCapture.OutputFileOptions.Builder(file)
             .setMetadata(ImageCapture.Metadata().apply { isReversedHorizontal = mirror })
@@ -298,7 +303,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
 
                     override fun onError(exception: ImageCaptureException) {
                         file.delete()
-                        _uiState.value = CaptureUiState.Error("Capture failed. Try again.")
+                        _uiState.value = CaptureUiState.Error(
+                            when (exception.imageCaptureError) {
+                                ImageCapture.ERROR_CAMERA_CLOSED -> "The camera was interrupted by another app. Try again."
+                                ImageCapture.ERROR_FILE_IO -> if (lowOnStorage(context)) STORAGE_FULL else "Couldn't write the photo. Try again."
+                                ImageCapture.ERROR_CAPTURE_FAILED -> "The camera couldn't take the shot. Hold still and try again."
+                                else -> "Capture failed. Try again."
+                            }
+                        )
                     }
                 }
             )
@@ -380,6 +392,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 throw e
             } catch (e: OutOfMemoryError) {
                 _uiState.value = CaptureUiState.Error("Not enough memory to process this photo. Close other apps and try again.")
+            } catch (e: java.io.IOException) {
+                _uiState.value = CaptureUiState.Error(if (lowOnStorage(context)) STORAGE_FULL else "Couldn't save the photo. Try again.")
             } catch (e: Exception) {
                 _uiState.value = CaptureUiState.Error("Couldn't process the photo. Try again.")
             } finally {
@@ -475,6 +489,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         const val RERESOLVE_AFTER_M = 30f
         const val RERESOLVE_AFTER_MS = 5 * 60_000L
         const val MAP_RETRY_AFTER_MS = 20_000L
+        const val STORAGE_FULL = "Phone storage is almost full. Free up some space to keep shooting."
+        /** Room for the full-size working copy, the stamped JPEG and the gallery copy. */
+        private const val MIN_FREE_BYTES = 60L * 1024 * 1024
+
+        fun lowOnStorage(context: android.content.Context): Boolean = runCatching {
+            val stat = android.os.StatFs(context.cacheDir.absolutePath)
+            stat.availableBytes < MIN_FREE_BYTES
+        }.getOrDefault(false)
         /** Address/tile resolved within this distance of the capture point still describe it. */
         const val REUSE_RESOLVE_WITHIN_M = 50f
         const val WEATHER_REUSE_MS = 10 * 60_000L
