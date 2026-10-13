@@ -42,9 +42,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ChromeTokens
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ProofColors
 
-private val Ink = Color(0xFFF5F7F8)
-private val AccentVerified = Color(0xFF56CB98)
+private val Ink = ChromeTokens.Ink
+private val AccentVerified = ProofColors.Verified
 
 /**
  * The identity moment (design section 05, screen 01). Shows the brand mark

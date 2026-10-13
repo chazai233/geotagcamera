@@ -39,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ChromeTokens
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.Radii
 
 /**
  * Field-worker sign-off as a bottom sheet over the dimmed-but-visible
@@ -84,7 +86,7 @@ fun SignatureCaptureDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .background(Color(0xFF14171A), RoundedCornerShape(14.dp))
+                    .background(ChromeTokens.Raised, RoundedCornerShape(Radii.M))
                     .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                     .onSizeChanged { canvasSize = it }
                     .pointerInput(Unit) {

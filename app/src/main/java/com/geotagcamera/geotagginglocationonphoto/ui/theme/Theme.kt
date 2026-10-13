@@ -27,17 +27,16 @@ import androidx.core.view.WindowCompat
  * accent hue. Accent (verified/live/pending/tamper) is reserved for status
  * chips and dots, never for general chrome.
  */
-private val AccentVerified = Color(0xFF56CB98)
-private val AccentLive = Color(0xFF6DB6FF)
-private val AccentPending = Color(0xFFE5A24B)
-private val AccentTamper = Color(0xFFE24947)
+private val AccentLive = ProofColors.Live
+private val AccentPending = ProofColors.Pending
+private val AccentTamper = ProofColors.Tamper
 
-private val ChromeBase = Color(0xFF08090A)
-private val ChromeRaised = Color(0xFF121417)
-private val ChromePill = Color(0xFF1B1E22)
-private val ChromeInk = Color(0xFFF5F7F8)
+private val ChromeBase = ChromeTokens.Base
+private val ChromeRaised = ChromeTokens.Raised
+private val ChromePill = ChromeTokens.Pill
+private val ChromeInk = ChromeTokens.Ink
 private val ChromeMuted = Color(0xFF9AA0A6)
-private val ChromeOutline = Color(0xFF33383D)
+private val ChromeOutline = ChromeTokens.Outline
 
 private val SurfaceBg = Color(0xFFF7F6F4)
 private val SurfaceCard = Color(0xFFFFFFFF)
@@ -123,13 +122,13 @@ fun GeoTagCameraTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) SurfaceDarkColors else SurfaceLightColors
-    MaterialTheme(colorScheme = colorScheme, typography = GeoTagCameraTypography, content = content)
+    MaterialTheme(colorScheme = colorScheme, typography = GeoTagCameraTypography, shapes = GeoTagShapes, content = content)
 }
 
 /** Nested override for the camera layer. Wrap Capture/Launch/Onboarding/Signature content in this. */
 @Composable
 fun GeoTagChromeTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = ChromeColors, typography = GeoTagCameraTypography, content = content)
+    MaterialTheme(colorScheme = ChromeColors, typography = GeoTagCameraTypography, shapes = GeoTagShapes, content = content)
 }
 
 /**

@@ -75,8 +75,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ProofColors
 
-private val VerifiedGreen = Color(0xFF2FA878)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -267,7 +267,7 @@ private fun PhotoTile(
             modifier = Modifier.fillMaxSize().padding(if (isSelected) 8.dp else 0.dp).clip(RoundedCornerShape(4.dp))
         )
         when (status) {
-            TileStatus.VERIFIED -> StatusBadge(Icons.Filled.Verified, VerifiedGreen, "Verified")
+            TileStatus.VERIFIED -> StatusBadge(Icons.Filled.Verified, ProofColors.verified, "Verified")
             TileStatus.TAMPERED -> StatusBadge(Icons.Filled.ErrorOutline, MaterialTheme.colorScheme.error, "Edited since capture")
             else -> Unit
         }

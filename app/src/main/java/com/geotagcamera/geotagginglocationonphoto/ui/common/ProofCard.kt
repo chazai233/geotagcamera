@@ -32,8 +32,8 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ProofColors
 
-private val VerifiedGreen = Color(0xFF2FA878)
 
 /**
  * The verification result, worded so it never overclaims (design section 05):
@@ -94,7 +94,7 @@ private fun describe(outcome: VerificationOutcome, deviceKey: String?): ProofCon
                 "Signed by another device's key"
             }
             ProofContent(
-                Icons.Filled.Verified, VerifiedGreen, "Unaltered since signing",
+                Icons.Filled.Verified, ProofColors.verified, "Unaltered since signing",
                 "$origin ${formatSigned(p)}. " + if (p.claims != null) {
                     "The image, including its stamp, and its GPS location and time match the signature exactly."
                 } else {

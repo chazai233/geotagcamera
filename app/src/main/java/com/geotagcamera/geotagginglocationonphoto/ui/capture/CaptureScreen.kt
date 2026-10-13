@@ -161,16 +161,18 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlin.math.roundToInt
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ChromeTokens
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ProofColors
 
 // Chrome tokens (design system section 03). Only the shutter is ever a filled control.
-private val ChromeBase = Color(0xFF08090A)
-private val Glass = Color(0x9E141619)
-private val GlassBorder = Color(0x21FFFFFF)
-private val Ink = Color(0xFFF5F7F8)
-private val InkMuted = Color(0xA6F5F7F8)
-private val AccentVerified = Color(0xFF56CB98)
-private val AccentPending = Color(0xFFE5A24B)
-private val AccentTamper = Color(0xFFE24947)
+private val ChromeBase = ChromeTokens.Base
+private val Glass = ChromeTokens.Glass
+private val GlassBorder = ChromeTokens.GlassBorder
+private val Ink = ChromeTokens.Ink
+private val InkMuted = ChromeTokens.InkMuted
+private val AccentVerified = ProofColors.Verified
+private val AccentPending = ProofColors.Pending
+private val AccentTamper = ProofColors.Tamper
 
 /** Caps the saved photo at ~12 MP: plenty for evidence, and a 50 MP decode would not fit in memory. */
 private val MAX_CAPTURE_4_3 = Size(4032, 3024)
@@ -1056,7 +1058,7 @@ private fun ThumbnailControl(lastCaptureUri: String?, onClick: () -> Unit, rotat
         modifier = rotation
             .size(52.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1B1E22))
+            .background(ChromeTokens.Pill)
             .border(BorderStroke(1.5.dp, Color.White.copy(alpha = 0.3f)), RoundedCornerShape(12.dp))
             .clickable(role = Role.Button, onClickLabel = "Open gallery", onClick = onClick),
         contentAlignment = Alignment.Center

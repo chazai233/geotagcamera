@@ -76,6 +76,7 @@ import com.geotagcamera.geotagginglocationonphoto.ui.common.rememberPhotoPicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.geotagcamera.geotagginglocationonphoto.profile.UserProfile
 
 private data class StampToggle(
     val label: String,
@@ -125,6 +126,7 @@ fun SettingsScreen(
 ) {
     val loaded by viewModel.fields.collectAsStateWithLifecycle()
     val autoDismiss by viewModel.autoDismissReview.collectAsStateWithLifecycle()
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
 
     AppScaffold(title = "Settings") { padding ->
         val fields = loaded
@@ -135,6 +137,7 @@ fun SettingsScreen(
         SettingsContent(
             fields = fields,
             autoDismiss = autoDismiss,
+            profile = profile,
             contentPadding = padding,
             viewModel = viewModel,
             onOpenVerify = onOpenVerify,
@@ -149,13 +152,14 @@ fun SettingsScreen(
 private fun SettingsContent(
     fields: StampFields,
     autoDismiss: Boolean,
+    profile: UserProfile,
     contentPadding: PaddingValues,
     viewModel: SettingsViewModel,
     onOpenVerify: () -> Unit,
     onOpenAboutLegal: () -> Unit,
     onOpenOfflineMaps: () -> Unit
 ) {
-    var showAll by rememberSaveable { mutableStateOf(false) }
+    var showAll by rememberSaveable(profile) { mutableStateOf(profile.showsAllSettings) }
     val pickLogo = rememberPhotoPicker { uri -> viewModel.setOrgLogo(uri) }
 
     Column(
@@ -168,6 +172,25 @@ private fun SettingsContent(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         StampPreview(fields)
+
+        SettingsCard("Set up for") {
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                UserProfile.entries.forEachIndexed { i, p ->
+                    SegmentedButton(
+                        selected = p == profile,
+                        onClick = { if (p != profile) viewModel.setProfile(p) },
+                        shape = SegmentedButtonDefaults.itemShape(i, UserProfile.entries.size),
+                        label = { Text(p.title) }
+                    )
+                }
+            }
+            Text(
+                profile.summary + " Switching applies its recommended stamp fields.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+        }
 
         SettingsCard("Stamp style") {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -255,12 +278,15 @@ private fun SettingsContent(
         }
 
         SettingsCard("Capture") {
-            SwitchRow(
-                title = "Require signature",
-                subtitle = "Ask for a signature before each photo is saved",
-                checked = fields.requireSignature,
-                onChange = { checked -> viewModel.update { it.copy(requireSignature = checked) } }
-            )
+            // Field keeps this one tucked away unless it's already on.
+            if (profile.showsAllSettings || fields.requireSignature || showAll) {
+                SwitchRow(
+                    title = "Require signature",
+                    subtitle = "Ask for a signature before each photo is saved",
+                    checked = fields.requireSignature,
+                    onChange = { checked -> viewModel.update { it.copy(requireSignature = checked) } }
+                )
+            }
             SwitchRow(
                 title = "Auto-close review",
                 subtitle = "Go back to the camera 4 seconds after each photo",

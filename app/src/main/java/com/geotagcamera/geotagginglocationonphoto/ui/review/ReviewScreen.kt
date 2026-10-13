@@ -50,12 +50,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.geotagcamera.geotagginglocationonphoto.ui.capture.CaptureUiState
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ChromeTokens
+import com.geotagcamera.geotagginglocationonphoto.ui.theme.ProofColors
 
-private val ChromeBase = Color(0xFF08090A)
-private val Ink = Color(0xFFF5F7F8)
-private val Muted = Color(0x8CF5F7F8)
-private val Outline = Color(0x38FFFFFF)
-private val AccentVerified = Color(0xFF56CB98)
+private val ChromeBase = ChromeTokens.Base
+private val Ink = ChromeTokens.Ink
+private val Muted = ChromeTokens.Muted
+private val Outline = ChromeTokens.OutlineSoft
+private val AccentVerified = ProofColors.Verified
 
 /**
  * Post-capture review takeover (design section 04). Share is the only filled
@@ -189,7 +191,7 @@ private fun ColumnScope.Actions(
     Button(
         onClick = onShare,
         modifier = Modifier.fillMaxWidth().height(54.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = Color(0xFF0C0E10))
+        colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = ChromeTokens.OnInk)
     ) {
         Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))

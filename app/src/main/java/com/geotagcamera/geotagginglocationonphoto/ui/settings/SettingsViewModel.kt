@@ -16,9 +16,26 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import com.geotagcamera.geotagginglocationonphoto.profile.UserProfile
+import com.geotagcamera.geotagginglocationonphoto.ui.onboarding.OnboardingPreferences
+import kotlinx.coroutines.flow.map
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val stampPreferences = StampPreferences(application)
+    private val onboardingPreferences = OnboardingPreferences(application)
+
+    /** People who onboarded before profiles existed are treated as Field. */
+    val profile: StateFlow<UserProfile> = onboardingPreferences.profile
+        .map { it ?: UserProfile.FIELD }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserProfile.FIELD)
+
+    /** Switching profile also applies its recommended stamp defaults. */
+    fun setProfile(profile: UserProfile) {
+        viewModelScope.launch {
+            onboardingPreferences.setProfile(profile)
+            stampPreferences.edit { profile.applyDefaults(it) }
+        }
+    }
 
     val fields: StateFlow<StampFields?> = stampPreferences.fields
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

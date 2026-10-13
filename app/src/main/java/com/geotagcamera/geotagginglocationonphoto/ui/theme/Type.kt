@@ -98,19 +98,18 @@ val GeoTagCameraTypography = Typography(
         letterSpacing = 0.sp
     ),
     labelMedium = TextStyle(
-        fontFamily = RobotoMono,
+        fontFamily = Poppins,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.03.em(12),
-        fontFeatureSettings = "tnum"
+        letterSpacing = 0.sp
     ),
     labelSmall = TextStyle(
-        fontFamily = RobotoMono,
+        fontFamily = Poppins,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
-        lineHeight = 14.3.sp,
-        letterSpacing = 0.12.em(11)
+        lineHeight = 14.sp,
+        letterSpacing = 0.2.sp
     )
 )
 
@@ -123,7 +122,8 @@ val StampAnchorStyle = TextStyle(
     letterSpacing = (-0.01).em(17)
 )
 
-/** Coordinates, hashes, accuracy, bearing: anything transcribed into a report. Tabular figures. */
+/** Coordinates, hashes, accuracy, bearing: anything transcribed into a report. Tabular figures.
+ * The only place Roboto Mono enters the UI; M3 label slots stay Poppins. */
 val MonoDataStyle = TextStyle(
     fontFamily = RobotoMono,
     fontWeight = FontWeight.Medium,
