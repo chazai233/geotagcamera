@@ -1,0 +1,59 @@
+# Draft metadata for https://gitlab.com/fdroid/fdroiddata
+# (copy to metadata/com.geotagcamera.geotagginglocationonphoto.yml in a fork, then open a merge request).
+Categories:
+  - Multimedia
+  - Navigation
+License: GPL-3.0-or-later
+AuthorName: Konko Maji
+AuthorEmail: konkomaji@gmail.com
+SourceCode: https://github.com/konkomaji/geotagcamera
+IssueTracker: https://github.com/konkomaji/geotagcamera/issues
+Changelog: https://github.com/konkomaji/geotagcamera/blob/HEAD/CHANGELOG.md
+
+AutoName: GeoTag Camera
+
+RepoType: git
+Repo: https://github.com/konkomaji/geotagcamera.git
+
+# One build per CPU type. versionCode = 10 * defaultConfig.versionCode + ABI digit
+# (1 armeabi-v7a, 2 arm64-v8a, 3 x86_64), computed by app/build.gradle.kts.
+Builds:
+  - versionName: 1.4.0
+    versionCode: 61
+    commit: v1.4.0
+    subdir: app
+    gradle:
+      - foss
+    gradleprops:
+      - abi=armeabi-v7a
+    output: build/outputs/apk/foss/release/app-foss-armeabi-v7a-release-unsigned.apk
+
+  - versionName: 1.4.0
+    versionCode: 62
+    commit: v1.4.0
+    subdir: app
+    gradle:
+      - foss
+    gradleprops:
+      - abi=arm64-v8a
+    output: build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk
+
+  - versionName: 1.4.0
+    versionCode: 63
+    commit: v1.4.0
+    subdir: app
+    gradle:
+      - foss
+    gradleprops:
+      - abi=x86_64
+    output: build/outputs/apk/foss/release/app-foss-x86_64-release-unsigned.apk
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+VercodeOperation:
+  - 10 * %c + 1
+  - 10 * %c + 2
+  - 10 * %c + 3
+UpdateCheckData: app/build.gradle.kts|versionCode\s*=\s*(\d+)|.|versionName\s*=\s*"([^"]+)"
+CurrentVersion: 1.4.0
+CurrentVersionCode: 63

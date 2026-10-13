@@ -10,7 +10,7 @@ plugins {
 // Release signing: env vars in CI (secrets, see .github/workflows/release.yml), or a
 // gitignored keystore.properties in the project root on the maintainer's PC
 // (storeFile, storePassword, keyAlias, keyPassword). Without either, release
-// builds fall back to the debug key so they still install for testing.
+// builds come out unsigned.
 val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
@@ -55,10 +55,9 @@ android {
 
     buildTypes {
         release {
-            // Without release secrets, sign with this machine's debug key: same
-            // certificate every earlier GitHub release used, so users update in
-            // place, but shrunk by R8 (a fraction of the debug APK's size).
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Signed with the permanent release key when it is configured; otherwise
+            // left unsigned (what F-Droid expects: it signs its own builds).
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -91,8 +90,10 @@ android {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
-            isUniversalApk = true
+            // -Pabi=arm64-v8a builds just that one (F-Droid builds one ABI per run).
+            val only = (project.findProperty("abi") as String?)?.takeIf { it.isNotBlank() }
+            if (only != null) include(only) else include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = only == null
         }
     }
 
