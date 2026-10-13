@@ -15,12 +15,13 @@ Roboto Mono was released under the Apache License 2.0 before version 3. The vers
 
 The fonts are not sold on their own, and their names are used unchanged. Under the OFL they can be bundled with software under any license.
 
-## Map data and tiles (optional map thumbnail)
+## Map data and tiles (stamp map)
 
-The optional map thumbnail is built from raster tiles downloaded at run time. Nothing is bundled in the app.
+The stamp map is drawn on the phone from vector tiles downloaded at run time. No map data is bundled in the app.
 
-- **Map data:** © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
-- **Tiles and style:** © [Stadia Maps](https://stadiamaps.com/) (Alidade Smooth style), © [OpenMapTiles](https://openmaptiles.org/). Used under the [Stadia Maps terms of service](https://stadiamaps.com/terms-of-service/).
+- **Map data:** © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Every map on a stamp carries a "© OpenStreetMap" credit.
+- **Tiles:** [OpenFreeMap](https://openfreemap.org/), © [OpenMapTiles](https://openmaptiles.org/).
+- **Style:** OpenFreeMap "Liberty", based on [OSM Liberty](https://github.com/maputnik/osm-liberty).
 
 ## Weather data (optional weather chip)
 
@@ -42,6 +43,7 @@ The optional map thumbnail is built from raster tiles downloaded at run time. No
 | [ExifInterface](https://developer.android.com/jetpack/androidx/releases/exifinterface) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [Material Components for Android](https://github.com/material-components/material-components-android) | The Android Open Source Project | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [Coil](https://github.com/coil-kt/coil) | Coil Contributors | [Apache 2.0](LICENSES/Apache-2.0.txt) |
+| [MapLibre Native for Android](https://github.com/maplibre/maplibre-native) (`org.maplibre.gl:android-sdk-opengl`) | MapLibre contributors, MapTiler.com, Mapbox | [BSD 2-Clause](LICENSES/MapLibre-BSD-2-Clause.txt). Its own dependencies (GeoJSON/Turf, gestures, Timber) are under Apache 2.0, MIT or BSD |
 | [OkHttp](https://github.com/square/okhttp) and [Okio](https://github.com/square/okio) (pulled in by Coil) | Square, Inc. | [Apache 2.0](LICENSES/Apache-2.0.txt) |
 | [Google Play services Location](https://developers.google.com/android/guides/setup) (`play-services-location`) | Google LLC | [Android Software Development Kit License](https://developer.android.com/studio/terms) and Google APIs Terms of Service. Not open source |
 

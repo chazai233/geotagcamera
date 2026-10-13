@@ -26,9 +26,9 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 **Capture**
 - Camera built on CameraX that adapts to the phone it runs on: zoom presets come from the real lens range (0.5x only appears when there is an ultra-wide lens), the flash button only appears when the camera has a flash, and the phone maker's own Auto, Night, HDR, Portrait (bokeh) and Retouch modes are offered when the phone provides them through CameraX Extensions
 - Tap-to-focus with exposure compensation, pinch zoom, a rule-of-thirds grid, and front/back switch. Front-camera photos match the mirrored preview
-- 4:3, 16:9, 1:1 and Full aspect ratios. The saved photo is cropped to exactly the frame you see on screen, and stays upright whether or not auto-rotate is on. Captures are capped at about 12 MP
+- 4:3, 16:9, 1:1 and Full aspect ratios, with a smooth switch between them. The saved photo is cropped to exactly the frame you see on screen, and stays upright however you hold the phone. On phones the camera screen itself stays upright like the stock camera: only the icons and the live stamp turn. Captures are capped at about 12 MP
 - A live stamp preview in the viewfinder, drawn by the same code that burns the stamp into the saved photo, so what you frame is what you get
-- Two stamp styles. **Bar** (the default) is a full-width strip along the top or bottom edge with every field you have turned on: place name and country code, address with Plus Code, coordinates, date and time with GMT offset, chips for accuracy, altitude, bearing and weather, an optional map thumbnail, and a footer with your organization logo and name, a SIGNED mark and the app mark. **Minimal** is a small coordinates-and-time label
+- Two stamp styles. **Bar** (the default) is a full-width strip along the top or bottom edge with every field you have turned on: place name and country code, address with Plus Code, coordinates, date and time with GMT offset, chips for accuracy, altitude, bearing and weather, a map, and your organization logo, name and signature. Every line stays on one line, so the stamp covers about a sixth of a portrait photo. **Minimal** is a small coordinates-and-time label
 - Move the stamp by long-pressing and dragging it on the viewfinder. Bar snaps to the top or bottom edge, Minimal to one of nine positions
 - GPS position, altitude, accuracy, compass direction, capture time and time-zone offset are also written into the photo's EXIF metadata, so GIS and photo tools pick them up automatically
 - Every capture is saved straight to your phone's Photos/Gallery app (Pictures/GeoTagCamera). Nothing leaves your phone unless you choose to share it
@@ -36,6 +36,8 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 
 **Built to actually work in the field**
 - Capturing, stamping, signing and verifying all work with no network connection
+- The stamp map is drawn on the phone from OpenStreetMap data, with no API key. Places you have shot in stay available offline, and Settings, Offline maps lets you save a whole area (2 to 30 km) before a trip
+- No GPS fix when you press the shutter? The photo is held and saved as soon as a fix arrives, instead of being lost
 - Location is only tracked while the camera screen is visible, and a fix older than 30 seconds is never used for a photo
 - Addresses come from the phone's built-in Geocoder. With no signal, the stamp falls back to the nearest address already cached on the phone. The Plus Code is worked out on the device, so it is always there
 - Only camera and location are requested at runtime on Android 10+; Android 9 and older also needs storage access to save into the gallery
@@ -46,6 +48,7 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 - The photo detail screen can share, delete, open the location in a maps app, copy the coordinates and verify the photo again
 
 **Made for your organization**
+- Pick **Field** (students, NGO and field staff: simple and quick) or **Professional** (surveyors and inspectors: altitude, bearing, required signature, every setting) on first launch. You can switch in Settings any time
 - Choose exactly which fields show on the stamp, with a live preview in Settings
 - Add your college, company or project name and logo to the stamp, free, no paywall
 
@@ -54,11 +57,8 @@ Most geotagging camera apps on the Play Store make you sit through ads before yo
 - Verify any photo that carries a GeoTag Camera proof, including one someone else sent you, from the "Verify a photo" screen or via Share → Verify with GeoTag Camera. The result shows the signing key's fingerprint and whether it is this phone's key
 - Field workers can add a hand-drawn signature onto the photo before saving, useful for inspection reports and muster-roll style documentation. Settings can make the signature required
 
-**Optional extras, off by default**
-- A small map thumbnail on the stamp, using Stadia Maps tiles drawn from OpenStreetMap data. It needs a Stadia Maps API key at build time, and the APKs on GitHub Releases are built without one, so the map is not available in them (see [Building from source](#building-from-source))
-- A current-weather chip, using Open-Meteo
-
-Both need an internet connection, both are off until you turn them on, and a capture never waits on either of them.
+**Optional extra, off by default**
+- A current-weather chip, using Open-Meteo. It needs an internet connection and a capture never waits on it.
 
 **No ads, no tracking, ever**
 - No ad SDKs, no analytics SDKs, no crash reporters
@@ -73,19 +73,20 @@ Both need an internet connection, both are off until you turn them on, and a cap
 - Room and DataStore for local storage
 - Android Keystore for on-device photo signing
 - Coil for gallery thumbnails
+- MapLibre Native with OpenFreeMap vector tiles for the on-device map and offline areas
 
 ## Project status
 
-Version 1.2.0 is out as a **pre-release**. It is a robustness and usability release: the Bar stamp as the default, moving the stamp by dragging it on the viewfinder, a camera that adapts to each phone's lenses and modes, a saved photo that matches the on-screen frame exactly, deleting from the gallery, and fixes for crashes when saving on high-resolution cameras. It has not yet been tested across many real phones, so expect rough edges on some devices and please [report what you find](https://github.com/konkomaji/geotagcamera/issues). See [CHANGELOG.md](CHANGELOG.md) for the full list.
+Version 1.3.0 is out as a **pre-release**. It is a redesign release: a compact stamp, a map that needs no API key and works offline, a camera that stays upright and only turns its icons, smooth ratio changes, Field and Professional setups, and photos that are no longer lost when GPS is slow. It has not yet been tested across many real phones, so expect rough edges on some devices and please [report what you find](https://github.com/konkomaji/geotagcamera/issues). See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## Install
 
-1. Download `geotagcamera-1.2.0.apk` from the [1.2.0 release](https://github.com/konkomaji/geotagcamera/releases/tag/v1.2.0) (or the newest release on the [Releases page](https://github.com/konkomaji/geotagcamera/releases)).
+1. Download the APK for your phone from the [1.3.0 release](https://github.com/konkomaji/geotagcamera/releases/tag/v1.3.0) (or the newest release on the [Releases page](https://github.com/konkomaji/geotagcamera/releases)). Most phones from the last several years want `geotagcamera-1.3.0-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-1.3.0-universal.apk`, which works everywhere but is bigger.
 2. Optional: check the download against the SHA-256 listed on the release page.
 3. Open the APK on your phone. Android asks you to allow installs from your browser or file manager the first time; allow it for that app only.
 4. Open GeoTag Camera and allow camera and location when asked.
 
-Already on 1.1.0? Install 1.2.0 over it; your photos, settings and signing key are kept. The APKs are signed with a development key and are built without a Stadia Maps key, so the map thumbnail is not available in them. Android 8.0 or newer is required.
+Already on 1.1.0 or 1.2.0? Install 1.3.0 over it; your photos, settings and signing key are kept. The APKs are signed with the same development key as earlier releases. Android 8.0 or newer is required.
 
 ## Using the app
 
@@ -96,7 +97,7 @@ Already on 1.1.0? Install 1.2.0 over it; your photos, settings and signing key a
 5. **Later:** the Gallery tab shows every photo with a verified badge. Open one to share it, delete it, open its location in a maps app or copy the coordinates.
 6. **Check a photo someone sent you:** Settings, then Verify a photo, or share the photo to GeoTag Camera from any app.
 
-Settings is where you choose the stamp style and fields, add your organization's name and logo, and turn on the optional map and weather.
+Settings is where you switch between Field and Professional, choose the stamp style and fields, add your organization's name and logo, save areas for offline maps, and turn on the optional weather.
 
 ## Roadmap
 
@@ -148,14 +149,14 @@ Short version: everything stays on your phone unless you share it or turn on one
 **Stored on your device only**
 - Your photos, in Pictures/GeoTagCamera
 - A small database of your captures (file location, time, coordinates, altitude, accuracy, bearing, address, organization label, hash and signature)
-- A cache of addresses you have looked up, and a cache of map tiles if the map is on
+- A cache of addresses you have looked up, a cache of map tiles (up to about 150 MB) and any areas you saved in Offline maps
 - Your settings and, if you upload one, your organization logo
 - The signing key, inside the Android Keystore
 
 Android backup is turned off for the app, and its data is also excluded from cloud backup and device-to-device transfer, so your location history is not copied off the phone that way. "Delete all data" on the About & legal screen removes the app's database, settings, logo and caches. Photos you already saved to the gallery stay there until you delete them.
 
 **What leaves your device, and when**
-- **Map thumbnail (off by default, not available in the GitHub Releases APKs):** the app downloads map tiles from Stadia Maps. Each request contains the tile's x/y/z coordinates at zoom 16, which pins down your location to within a few hundred metres, plus the API key built into the app. Stadia also sees your IP address, as any server does.
+- **Stamp map (on by default, can be turned off):** the map is drawn on your phone from OpenStreetMap vector tiles downloaded from OpenFreeMap. No API key and no account. Each request names a tile by its x, y and zoom numbers, which corresponds to an area a few kilometres across around you, and OpenFreeMap also sees your IP address. Tiles are kept on the phone (up to about 150 MB) and areas you save in Offline maps are stored until you delete them, so places you have already been need no network at all.
 - **Weather (off by default):** the app sends your latitude and longitude to Open-Meteo to get the current temperature and conditions, rounded to two decimal places (about 1 km). Open-Meteo also sees your IP address.
 - **Address lookup:** the app uses the phone's built-in Android Geocoder. On most phones that service is provided by Google Play services and needs a network connection, so the coordinates you look up go to Google under Google's terms, not ours. Results are cached on the device.
 - **Location:** GPS fixes come from Google Play services' Fused Location Provider, which may use Wi-Fi and cell data depending on your phone's location settings. The app only asks for location while the camera screen is visible.
@@ -169,7 +170,7 @@ There are no ads, analytics, crash reporting or tracking SDKs in the app.
 |---|---|
 | Camera | To take the photo |
 | Location (fine and coarse) | To read GPS coordinates for the stamp and EXIF data. Only while the camera screen is visible, never in the background. If you grant approximate location only, the camera still works |
-| Internet | Only for the optional map thumbnail (Stadia Maps) and weather chip (Open-Meteo), both off by default. Android's Geocoder may also use the network on its own |
+| Internet, network state | For the stamp map and offline map downloads (OpenFreeMap), and the optional weather chip (Open-Meteo). Network state lets the app warn before a big download on mobile data. Android's Geocoder may also use the network on its own |
 | Storage (Android 9 / API 28 and below only) | To save the finished photo into the gallery. Android 10+ does this without any storage permission |
 
 That's the complete list. No broad storage access on modern Android, no contacts, no background location.
@@ -188,13 +189,7 @@ cd geotagcamera
 
 The debug APK ends up in `app/build/outputs/apk/debug/`. Minimum SDK is 26 (Android 8.0), target SDK is 36. The build uses Gradle 8.14 through the wrapper, Android Gradle Plugin 8.13 and Kotlin 2.3.
 
-**Map thumbnail (optional).** The map needs a Stadia Maps API key. Without one the app builds and runs normally and the stamp simply leaves the map out. To enable it, get a free key from [Stadia Maps](https://stadiamaps.com/) and add this line to `local.properties` in the project root (the file is gitignored):
-
-```
-stadiaMaps.apiKey=YOUR_KEY_HERE
-```
-
-The key is compiled into the APK, and anyone who has the APK can pull it out. Restrict it in the Stadia dashboard and don't publish an APK built with a key you care about. The APKs on GitHub Releases are built without a key, so the map thumbnail is not available in them.
+No API keys are needed: the map uses OpenFreeMap, which has none. The build produces one APK per CPU type plus a universal one.
 
 ## Contributing
 

@@ -23,7 +23,7 @@ Each photo is hashed with SHA-256 and signed with a key created on your phone in
 Taking, stamping, signing and verifying photos all work with no signal. With no connection the stamp uses the nearest address already cached on the phone, and the Plus Code is always calculated on the device.
 
 <b>Privacy</b>
-No ads, analytics or tracking. Nothing is sent to the developer. Location is only used while the camera screen is visible. Two optional features are off by default: a weather chip (sends your position, rounded to about 1 km, to Open-Meteo) and a map thumbnail (downloads OpenStreetMap tiles from Stadia Maps; it needs an API key at build time, so it isn't available in builds without one). Address lookup uses the phone's built-in Android geocoder, which on most phones is provided by Google and uses the network. App data is excluded from cloud backup and device transfer, and can be wiped from the About screen.
+No ads, analytics or tracking. Nothing is sent to the developer. Location is only used while the camera screen is visible. The stamp map is drawn on the phone from OpenStreetMap tiles downloaded from OpenFreeMap (no account or key) and kept for offline use; you can also save whole areas before a trip. The weather chip is off by default and sends your position, rounded to about 1 km, to Open-Meteo. Address lookup uses the phone's built-in Android geocoder, which on most phones is provided by Google and uses the network. App data is excluded from cloud backup and device transfer, and can be wiped from the About screen.
 
 Location comes from Google Play services (Fused Location Provider), which is not free software.
 

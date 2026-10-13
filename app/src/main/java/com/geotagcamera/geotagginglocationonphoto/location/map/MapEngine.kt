@@ -43,7 +43,9 @@ class MapEngine(context: Context) {
         withTimeoutOrNull(SNAPSHOT_TIMEOUT_MS) {
             val raw = withContext(Dispatchers.Main) { snapshot(latitude, longitude, sizePx, zoom) } ?: return@withTimeoutOrNull null
             withContext(Dispatchers.Default) {
-                if (looksBlank(raw)) { android.util.Log.i(TAG, "snapshot blank (no tiles cached)"); raw.recycle(); null }
+                // Inside a downloaded area the tiles are known to be there; sparse
+                // farmland can look "blank" to the heuristic, so trust the area.
+                if (!OfflineMaps.covers(latitude, longitude) && looksBlank(raw)) { android.util.Log.i(TAG, "snapshot blank (no tiles cached)"); raw.recycle(); null }
                 else decorate(raw)
             }
         }
@@ -88,7 +90,10 @@ class MapEngine(context: Context) {
             }
             y += step
         }
-        return distinct < 6
+        android.util.Log.d(TAG, "blank check: $distinct distinct samples")
+        // A tile-less render is the flat background colour: zero differing samples.
+        // Real maps, even empty farmland, have at least a road or field edge.
+        return distinct <= 1
     }
 
     private fun colorDistance(a: Int, b: Int): Int =

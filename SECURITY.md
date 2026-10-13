@@ -36,5 +36,4 @@ This is maintained by one person in their spare time, so there is no bug bounty 
 
 - Spoofed GPS or a wrong device clock being stamped. The app records what the phone reports.
 - Attacks that need a rooted or already compromised device.
-- Extracting the Stadia Maps API key from an APK you built yourself. The key is compiled in by design and release APKs don't contain one.
-- Issues in Android, Google Play services, Stadia Maps or Open-Meteo themselves. Report those upstream.
+- Issues in Android, Google Play services, MapLibre, OpenFreeMap or Open-Meteo themselves. Report those upstream.

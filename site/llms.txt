@@ -19,7 +19,7 @@
 ## Core features (v1.2.0)
 
 - Camera capture with GPS location, address and timestamp burned into the photo, with a live stamp preview in the viewfinder
-- Two stamp styles: Bar (default), a full-width strip on the top or bottom edge with every enabled field (place and country code, address with Plus Code, coordinates, date and time with GMT offset, accuracy/altitude/bearing/weather chips, optional map thumbnail, organization logo and name, signed mark), and Minimal, a small coordinates-and-time label
+- Two stamp styles: Bar (default), a full-width strip on the top or bottom edge with every enabled field (place and country code, address with Plus Code, coordinates, date and time with GMT offset, accuracy/altitude/bearing/weather chips, a map, organization logo, name and signature; every line single-line so the stamp covers about a sixth of a portrait photo), and Minimal, a small coordinates-and-time label
 - The stamp is moved by long-pressing and dragging it on the viewfinder; Bar snaps to the top or bottom edge, Minimal to one of nine positions
 - Camera adapts to the phone: zoom presets from the real lens range, flash only when present, the phone maker's Auto/Night/HDR/Portrait/Retouch modes through CameraX Extensions when available, tap-to-focus with exposure compensation, pinch zoom, grid, front/back switch
 - Aspect ratios 4:3, 16:9, 1:1 and Full; the saved photo is cropped to exactly the on-screen frame and stays upright with or without auto-rotate
@@ -30,7 +30,9 @@
 - Custom organization or college name and logo on the stamp, free
 - Tamper-evident photos: SHA-256 hash of the image pixels signed with an Android Keystore key generated on-device; the proof travels inside the photo, so any copy of the app can verify any photo, and the result shows the signing key's fingerprint
 - Field-worker hand-drawn signature on the photo for inspection and muster-roll style records, optionally required
-- Optional map thumbnail (Stadia Maps, OpenStreetMap data) and weather chip (Open-Meteo), both off by default; the map needs a build-time API key and is not available in the published APKs
+- On-device stamp map from OpenStreetMap vector tiles (OpenFreeMap, MapLibre), no API key, works offline; save 2-30 km areas ahead of a trip
+- Field and Professional profiles chosen at first launch
+- Optional weather chip (Open-Meteo), off by default
 
 ## Who it's for
 
@@ -48,4 +50,4 @@ Q: How is photo authenticity verified?
 A: Each photo's image data is SHA-256 hashed and signed with a device-generated Android Keystore key at capture time, and the hash, signature and public key are embedded in the file. Verifying recomputes the hash and checks the signature. A pass means the pixels, including the burned-in stamp, have not changed since signing. The signature also covers the capture latitude, longitude and time, so rewriting the EXIF GPS or time fails verification; a copy with that metadata stripped shows "location not checked". It does not prove who signed the photo or that the GPS and clock were accurate.
 
 Q: What leaves the phone?
-A: Nothing goes to the developer. The optional weather chip sends the position rounded to about 1 km to Open-Meteo, the optional map downloads tiles from Stadia Maps, and the phone's own geocoder (usually Google Play services) looks up addresses. App data is excluded from cloud backup and device transfer.
+A: Nothing goes to the developer. The optional weather chip sends the position rounded to about 1 km to Open-Meteo, the stamp map downloads OpenStreetMap tiles from OpenFreeMap, and the phone's own geocoder (usually Google Play services) looks up addresses. App data is excluded from cloud backup and device transfer.

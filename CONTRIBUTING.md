@@ -19,15 +19,9 @@ cd geotagcamera
 ./gradlew assembleDebug
 ```
 
-### Stadia Maps key (optional)
+### Map
 
-The map thumbnail on the stamp needs a Stadia Maps API key. You don't need one to work on anything else: without it the app builds and runs normally and the stamp leaves the map out. If you do want the map, get a free key from [Stadia Maps](https://stadiamaps.com/) and add it to `local.properties` in the project root:
-
-```
-stadiaMaps.apiKey=YOUR_KEY_HERE
-```
-
-`local.properties` is gitignored. Never commit a key, never paste one into an issue or a log, and don't share APKs built with your key, because the key is compiled into the APK and can be extracted.
+The stamp map needs no API key: it draws OpenFreeMap vector tiles with MapLibre (`location/map/`). The emulator needs network access the first time; after that, tiles come from the on-device cache.
 
 ## Code style
 

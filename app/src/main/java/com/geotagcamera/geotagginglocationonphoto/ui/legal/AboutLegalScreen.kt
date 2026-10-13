@@ -69,11 +69,11 @@ fun AboutLegalScreen(onBack: () -> Unit, viewModel: AboutLegalViewModel = viewMo
             Body("Free and open source. No ads, no accounts, no tracking.")
 
             Section("No data collected") {
-                Body("No accounts, no analytics, no ad SDK, no crash reporting. The optional map thumbnail and weather are off by default and only fetched for the current location when you turn them on.")
+                Body("No accounts, no analytics, no ad SDK, no crash reporting. The stamp map downloads map tiles for where you are (and areas you choose to save); weather is off by default.")
             }
 
             Section("What the signature proves") {
-                Body("Each photo is hashed and signed with a key kept in this device's secure keystore. Verifying proves the image, including its stamp, is unchanged since that key signed it, and shows which key it was. It does not prove who was holding the phone, and the location fields in the file's metadata are not part of the signature.")
+                Body("Each photo is hashed and signed with a key kept in this device's secure keystore. Verifying proves the image, including its stamp, is unchanged since that key signed it, and shows which key it was. The signature also covers the capture latitude, longitude and time. It does not prove who was holding the phone, and other metadata (altitude, direction, camera details) is not covered.")
             }
 
             Section("Location & photos") {
@@ -81,7 +81,7 @@ fun AboutLegalScreen(onBack: () -> Unit, viewModel: AboutLegalViewModel = viewMo
             }
 
             Section("Optional network features") {
-                Body("Map thumbnail: OpenStreetMap data via Stadia Maps, sent the map tile around your position. Weather: Open-Meteo, sent your position rounded to about 1 km. Neither ever blocks a photo when you're offline.")
+                Body("Stamp map: OpenStreetMap vector tiles from OpenFreeMap, drawn on the phone and kept for offline use. Requests name the map tile around your position. Turn the map off in Settings to stop them. Weather (off by default): Open-Meteo, sent your position rounded to about 1 km. Neither ever blocks a photo when you're offline.")
             }
 
             Section("Licenses") {
@@ -89,7 +89,8 @@ fun AboutLegalScreen(onBack: () -> Unit, viewModel: AboutLegalViewModel = viewMo
                     "GeoTag Camera: GNU GPL v3.\n" +
                         "Poppins and Roboto Mono fonts: SIL Open Font License 1.1.\n" +
                         "AndroidX, CameraX, Kotlin, Coil: Apache License 2.0.\n" +
-                        "Map data © OpenStreetMap contributors (ODbL), tiles © Stadia Maps, © OpenMapTiles.\n" +
+                        "MapLibre Native: BSD 2-Clause.\n" +
+                        "Map data © OpenStreetMap contributors (ODbL). Tiles: OpenFreeMap, © OpenMapTiles.\n" +
                         "Weather data by Open-Meteo.com (CC BY 4.0)."
                 )
             }

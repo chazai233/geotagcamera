@@ -4,6 +4,31 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-10-13
+
+A redesign release: a compact stamp, a map that works without a key and offline, a calmer camera, and a choice between a simple and a professional setup. Still a preview: not yet tested on a range of real phones.
+
+### Changed
+- **Compact stamp.** Bar is now an inset card that takes about a sixth of a portrait photo instead of more than a third. Every line is a single line (a long address is shortened with an ellipsis instead of wrapping), latitude and longitude share a line, and accuracy, altitude, bearing and weather share the last line with the SIGNED and GEOTAG marks. The map sits beside the card at the card's height.
+- The field worker's signature now sits inside the stamp card next to the logo, instead of a large box over the photo.
+- **Camera layout.** On phones the camera screen stays upright like the stock camera app: rotating the phone turns only the icons and the live stamp, and the stamp previews along the edge that will be the bottom of the saved photo. Tablets and unfolded foldables keep the side-rail layout.
+- Changing the aspect ratio now animates the frame to its new shape and keeps the last frame on screen while the camera switches, instead of flashing black.
+- Design system: colours, spacing, corner radii and motion now come from one set of tokens, the two different "verified" greens are one rule, and button and tab labels use Poppins (they were showing in the monospace font by mistake).
+- APKs are split per CPU type (arm64-v8a for most phones, armeabi-v7a for older ones, x86_64 for emulators and Chromebooks) plus a universal APK. A typical phone download is about 15 MB.
+
+### Added
+- **Map without an API key.** The stamp map is drawn on the phone from OpenStreetMap vector tiles (OpenFreeMap, rendered by MapLibre). It is on by default and now works in the published APKs. Places you shoot in stay available offline.
+- **Offline maps** (Settings, More): save a 2, 5, 15 or 30 km area before going somewhere without signal. Shows the expected size, warns before using mobile data, can be paused, resumed and deleted, and resumes by itself if the app was closed mid-download.
+- **Field and Professional profiles**, chosen on first launch and changeable in Settings. Field keeps things simple; Professional turns on altitude, accuracy and bearing on the stamp and a required signature, and shows every setting.
+- No GPS fix when you press the shutter no longer loses the photo: it is held and saved as soon as a fix arrives (within 60 seconds), or you can keep waiting or discard it.
+- Clear messages when storage is almost full or another app takes the camera.
+
+### Fixed
+- The location chip no longer keeps saying "Location locked" after the fix goes stale or location is switched off.
+
+### Removed
+- Stadia Maps and its build-time API key.
+
 ## [1.2.0] - 2026-10-12
 
 A robustness and usability release. Still a preview: not yet tested on a range of real phones.

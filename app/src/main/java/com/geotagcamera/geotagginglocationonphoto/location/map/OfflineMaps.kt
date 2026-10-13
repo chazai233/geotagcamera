@@ -134,7 +134,7 @@ object OfflineMaps {
 
     /**
      * Rough tile count and size for a circle, shown before downloading.
-     * Vector tiles average about 40 KB at these zooms.
+     * Measured: about 90 KB per tile including style, fonts and sprites.
      */
     fun estimate(latitude: Double, radiusKm: Int): Pair<Long, Long> {
         var tiles = 0L
@@ -145,7 +145,7 @@ object OfflineMaps {
             tiles += across * across
             z++
         }
-        return tiles to tiles * 40_000L
+        return tiles to tiles * 90_000L
     }
 
     private fun observe(region: OfflineRegion) {

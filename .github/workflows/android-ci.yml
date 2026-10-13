@@ -54,8 +54,6 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # There is no local.properties in CI, so this also checks that the app
-      # builds without a Stadia Maps key.
       - name: Lint, unit tests and debug build
         run: ./gradlew lintDebug testDebugUnitTest assembleDebug --no-daemon --stacktrace
 

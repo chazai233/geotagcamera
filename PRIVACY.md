@@ -13,7 +13,7 @@ All of this stays on your device:
 - **Your photos.** Saved to your gallery in Pictures/GeoTagCamera. They're ordinary files you can view, share or delete with any gallery app.
 - **A list of your captures.** For each photo: where the file is, when it was taken, the coordinates, altitude, accuracy, compass bearing, address, your organization label, and the hash and signature used for verification.
 - **An address cache.** Addresses you've already looked up, so with no signal the stamp can use the nearest address already on the phone.
-- **A map tile cache**, only if you turned the map thumbnail on.
+- **Map tiles**: a cache of up to about 150 MB, plus any areas you saved in Offline maps.
 - **Your settings**, and your organization logo if you uploaded one.
 - **A signing key**, created on your phone and kept in the Android Keystore. The private part can't be exported.
 
@@ -23,13 +23,11 @@ Android backup is turned off for this app, and the app's data is also excluded f
 
 Nothing is sent to the developer. The only network traffic comes from the features below.
 
-### Map thumbnail (off by default)
+### Stamp map (on by default, can be turned off)
 
-The map thumbnail is off until you turn it on in Settings. If you turn it on, the app downloads map images from **Stadia Maps** (map data from OpenStreetMap). Each request names a map tile by its x, y and zoom numbers. Those numbers correspond to a small area around your location, a few hundred metres across, so Stadia can work out roughly where you are. Stadia also sees your IP address and the app's API key. See the [Stadia Maps privacy policy](https://stadiamaps.com/privacy-policy/).
+The map on the stamp is drawn on your phone from OpenStreetMap vector tiles downloaded from **OpenFreeMap** (no account, no API key). Each request names a tile by its x, y and zoom numbers. Those correspond to an area a few kilometres across around your location, so OpenFreeMap can work out roughly where you are, and it also sees your IP address. See [openfreemap.org](https://openfreemap.org/).
 
-Tiles are cached on your phone, so the same place isn't downloaded twice.
-
-Copies of the app downloaded from GitHub Releases are built without a Stadia Maps key, so in those copies the map feature does not make any requests at all.
+Tiles are cached on your phone (up to about 150 MB), so the same place isn't downloaded twice. Areas you save under Settings, Offline maps are downloaded in one go and kept until you delete them. Turn the map off in Settings, Stamp fields to stop all map requests.
 
 ### Weather (off by default)
 
@@ -64,12 +62,12 @@ Anyone who receives the file can read all of this. If you don't want to share yo
 
 - **Camera:** to take photos.
 - **Location:** to stamp and tag photos with where they were taken, only while the camera screen is visible.
-- **Internet:** only for the optional map thumbnail and weather features above (and the Android geocoder, which may use it on its own).
+- **Internet and network state:** only for the stamp map, offline map downloads and the optional weather feature above (and the Android geocoder, which may use it on its own). Network state is used to warn you before a large download on mobile data.
 - **Storage (Android 9 and older only):** to save photos to the gallery.
 
 ## Deleting your data
 
-- The **Delete all data** option on the About & legal screen removes the app's capture list, address cache, map tile cache, settings and organization logo.
+- The **Delete all data** option on the About & legal screen removes the app's capture list, address cache, map tile cache, settings and organization logo. Saved offline map areas are deleted from Settings, Offline maps.
 - Uninstalling the app removes all of the above and the signing key.
 - Photos already saved to your gallery are yours. They stay until you delete them yourself.
 
