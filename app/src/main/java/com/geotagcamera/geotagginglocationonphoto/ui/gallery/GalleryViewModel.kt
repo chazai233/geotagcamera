@@ -106,6 +106,22 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+    fun messageShown() { _message.value = null }
+
+    /** Adds picked GeoTag photos to the list, into the filtered project if one is shown. */
+    fun importPhotos(uris: List<android.net.Uri>) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            val project = (_filter.value as? GalleryFilter.Project)?.id
+            val result = withContext(Dispatchers.IO) {
+                runCatching { com.geotagcamera.geotagginglocationonphoto.data.PhotoImporter(getApplication()).import(uris, project) }.getOrNull()
+            }
+            _message.value = result?.summary() ?: "Couldn't import those photos."
+        }
+    }
+
     fun moveToProject(ids: Collection<Long>, projectId: Long?) {
         viewModelScope.launch { photoDao.moveToProject(ids.toList(), projectId) }
     }

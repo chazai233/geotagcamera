@@ -1,5 +1,6 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.gallery
 
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import kotlinx.coroutines.flow.first
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
@@ -104,6 +105,10 @@ fun GalleryScreen(
     var pickFormat by remember { mutableStateOf(false) }
     var moveDialog by remember { mutableStateOf(false) }
     var manageProjects by remember { mutableStateOf(false) }
+    val galleryMessage by viewModel.message.collectAsStateWithLifecycle()
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    LaunchedEffect(galleryMessage) { galleryMessage?.let { snackbar.showSnackbar(it); viewModel.messageShown() } }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> viewModel.importPhotos(uris) }
     val orgLabel by androidx.compose.runtime.produceState<String?>(null) {
         value = com.geotagcamera.geotagginglocationonphoto.stamp.StampPreferences(context).fields
             .first().orgLabel.ifBlank { null }
@@ -130,6 +135,7 @@ fun GalleryScreen(
     BackHandler(enabled = selecting) { selected = emptySet() }
 
     AppScaffold(
+        snackbarHostState = snackbar,
         title = if (selecting) "${selected.size} selected" else "Gallery",
         onBack = if (selecting) ({ selected = emptySet() }) else null,
         backIcon = Icons.Filled.Close,
@@ -152,7 +158,7 @@ fun GalleryScreen(
                     Icon(Icons.Outlined.Delete, contentDescription = "Delete")
                 }
             }
-            if (!allPhotos.isNullOrEmpty()) {
+            if (allPhotos != null) {
                 Box {
                     IconButton(onClick = { menuOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -167,6 +173,11 @@ fun GalleryScreen(
                             leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, contentDescription = null) },
                             enabled = scope.isNotEmpty(),
                             onClick = { menuOpen = false; viewModel.buildReport(scope, viewModel.scopeTitle(), orgLabel) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Import photos") },
+                            leadingIcon = { Icon(Icons.Outlined.AddPhotoAlternate, contentDescription = null) },
+                            onClick = { menuOpen = false; importLauncher.launch(arrayOf("image/jpeg")) }
                         )
                         DropdownMenuItem(
                             text = { Text("Manage projects") },

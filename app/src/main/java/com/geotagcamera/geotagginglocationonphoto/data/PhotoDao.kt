@@ -34,6 +34,9 @@ interface PhotoDao {
     @Query("SELECT * FROM photos WHERE id IN (:ids) ORDER BY capturedAtEpochMs ASC")
     suspend fun getByIds(ids: List<Long>): List<PhotoEntity>
 
+    @Query("SELECT COUNT(*) FROM photos WHERE sha256Hash = :hash")
+    suspend fun countBySha(hash: String): Int
+
     @Query("UPDATE photos SET projectId = :projectId WHERE id IN (:ids)")
     suspend fun moveToProject(ids: List<Long>, projectId: Long?)
 }
