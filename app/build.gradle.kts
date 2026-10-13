@@ -24,6 +24,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // foss: Android's own location services, no Google Play services. Shipped on
+    // GitHub, F-Droid and IzzyOnDroid. play: Fused Location Provider, kept for a
+    // future Google Play listing. Same applicationId and code otherwise.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("foss") { dimension = "distribution" }
+        create("play") { dimension = "distribution" }
+    }
+
     signingConfigs {
         if (releaseStoreFile != null) {
             create("release") {
@@ -153,7 +162,7 @@ dependencies {
     implementation(libs.androidx.camera.extensions)
 
     // Location
-    implementation(libs.play.services.location)
+    "playImplementation"(libs.play.services.location)
 
     // Map thumbnail + offline maps: MapLibre renders OpenFreeMap vector tiles
     // on the phone. No API key, no Google services, works offline.

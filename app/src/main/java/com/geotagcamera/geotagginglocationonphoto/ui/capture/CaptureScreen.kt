@@ -281,7 +281,7 @@ private fun CameraContent(
 
     var lensFacing by remember { mutableStateOf(CameraSelector.DEFAULT_BACK_CAMERA) }
     var hasFrontCamera by remember { mutableStateOf(false) }
-    var flashMode by remember { mutableIntStateOf(ImageCapture.FLASH_MODE_AUTO) }
+    val flashMode by viewModel.flashMode.collectAsStateWithLifecycle()
     var aspect by remember { mutableStateOf(CaptureAspect.RATIO_4_3) }
     var gridOn by remember { mutableStateOf(true) }
     var camera by remember { mutableStateOf<Camera?>(null) }
@@ -584,7 +584,7 @@ private fun CameraContent(
                 ) {
                     ControlButtons(
                         iconRotation, hasFlash, flashMode, aspect, gridOn,
-                        onFlash = { flashMode = nextFlash(flashMode) },
+                        onFlash = { viewModel.setFlashMode(nextFlash(flashMode)) },
                         onAspect = onAspect,
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings
@@ -624,7 +624,7 @@ private fun CameraContent(
                 ) {
                     ControlButtons(
                         iconRotation, hasFlash, flashMode, aspect, gridOn,
-                        onFlash = { flashMode = nextFlash(flashMode) },
+                        onFlash = { viewModel.setFlashMode(nextFlash(flashMode)) },
                         onAspect = onAspect,
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings,

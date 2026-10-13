@@ -18,7 +18,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 /**
- * Location for the stamp. Two ways in:
+ * Location for the stamp, "play" flavor: Google Play services' Fused
+ * Location Provider (fast indoor fixes). The "foss" flavor has the same API
+ * on Android's own LocationManager. Two ways in:
  *
  * - [updates] streams fixes while the viewfinder is on screen, so the fix a
  *   photo gets is seconds old even if the user walked across a site between
@@ -98,16 +100,4 @@ class LocationProvider(context: Context) {
         /** Same limit the capture path applies to streamed fixes: nothing older is ever stamped. */
         const val MAX_LAST_KNOWN_AGE_MS = 30_000L
     }
-}
-
-/**
- * How old this fix is. Uses the monotonic clock when the fix has it, so a
- * wall-clock change can't make an old fix look fresh; [now] (wall clock) is
- * the fallback for fixes without it.
- */
-fun LocationFix.ageMs(now: Long = System.currentTimeMillis()): Long {
-    elapsedRealtimeNanos?.let { nanos ->
-        return (android.os.SystemClock.elapsedRealtimeNanos() - nanos) / 1_000_000L
-    }
-    return now - timestampEpochMs
 }

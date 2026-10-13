@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -25,11 +26,19 @@ class CapturePreferences(private val context: Context) {
     private object Keys {
         val ACTIVE_PROJECT = longPreferencesKey("active_project_id")
         val NOTE = stringPreferencesKey("capture_note")
+        val FLASH = intPreferencesKey("flash_mode")
     }
 
     val activeProjectId: Flow<Long?> = context.captureDataStore.data.map { it[Keys.ACTIVE_PROJECT]?.takeIf { id -> id > 0 } }
 
     val note: Flow<String> = context.captureDataStore.data.map { it[Keys.NOTE] ?: "" }
+
+    /** CameraX ImageCapture.FLASH_MODE_* value; Auto (0) until the user picks one. */
+    val flashMode: Flow<Int> = context.captureDataStore.data.map { it[Keys.FLASH] ?: 0 }
+
+    suspend fun setFlashMode(mode: Int) {
+        context.captureDataStore.edit { it[Keys.FLASH] = mode }
+    }
 
     suspend fun setActiveProject(id: Long?) {
         context.captureDataStore.edit { if (id == null) it.remove(Keys.ACTIVE_PROJECT) else it[Keys.ACTIVE_PROJECT] = id }

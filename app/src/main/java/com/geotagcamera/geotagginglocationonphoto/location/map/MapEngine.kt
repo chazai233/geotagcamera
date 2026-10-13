@@ -39,7 +39,7 @@ class MapEngine(context: Context) {
     /**
      * @return a square map image centred on the point with a pin, or null.
      */
-    suspend fun thumbnail(latitude: Double, longitude: Double, sizePx: Int = 480, zoom: Double = 15.0): Bitmap? =
+    suspend fun thumbnail(latitude: Double, longitude: Double, sizePx: Int = 512, zoom: Double = 16.0): Bitmap? =
         withTimeoutOrNull(SNAPSHOT_TIMEOUT_MS) {
             val raw = withContext(Dispatchers.Main) { snapshot(latitude, longitude, sizePx, zoom) } ?: return@withTimeoutOrNull null
             withContext(Dispatchers.Default) {
@@ -52,9 +52,11 @@ class MapEngine(context: Context) {
 
     private suspend fun snapshot(lat: Double, lon: Double, sizePx: Int, zoom: Double): Bitmap? {
         ensureInit(appContext)
-        // The snapshotter works in dp at the given pixel ratio; render at 2x for crisp roads.
-        val ratio = 2f
-        val sideDp = (sizePx / ratio).toInt().coerceAtLeast(64)
+        // The snapshotter works in dp at a pixel ratio. A small dp canvas drawn at a
+        // high ratio keeps the area tight and makes road names and place labels
+        // large enough to read on a thumbnail (~40% bigger than at 2x).
+        val sideDp = THUMB_SIDE_DP
+        val ratio = (sizePx / sideDp.toFloat()).coerceAtLeast(1f)
         val options = MapSnapshotter.Options(sideDp, sideDp)
             .withStyle(STYLE_URL)
             .withPixelRatio(ratio)
@@ -208,6 +210,7 @@ class MapEngine(context: Context) {
         const val ATTRIBUTION = "OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors"
 
         private const val TAG = "MapEngine"
+        private const val THUMB_SIDE_DP = 180
         private const val SNAPSHOT_TIMEOUT_MS = 30_000L
         private const val AMBIENT_CACHE_BYTES = 150L * 1024 * 1024
         private val PIN_COLOR = Color.rgb(0xE5, 0x39, 0x35)

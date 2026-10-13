@@ -82,11 +82,11 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease --no-daemon --stacktrace
-          apks=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | grep -v unsigned || true)
+          ./gradlew assembleFossRelease --no-daemon --stacktrace
+          apks=$(ls app/build/outputs/apk/foss/release/*.apk 2>/dev/null | grep -v unsigned || true)
           if [ -z "$apks" ]; then
             echo "::error::No signed release APK was produced. Does app/build.gradle.kts read the RELEASE_* env vars?"
-            ls -la app/build/outputs/apk/release/ || true
+            ls -la app/build/outputs/apk/foss/release/ || true
             exit 1
           fi
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)/apksigner"
@@ -94,7 +94,7 @@ jobs:
           # One APK per CPU type plus a universal one (app-<abi>-release.apk).
           for apk in $apks; do
             "$apksigner" verify --print-certs "$apk"
-            abi=$(basename "$apk" .apk | sed -e 's/^app-//' -e 's/-release$//')
+            abi=$(basename "$apk" .apk | sed -e 's/^app-foss-//' -e 's/-release$//')
             cp "$apk" "dist/geotagcamera-${TAG}-${abi}.apk"
           done
 
@@ -102,10 +102,10 @@ jobs:
         if: env.HAS_SIGNING_KEY != 'true'
         run: |
           echo "::warning::Signing secrets are not set, publishing a debug-signed APK instead"
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleFossDebug --no-daemon --stacktrace
           mkdir -p dist
-          for apk in app/build/outputs/apk/debug/*.apk; do
-            abi=$(basename "$apk" .apk | sed -e 's/^app-//' -e 's/-debug$//')
+          for apk in app/build/outputs/apk/foss/debug/*.apk; do
+            abi=$(basename "$apk" .apk | sed -e 's/^app-foss-//' -e 's/-debug$//')
             cp "$apk" "dist/geotagcamera-${TAG}-${abi}-debug.apk"
           done
           {

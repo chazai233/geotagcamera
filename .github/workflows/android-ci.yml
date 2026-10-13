@@ -55,7 +55,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Lint, unit tests and debug build
-        run: ./gradlew lintDebug testDebugUnitTest assembleDebug --no-daemon --stacktrace
+        run: ./gradlew lintFossDebug testFossDebugUnitTest assembleFossDebug assemblePlayDebug --no-daemon --stacktrace
 
       - name: Upload lint report
         if: failure()
@@ -79,4 +79,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: geotagcamera-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/foss/debug/*.apk

@@ -141,6 +141,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         .flatMapLatest { id -> if (id == null) flowOf(null) else projectDao.observeById(id) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Survives leaving the camera and app restarts; it used to reset to Auto on every return. */
+    val flashMode: StateFlow<Int> = capturePreferences.flashMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, androidx.camera.core.ImageCapture.FLASH_MODE_AUTO)
+
+    fun setFlashMode(mode: Int) {
+        viewModelScope.launch { capturePreferences.setFlashMode(mode) }
+    }
+
     fun setCaptureNote(note: String) {
         viewModelScope.launch { capturePreferences.setNote(note) }
     }
