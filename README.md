@@ -15,7 +15,7 @@ Free, open source, ad free Android camera app that stamps every photo with GPS l
 [![Build](https://github.com/konkomaji/geotagcamera/actions/workflows/android-ci.yml/badge.svg)](https://github.com/konkomaji/geotagcamera/actions/workflows/android-ci.yml)
 [![Release](https://img.shields.io/github/v/release/konkomaji/geotagcamera?include_prereleases&label=release)](https://github.com/konkomaji/geotagcamera/releases)
 
-Website: https://konkomaji.github.io/geotagcamera/
+Website: https://konkomaji.com/geotagcamera/
 
 ## Why this exists
 
@@ -87,7 +87,7 @@ Version 1.4.0 is the first full release. It adds projects, notes on the stamp, C
 
 ## Install
 
-1. Download the APK for your phone from the [latest release](https://github.com/konkomaji/geotagcamera/releases/latest). Most phones from the last several years want `geotagcamera-1.4.0-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-1.4.0-universal.apk`, which works everywhere but is bigger.
+1. Download the APK for your phone from the [latest release](https://github.com/konkomaji/geotagcamera/releases/latest). Most phones from the last several years want `geotagcamera-v1.4.0-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-v1.4.0-universal.apk`, which works everywhere but is bigger.
 2. Optional: check the download against the SHA-256 listed on the release page.
 3. Open the APK on your phone. Android asks you to allow installs from your browser or file manager the first time; allow it for that app only.
 4. Open GeoTag Camera and allow camera and location when asked.
@@ -167,7 +167,7 @@ Android backup is turned off for the app, and its data is also excluded from clo
 - **Stamp map (on by default, can be turned off):** the map is drawn on your phone from OpenStreetMap vector tiles downloaded from OpenFreeMap. No API key and no account. Each request names a tile by its x, y and zoom numbers, which corresponds to an area a few kilometres across around you, and OpenFreeMap also sees your IP address. Tiles are kept on the phone (up to about 150 MB) and areas you save in Offline maps are stored until you delete them, so places you have already been need no network at all.
 - **Weather (off by default):** the app sends your latitude and longitude to Open-Meteo to get the current temperature and conditions, rounded to two decimal places (about 1 km). Open-Meteo also sees your IP address.
 - **Address lookup:** the app uses the phone's built-in Android Geocoder. On most phones that service is provided by Google Play services and needs a network connection, so the coordinates you look up go to Google under Google's terms, not ours. Results are cached on the device.
-- **Location:** GPS fixes come from Google Play services' Fused Location Provider, which may use Wi-Fi and cell data depending on your phone's location settings. The app only asks for location while the camera screen is visible.
+- **Location:** GPS fixes come from Android's own location services (no Google Play services), which may use Wi-Fi and cell data depending on your phone's location settings. The app only asks for location while the camera screen is visible.
 - **When you share a photo:** the file carries its EXIF data, including the exact GPS coordinates, altitude and time, as well as the burned-in stamp and the verification proof. Whoever receives the file can read all of it.
 
 There are no ads, analytics, crash reporting or tracking SDKs in the app.

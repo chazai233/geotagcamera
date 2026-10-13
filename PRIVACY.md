@@ -39,7 +39,7 @@ To turn coordinates into an address, the app uses the geocoder built into your p
 
 ### Location
 
-The app gets your location from Google Play services (the Fused Location Provider). Depending on your phone's location settings, Google Play services may use Wi-Fi and mobile network information to improve accuracy. That is controlled by your phone's settings, not by this app. GeoTag Camera only receives location updates while the camera screen is open and visible. It stops as soon as you leave the camera screen or the app, and it never uses location in the background.
+The app gets your location from Android's own location services (GPS, and the phone's network location or fused provider where available). It does not use Google Play services. Depending on your phone's location settings, the system may use Wi-Fi and mobile network information to improve accuracy. That is controlled by your phone's settings, not by this app. GeoTag Camera only receives location updates while the camera screen is open and visible. It stops as soon as you leave the camera screen or the app, and it never uses location in the background.
 
 ### When you share a photo
 

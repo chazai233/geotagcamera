@@ -6,7 +6,7 @@ Only the latest release gets security fixes. If you're on an older version, upda
 
 | Version | Supported |
 |---|---|
-| Latest release (currently 1.2.x, a pre-release) | Yes |
+| Latest release (currently 1.4.x) | Yes |
 | Anything older | No |
 
 ## Reporting a vulnerability

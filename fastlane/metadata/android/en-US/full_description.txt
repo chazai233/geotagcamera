@@ -34,3 +34,4 @@ Location comes from Android's own location services. No Google Play services are
 
 Source code (GPL-3.0-or-later): https://github.com/konkomaji/geotagcamera
 Privacy policy: https://github.com/konkomaji/geotagcamera/blob/main/PRIVACY.md
+Website: https://konkomaji.com/geotagcamera/

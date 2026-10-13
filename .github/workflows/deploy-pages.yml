@@ -1,4 +1,8 @@
-name: Deploy site to GitHub Pages
+name: Deploy GitHub Pages redirect
+
+# The website now lives at https://konkomaji.com/geotagcamera/ (built by site/build.py and
+# uploaded to Hostinger by hand). GitHub Pages only serves a tiny redirect site so old links
+# to https://konkomaji.github.io/geotagcamera/ keep working, with their path preserved.
 
 on:
   push:
@@ -27,10 +31,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Upload site artifact
+      - name: Build site and redirect pages
+        run: python3 site/build.py --no-zip
+
+      - name: Upload redirect site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site/dist/github-pages
 
       - name: Deploy to GitHub Pages
         id: deployment

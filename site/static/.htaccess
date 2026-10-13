@@ -1,0 +1,74 @@
+# GeoTag Camera website: https://konkomaji.com/geotagcamera/
+# Upload this folder's contents into public_html/geotagcamera/.
+
+Options -Indexes
+DirectoryIndex index.html
+ErrorDocument 404 /geotagcamera/404.html
+
+# Force HTTPS (also works behind Hostinger's proxy, which sets X-Forwarded-Proto)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Don't serve build leftovers or dotfiles
+<FilesMatch "(^\.|\.(md|py|zip|bak)$)">
+  Require all denied
+</FilesMatch>
+<Files ".htaccess">
+  Require all denied
+</Files>
+
+<IfModule mod_mime.c>
+  AddType font/ttf .ttf
+  AddType application/manifest+json .webmanifest
+  AddType text/plain .txt
+  AddDefaultCharset utf-8
+  AddCharset utf-8 .html .css .js .txt .xml .webmanifest
+</IfModule>
+
+# Security headers. The site loads nothing from other origins: no fonts, CDNs,
+# analytics or cookies, so the policy only allows this site itself.
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'none'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "no-referrer"
+  Header always set Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()"
+  Header always set X-Frame-Options "DENY"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Cross-Origin-Resource-Policy "same-origin"
+  # HSTS affects the whole konkomaji.com host, not just this folder.
+  # Enable it here (or better, at the root) once every page on the domain is HTTPS-only:
+  # Header always set Strict-Transport-Security "max-age=31536000"
+  Header unset X-Powered-By
+</IfModule>
+
+# Caching. CSS and JS links carry a ?v=<content hash>, so they can be cached for a year.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|xml|txt|webmanifest)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(css|js|ttf|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpe?g|webp|svg|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType font/ttf "access plus 1 year"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript text/javascript application/json application/ld+json application/manifest+json image/svg+xml font/ttf
+</IfModule>

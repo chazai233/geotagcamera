@@ -1,0 +1,319 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-blob" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Free &middot; Open source &middot; No ads</p>
+      <h1 id="hero-title">Every photo, exactly where and when it happened.</h1>
+      <p class="lede">GeoTag Camera is an Android camera that stamps the GPS location, address and time onto each photo, and signs the photo on the phone so anyone can later check it hasn't been edited. I built it for surveyors, inspectors, students and NGO teams who need proof, not clutter.</p>
+      <p class="quip">No ads. No paywall. I know, it's suspicious.</p>
+      <div class="hero-cta">
+        <a class="btn btn-filled" href="{{root}}download/">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          Download the APK
+        </a>
+        <a class="btn btn-tonal" href="https://github.com/konkomaji/geotagcamera">Read the source</a>
+      </div>
+      <p class="hero-meta">Version {{version}} &middot; Android 8.0 or newer &middot; GPL-3.0-or-later</p>
+      <ul class="badges" aria-label="At a glance">
+        <li class="badge">No ads</li>
+        <li class="badge">No tracking</li>
+        <li class="badge">No Google Play services</li>
+        <li class="badge">Works offline</li>
+        <li class="badge">Built in India</li>
+      </ul>
+    </div>
+    <div class="stamp-demo" role="img" aria-label="Example of a photo with the GeoTag Camera stamp: place name, coordinates, date and time, and a signed mark">
+      <div class="frame" aria-hidden="true">
+        <svg class="scene" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice">
+          <path d="M0 250 L70 190 L120 225 L190 150 L300 235 L300 400 L0 400Z" fill="#20322c"/>
+          <path d="M0 300 L90 265 L170 290 L240 255 L300 280 L300 400 L0 400Z" fill="#17241f"/>
+          <circle cx="232" cy="88" r="20" fill="#3b4d48"/>
+        </svg>
+        <div class="stamp-card">
+          <div class="place">Bhatpara, West Bengal &nbsp;IN</div>
+          <div>22.866412 N &nbsp;88.401837 E</div>
+          <div>14 Oct 2026 10:42 GMT+05:30</div>
+          <div class="muted">Pole 12, north wall</div>
+          <div class="signed">SIGNED SHA-256</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="why-title">
+  <div class="wrap narrow center">
+    <p class="eyebrow">Why this exists</p>
+    <h2 id="why-title">Most geotagging apps get the basics wrong</h2>
+    <p class="lead">Every app I tried wanted something before it let me take a photo. A video ad before the camera opened. A subscription to remove a stamp field I didn't want. Permissions that have nothing to do with a camera. And the moment there was no signal, half of it stopped working, which is exactly where field work happens.</p>
+    <p class="lead">So I wrote my own and published the code. It does one job: a photo that shows where and when it was taken, that you can check later.</p>
+  </div>
+  <div class="wrap">
+    <div class="problem-grid">
+      <div class="card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M9 7l1.2-2.2h3.6L15 7"/><circle cx="12" cy="13.5" r="3.4"/></svg></div>
+        <h3>1. Frame it</h3>
+        <p>The stamp is drawn live on the viewfinder by the same code that burns it into the photo, so what you frame is what you get.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></div>
+        <h3>2. Shoot it</h3>
+        <p>Location, address and time go onto the image and into its EXIF data. The photo is hashed and signed on the phone and saved to your normal gallery.</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>3. Prove it</h3>
+        <p>Anyone with the app can verify the photo later, offline. Export the locations or build a PDF site report when the job is done.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="screens" aria-labelledby="screens-title">
+  <div class="wrap">
+    <p class="eyebrow">Screens</p>
+    <h2 id="screens-title">What it looks like</h2>
+  </div>
+  {{screens}}
+</section>
+
+<div class="section-divider" aria-hidden="true">
+  <span class="line"></span>
+  <span class="motif"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.2"/></svg></span>
+  <span class="line"></span>
+</div>
+
+<section id="features" aria-labelledby="features-title">
+  <div class="wrap">
+    <p class="eyebrow">What's inside</p>
+    <h2 id="features-title">Everything a proof-of-location photo needs</h2>
+    <div class="feature-grid">
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M6 17h6M15 17h3"/><path d="M5 10l3-4 3 3 3-5 5 6"/></svg></div>
+        <h3>A compact stamp, signed at capture</h3>
+        <p>Place, address with Plus Code, coordinates, date and time with GMT offset, plus accuracy, altitude and bearing if you want them. Every line stays on one line, so the Bar stamp covers about a sixth of a portrait photo. Or pick the small Minimal label.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></div>
+        <h3>A map drawn on the phone</h3>
+        <p>The stamp map comes from OpenStreetMap, rendered on the device with MapLibre and OpenFreeMap tiles. No API key, no account. Places you've shot in stay available offline, and you can save a 2 to 30 km area before a trip.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/><line x1="3" y1="3" x2="21" y2="21"/></svg></div>
+        <h3>Works without signal</h3>
+        <p>Capturing, stamping, signing and verifying need no connection. With no signal the stamp uses the nearest address already cached on the phone, and the Plus Code is always worked out on the device. No GPS fix yet? The photo waits for one instead of being lost.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+        <h3>Projects for each site or job</h3>
+        <p>Pick a project under the viewfinder and photos go into it. Filter the gallery by project, move photos between projects, rename or archive them. Deleting a project never deletes photos.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v12l-4 4H5z"/><path d="M15 20v-4h4M8 9h8M8 13h5"/></svg></div>
+        <h3>A note and your own text on the stamp</h3>
+        <p>A sticky note such as "Pole 12, north wall" is burned into every photo until you change it. A fixed custom line holds a contract number or an inspector's name.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+        <h3>Export to CSV, KML or GeoJSON</h3>
+        <p>Export a project, a selection or everything, with time, place, note and each photo's SHA-256. CSV opens in Excel and Sheets, KML in Google Earth, GeoJSON in QGIS and ArcGIS.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 14h3M8 17h6"/></svg></div>
+        <h3>A PDF site report</h3>
+        <p>A cover with an overview map of numbered photo locations and an index, then two photos per page with time, place, coordinates, note and a fresh verification result for each file.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Verify any photo</h3>
+        <p>The proof travels inside the file, so the app can check a photo someone else sent you, on any phone, offline. The result shows the signing key's fingerprint and whether it is your own phone's key.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7 9l5-5 5 5"/><rect x="3" y="15" width="18" height="5" rx="2"/></svg></div>
+        <h3>Import your photos back</h3>
+        <p>Reinstalled the app or moved to a new phone? Gallery, Import photos re-adds GeoTag Camera photos already in your gallery to the in-app list. The proofs are inside the files, so they still verify.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div>
+        <h3>A camera that fits your phone</h3>
+        <p>Zoom presets from the real lenses, a flash button only when there is a flash, and the phone maker's Night, HDR and Portrait modes when it offers them. 4:3, 16:9, 1:1 or Full, and the saved photo matches the frame on screen.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18c3-4 4-7 4-9.5a2.5 2.5 0 0 1 5 0c0 3-2 4-2 7a2 2 0 0 0 4 0"/><path d="M17 15l3 3-1.5 1.5"/></svg></div>
+        <h3>Your organisation on the stamp</h3>
+        <p>Add your college, company or project name and logo, and a hand-drawn signature inside the stamp. Professional mode can make the signature required. None of it is behind a paywall.</p>
+      </article>
+      <article class="feature-card reveal">
+        <div class="icon-wrap"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg></div>
+        <h3>No ads, no trackers, no Google</h3>
+        <p>No ad SDKs, no analytics, no crash reporters, no account. Location comes from Android's own location services, so the app runs on phones without Google Play services.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider alt" aria-hidden="true">
+  <span class="line"></span>
+  <span class="motif"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/></svg></span>
+  <span class="line"></span>
+</div>
+
+<section id="verify" aria-labelledby="verify-title">
+  <div class="wrap split">
+    <div>
+      <p class="eyebrow">How verification works</p>
+      <h2 id="verify-title">What the signature proves, and what it doesn't</h2>
+      <ol class="steps">
+        <li><strong>The stamp is burned in</strong> and the photo is saved as a JPEG.</li>
+        <li><strong>The image data is hashed</strong> with SHA-256. Metadata segments are left out, so the proof can be written into the file without changing the hash.</li>
+        <li><strong>The hash, latitude, longitude and time are signed</strong> with an ECDSA P-256 key created on your phone in the Android Keystore. The private key can't be exported.</li>
+        <li><strong>The hash, signature and public key are embedded</strong> in the photo's EXIF and XMP, so the proof goes wherever the file goes.</li>
+      </ol>
+      <p class="lead">Verifying recomputes the hash, checks the signature against the embedded key, and checks the photo's EXIF location and time against what was signed. No network, no account.</p>
+    </div>
+    <div class="terminal" aria-label="Example verification output" role="img">
+      <p>&gt; sha256(image data)</p>
+      <p class="s">9f2c41d0b7e3...a81f5c</p>
+      <p class="gap">&gt; sign(hash, lat, lon, time, <span class="k">keystoreKey</span>)</p>
+      <p class="s">MEUCIQD4x7...signature</p>
+      <p class="gap">&gt; verify(photo.jpg)</p>
+      <p class="ok">Verified: image, location and time unchanged since signing</p>
+      <p class="s">key fingerprint 4F1A 9C02 77DE B3E5</p>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="proves">
+      <div class="card yes reveal">
+        <h3><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>A "verified" result tells you</h3>
+        <ul>
+          <li>The pixels, including the burned-in stamp, haven't changed since signing.</li>
+          <li>The EXIF latitude, longitude and capture time still match what was signed.</li>
+          <li>Which key signed it, as a short fingerprint you can compare with one the photographer gives you.</li>
+        </ul>
+      </div>
+      <div class="card no reveal">
+        <h3><svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>It does not tell you</h3>
+        <ul>
+          <li>Who took the photo. The key isn't tied to a person; someone can strip the proof and re-sign an edit with their own key. That's what the fingerprint is for.</li>
+          <li>That the GPS or the clock were right. A spoofed fix is stamped like any other.</li>
+          <li>Anything about other metadata such as altitude or camera details, which isn't signed.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="lead">Messaging apps that recompress photos change the pixels, so the copy no longer verifies even though nobody tampered with it. Send the original file when it matters. The full details are in the <a href="https://github.com/konkomaji/geotagcamera#how-photo-verification-works">README</a>.</p>
+  </div>
+</section>
+
+<section id="who" class="panel" aria-labelledby="who-title">
+  <div class="wrap">
+    <p class="eyebrow">Who it's for</p>
+    <h2 id="who-title">Two setups, picked on first launch</h2>
+    <p class="lead">The app asks once which one fits you. You can switch in Settings any time, and nothing is locked in either mode.</p>
+    <div class="profile-grid">
+      <div class="profile reveal">
+        <p class="tag">Field</p>
+        <h3>Students, NGO and field staff</h3>
+        <p>You're recording a well, a school or a road in a village with no signal, or submitting fieldwork for a report. You want it quick and you can't pay for basics.</p>
+        <ul>
+          <li>Simple stamp with place, address, coordinates and time</li>
+          <li>Fewer settings on screen</li>
+          <li>Optional signature, notes and projects when you need them</li>
+        </ul>
+      </div>
+      <div class="profile reveal">
+        <p class="tag">Professional</p>
+        <h3>Surveyors and inspectors</h3>
+        <p>You need a photo that shows it was taken on site, at that time, and a report the client accepts at the end of the job.</p>
+        <ul>
+          <li>Altitude, accuracy and bearing on the stamp</li>
+          <li>Required signature before a photo is saved</li>
+          <li>Every setting visible, plus exports and PDF reports</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy" aria-labelledby="privacy-title">
+  <div class="wrap split">
+    <div>
+      <p class="eyebrow">Privacy</p>
+      <h2 id="privacy-title">Your photos stay on your phone</h2>
+      <p class="lead">I didn't build a server, so there's nothing for me to collect. These are the only times the app touches the network, and the <a href="{{root}}privacy/">privacy policy</a> has the details.</p>
+    </div>
+    <ul class="checklist">
+      <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><strong>No ads, analytics or trackers.</strong> No account, no cloud sync, no automatic crash reports.</span></li>
+      <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><strong>Location only while the camera is open.</strong> Never in the background.</span></li>
+      <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><strong>Map tiles from OpenFreeMap</strong>, for the area around you, cached on the phone. You can turn the map off.</span></li>
+      <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><strong>Weather is off by default.</strong> If you turn it on, your position is rounded to about 1 km before it goes to Open-Meteo.</span></li>
+      <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><strong>Addresses come from your phone's own geocoder</strong>, which on phones with Google services is usually Google's.</span></li>
+      <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span><strong>Kept out of cloud backups.</strong> Delete all data wipes the app's records; your gallery photos stay yours.</span></li>
+    </ul>
+  </div>
+</section>
+
+<div class="section-divider alt2" aria-hidden="true">
+  <span class="line"></span>
+  <span class="motif"><svg viewBox="0 0 24 24"><path d="M9 9a3 3 0 1 1 4 2.8c-.8.4-1 .9-1 1.7"/><circle cx="12" cy="17.5" r=".4" fill="currentColor" stroke="none"/></svg></span>
+  <span class="line"></span>
+</div>
+
+<section id="faq" aria-labelledby="faq-title">
+  <div class="wrap">
+    <p class="eyebrow">Questions</p>
+    <h2 id="faq-title">Frequently asked</h2>
+    <div class="faq">
+{{faq}}
+    </div>
+  </div>
+</section>
+
+<section id="download" aria-labelledby="cta-title">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2 id="cta-title">Take a photo that can prove itself.</h2>
+      <p>Version {{version}} for Android 8.0 and newer. Free, open source, no account.</p>
+      <div class="hero-cta center-row">
+        <a class="btn btn-filled" href="{{root}}download/">Download and install</a>
+        <a class="btn btn-outline" href="https://github.com/konkomaji/geotagcamera">Source on GitHub</a>
+      </div>
+{{stores}}
+    </div>
+  </div>
+</section>
+
+<section id="roadmap" aria-labelledby="roadmap-title">
+  <div class="wrap">
+    <p class="eyebrow">What's next</p>
+    <h2 id="roadmap-title">Where it's going</h2>
+    <p class="lead">I maintain this on my own time. 1.4.0 is the first full release after three previews; the <a href="{{root}}changelog/">changelog</a> has every change. These are the things I'm working towards, roughly in order.</p>
+    <h3 class="eyebrow sub">New in {{version}}</h3>
+    <ul class="roadmap-chips">
+      <li class="chip chip-solid">Projects</li>
+      <li class="chip chip-solid">Notes and custom text on the stamp</li>
+      <li class="chip chip-solid">CSV, KML and GeoJSON export</li>
+      <li class="chip chip-solid">PDF site reports</li>
+      <li class="chip chip-solid">Import photos</li>
+      <li class="chip chip-solid">No Google Play services</li>
+    </ul>
+    <h3 class="eyebrow sub">Next</h3>
+    <ul class="roadmap-chips">
+      <li class="chip">Quick-capture shortcut</li>
+      <li class="chip">Batch mode with numbered notes</li>
+      <li class="chip">Proof pack: photos, manifest and signatures in one zip</li>
+      <li class="chip">Verify a photo on the web, without the app</li>
+      <li class="chip">Before and after pairing</li>
+      <li class="chip">Hindi and Bengali</li>
+    </ul>
+    <h3 class="eyebrow sub">Later</h3>
+    <ul class="roadmap-chips">
+      <li class="chip">Video geotagging</li>
+      <li class="chip">Track log, distance and area</li>
+      <li class="chip">Voice notes</li>
+      <li class="chip">Home screen widget</li>
+      <li class="chip">Biometric app lock</li>
+      <li class="chip">Local backup and restore</li>
+      <li class="chip">Material You colours</li>
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,90 @@
+<div class="wrap page-head">
+  <p class="eyebrow">Download &middot; Version {{version}}</p>
+  <h1>Download and install</h1>
+  <p>GeoTag Camera is free and installs from a signed APK, without Google Play. Here's which file to pick, how to check it, and how to install it.</p>
+</div>
+
+<div class="wrap page-body">
+  <div class="prose">
+    <div class="notice" id="upgrade" role="note">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.2"/></svg>
+      <p><strong>Coming from 1.3.0 or older? Uninstall the old version first.</strong> Those builds were signed with a development key, and 1.4.0 uses the project's new permanent key, so Android can't update in place. Photos in your gallery stay where they are and still verify. After installing, Gallery, Import photos re-adds them to the in-app list. From 1.4.0 on, updates install over the top as usual.</p>
+    </div>
+
+    <h2 id="get-it">Get it from</h2>
+    <p>GitHub is the official source; every other channel pulls from it. The F-Droid and IzzyOnDroid listings are in progress and will light up here once they're live.</p>
+{{stores}}
+
+    <h2 id="which-apk">Which APK do I need?</h2>
+    <p>Each release has one APK per processor type plus a universal one. If you're not sure, take arm64-v8a: nearly every Android phone from the last several years uses it. If it refuses to install, use the universal APK, which works everywhere but is bigger.</p>
+    <div class="table-wrap">
+      <table>
+        <caption class="visually-hidden">APK files for version {{version}}</caption>
+        <thead><tr><th scope="col">File</th><th scope="col">For</th><th scope="col">Download</th></tr></thead>
+        <tbody>
+          <tr><td><code>geotagcamera-v{{version}}-arm64-v8a.apk</code></td><td>Most phones and tablets (64-bit ARM). About 15 MB. <strong>Start here.</strong></td><td><a href="{{dl}}geotagcamera-v{{version}}-arm64-v8a.apk">APK</a> &middot; <a href="{{dl}}geotagcamera-v{{version}}-arm64-v8a.apk.sha256">SHA-256</a></td></tr>
+          <tr><td><code>geotagcamera-v{{version}}-armeabi-v7a.apk</code></td><td>Older or low-cost phones with a 32-bit ARM processor</td><td><a href="{{dl}}geotagcamera-v{{version}}-armeabi-v7a.apk">APK</a> &middot; <a href="{{dl}}geotagcamera-v{{version}}-armeabi-v7a.apk.sha256">SHA-256</a></td></tr>
+          <tr><td><code>geotagcamera-v{{version}}-x86_64.apk</code></td><td>Chromebooks, Intel-based tablets and the Android emulator</td><td><a href="{{dl}}geotagcamera-v{{version}}-x86_64.apk">APK</a> &middot; <a href="{{dl}}geotagcamera-v{{version}}-x86_64.apk.sha256">SHA-256</a></td></tr>
+          <tr><td><code>geotagcamera-v{{version}}-universal.apk</code></td><td>Any device. Contains all of the above, so it's the largest download</td><td><a href="{{dl}}geotagcamera-v{{version}}-universal.apk">APK</a> &middot; <a href="{{dl}}geotagcamera-v{{version}}-universal.apk.sha256">SHA-256</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Want to check your phone's processor type? With USB debugging on, <code>adb shell getprop ro.product.cpu.abi</code> prints it. All files are also listed on the <a href="https://github.com/konkomaji/geotagcamera/releases/latest">latest release page</a>.</p>
+
+    <h2 id="verify-download">Check the download (optional)</h2>
+    <p>Every APK has a matching <code>.sha256</code> file. Download both into the same folder and compare. If the values differ, delete the APK and download it again.</p>
+    <div class="cmd-grid">
+      <div class="cmd">
+        <h3 class="h4">Windows (PowerShell)</h3>
+<pre><code>Get-FileHash .\geotagcamera-v{{version}}-arm64-v8a.apk -Algorithm SHA256
+Get-Content .\geotagcamera-v{{version}}-arm64-v8a.apk.sha256</code></pre>
+        <p>The two hex values must match (case doesn't matter). In Command Prompt, <code>certutil -hashfile geotagcamera-v{{version}}-arm64-v8a.apk SHA256</code> does the same.</p>
+      </div>
+      <div class="cmd">
+        <h3 class="h4">macOS</h3>
+<pre><code>shasum -a 256 -c geotagcamera-v{{version}}-arm64-v8a.apk.sha256</code></pre>
+      </div>
+      <div class="cmd">
+        <h3 class="h4">Linux</h3>
+<pre><code>sha256sum -c geotagcamera-v{{version}}-arm64-v8a.apk.sha256</code></pre>
+        <p>Both print <code>OK</code> when the file is intact.</p>
+      </div>
+    </div>
+
+    <h2 id="install">Install</h2>
+    <ol>
+      <li>Download the APK on your phone, or copy it over from your computer.</li>
+      <li>Open it from your browser's downloads or your file manager.</li>
+      <li>The first time, Android asks you to allow installs from that app. Allow it for that app only, then go back and tap Install.</li>
+      <li>Open GeoTag Camera, pick Field or Professional, and allow camera and location when asked.</li>
+      <li>Wait for "Location locked" in the corner of the viewfinder, then take your first photo.</li>
+    </ol>
+    <p>Play Protect may warn about an app it hasn't seen before. That's expected for apps installed outside the Play Store. The source is public, and you can compare the file with its SHA-256 above.</p>
+
+    <h2 id="updating">Updating</h2>
+    <p>From 1.4.0 on, every release is signed with the same key, so a newer APK installs over the old one and keeps your photos, projects and settings. Download it the same way and open it.</p>
+    <ul>
+      <li><strong>Obtainium</strong> can watch the GitHub releases and update the app for you. Add <code>https://github.com/konkomaji/geotagcamera</code> and, if it asks, filter APKs by <code>arm64-v8a</code>.</li>
+      <li><strong>GitHub</strong>: on the repository, choose Watch, Custom, Releases to get an email when a new version is out.</li>
+      <li>Once the F-Droid and IzzyOnDroid listings are live, their client apps will handle updates too.</li>
+    </ul>
+
+    <h2 id="requirements">System requirements</h2>
+    <ul class="req-list">
+      <li><strong>Android 8.0 or newer</strong>API level 26 and up, phones and tablets.</li>
+      <li><strong>Camera and GPS</strong>Location must be switched on. Approximate-only location still works, with less precise stamps.</li>
+      <li><strong>No Google Play services</strong>Works on de-Googled phones. Address lookup needs a geocoder on the phone, otherwise the stamp shows the Plus Code.</li>
+      <li><strong>Internet optional</strong>Only for the stamp map, offline map downloads and the optional weather chip.</li>
+      <li><strong>Storage</strong>About 15 MB for the app, plus up to about 150 MB of map cache and any offline areas you save.</li>
+      <li><strong>Permissions</strong>Camera, location while the camera is open, photo location (for Verify), and storage on Android 9 and older only.</li>
+    </ul>
+
+    <h2 id="source">Build it yourself</h2>
+    <p>The app is GPL-3.0-or-later. You need JDK 17 and the Android SDK; no API keys. Steps are in the <a href="https://github.com/konkomaji/geotagcamera#building-from-source">README</a>, and older versions are on the <a href="https://github.com/konkomaji/geotagcamera/releases">releases page</a>.</p>
+
+    <div class="hero-cta">
+      <a class="btn btn-filled" href="https://github.com/konkomaji/geotagcamera/releases/latest">Open the latest release</a>
+      <a class="btn btn-outline" href="{{root}}support/">Something not working?</a>
+    </div>
+  </div>
+</div>

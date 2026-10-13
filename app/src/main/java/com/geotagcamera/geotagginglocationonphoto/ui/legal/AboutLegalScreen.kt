@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 private const val SOURCE_URL = "https://github.com/konkomaji/geotagcamera"
+private const val WEBSITE_URL = "https://konkomaji.com/geotagcamera/"
 
 /**
  * About & legal (design section 05, screen 10). Copy is written to match the
@@ -112,6 +113,7 @@ fun AboutLegalScreen(
             }
 
             Section("Links") {
+                LinkRow("Website", WEBSITE_URL, context)
                 LinkRow("Source code", SOURCE_URL, context)
                 LinkRow("Privacy policy, online", "$SOURCE_URL/blob/main/PRIVACY.md", context)
             }

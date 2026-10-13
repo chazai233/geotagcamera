@@ -1,0 +1,7 @@
+# GeoTag Camera website, served from https://konkomaji.com/geotagcamera/
+# Crawlers only read robots.txt at the root of a host, so this copy is for reference.
+# The root file https://konkomaji.com/robots.txt should carry the Sitemap line below.
+User-agent: *
+Allow: /geotagcamera/
+
+Sitemap: https://konkomaji.com/geotagcamera/sitemap.xml

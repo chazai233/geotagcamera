@@ -38,7 +38,7 @@ object PhotoExport {
 
     fun csv(photos: List<PhotoEntity>, projectNames: Map<Long, String>): String = buildString {
         // BOM so Excel opens UTF-8 (Bengali, Hindi place names) correctly.
-        append('﻿')
+        append('\uFEFF')
         appendLine(HEADER.joinToString(","))
         photos.forEach { p ->
             val row = listOf(

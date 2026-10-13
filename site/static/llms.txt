@@ -1,0 +1,54 @@
+# GeoTag Camera
+
+> Free, open source (GPL-3.0-or-later), ad-free Android camera app that stamps photos with GPS location, address and time, and signs each photo on the device so anyone can later check it hasn't been edited. Built by Konko Maji for field surveyors, inspectors, students and NGO teams. Capturing, stamping, signing and verifying work offline. No Google Play services, no ads, no analytics, no trackers, no account.
+
+## Key facts
+
+- Current version: {{version}}, the first full (non-preview) release
+- Platform: Android 8.0 (API 26) and newer; Kotlin, CameraX, Jetpack Compose
+- Package name: com.geotagcamera.geotagginglocationonphoto
+- License: GNU GPL v3.0 or later
+- Price: free; no ads, subscriptions or in-app purchases
+- Data collection: none; there is no developer server, no analytics SDK, no ad SDK, no crash reporter, no account
+- Google Play services: not needed; location comes from Android's own location services
+- Permissions: camera; location (only while the camera screen is visible); photo location (so Verify can read GPS data in a picked photo); storage only on Android 9 and older; internet only for the stamp map, offline map downloads and the optional weather chip
+- Downloads: signed APKs on GitHub releases, one per CPU type (arm64-v8a, armeabi-v7a, x86_64) plus universal, each with a .sha256 file
+- Stores: GitHub releases and Obtainium now; F-Droid and IzzyOnDroid listings in progress; not on Google Play
+- Upgrading from 1.3.0 or older: uninstall first (new permanent signing key); photos stay in the gallery and still verify; Gallery, Import photos re-adds them to the in-app list
+- Author: Konko Maji (konkomaji@gmail.com)
+
+## Pages
+
+- [Home](https://konkomaji.com/geotagcamera/): features, how verification works, FAQ
+- [Download and install](https://konkomaji.com/geotagcamera/download/): which APK to pick, SHA-256 checks, install and update steps, requirements
+- [Changelog](https://konkomaji.com/geotagcamera/changelog/)
+- [Support](https://konkomaji.com/geotagcamera/support/): report a problem, security reports, contributing
+- [Privacy policy](https://konkomaji.com/geotagcamera/privacy/)
+- [Terms of use](https://konkomaji.com/geotagcamera/terms/)
+- [Licences and third-party notices](https://konkomaji.com/geotagcamera/licenses/)
+- Source code: https://github.com/konkomaji/geotagcamera
+- Latest release: https://github.com/konkomaji/geotagcamera/releases/latest
+
+## Features ({{version}})
+
+- Live stamp preview in the viewfinder, drawn by the same code that burns the stamp into the photo
+- Compact Bar stamp (place and country, address with Plus Code, coordinates, date and time with GMT offset, accuracy/altitude/bearing/weather, map, organisation name, logo and signature; about a sixth of a portrait photo) or a small Minimal label; moved by long-press and drag
+- GPS position, altitude, accuracy, direction, time and time-zone offset also written to EXIF
+- On-device OpenStreetMap map on the stamp (MapLibre + OpenFreeMap, no API key); cached for offline use; whole 2-30 km areas can be saved before a trip
+- Field and Professional profiles chosen at first launch
+- Projects: shoot into a project, filter the gallery, move photos between projects
+- Sticky note and a fixed custom text line on the stamp
+- Export locations as CSV, KML or GeoJSON with each photo's SHA-256
+- PDF site report with an overview map, an index and a fresh verification of each photo
+- Import photos: re-adds GeoTag Camera photos from the phone's gallery to the in-app list
+- Verify any photo carrying a GeoTag Camera proof, including ones from other people, offline
+- Camera adapts to the phone: real lens zoom presets, flash only if present, maker Night/HDR/Portrait modes via CameraX Extensions, 4:3/16:9/1:1/Full
+- In-app privacy policy, terms and licences; Report a problem by email (nothing sent automatically)
+
+## How verification works
+
+At capture the app hashes the JPEG image data (metadata segments excluded) with SHA-256 and signs the hash together with the capture latitude, longitude and time using an ECDSA P-256 key generated in the Android Keystore. Hash, signature and public key are embedded in EXIF and XMP. Verification recomputes the hash, checks the signature against the embedded key and compares the EXIF latitude, longitude and time with the signed values. A pass means the pixels (including the stamp) and the signed location and time are unchanged since signing. It does not prove who took the photo (the key is not tied to a person; compare the key fingerprint), nor that the GPS or clock were accurate. Recompressing a photo breaks verification.
+
+## What leaves the phone
+
+Nothing goes to the developer. The stamp map downloads OpenStreetMap tiles from OpenFreeMap (tile coordinates and IP address). The optional weather chip (off by default) sends the position rounded to about 1 km to Open-Meteo. Address lookup uses the phone's built-in Android geocoder, which on phones with Google services is usually Google's. App data is excluded from cloud backup and device transfer.
