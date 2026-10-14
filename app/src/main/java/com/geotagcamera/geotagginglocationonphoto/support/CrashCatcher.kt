@@ -40,7 +40,7 @@ object CrashCatcher {
         val trace = StringWriter().also { error.printStackTrace(PrintWriter(it)) }.toString()
         val text = buildString {
             appendLine("Crash at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date())}")
-            appendLine("App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}), Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}")
+            appendLine("App ${BuildConfig.VERSION_NAME} (${AppVersion.code(context)}), Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}")
             appendLine("Thread: ${thread.name}")
             appendLine()
             append(trace)

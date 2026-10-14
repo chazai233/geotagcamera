@@ -58,6 +58,10 @@ android {
             // Signed with the permanent release key when it is configured; otherwise
             // left unsigned (what F-Droid expects: it signs its own builds).
             signingConfig = signingConfigs.findByName("release")
+            // AGP otherwise packs META-INF/version-control-info.textproto, which
+            // depends on the checkout (F-Droid's clone vs ours) and breaks
+            // reproducible builds.
+            vcsInfo { include = false }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

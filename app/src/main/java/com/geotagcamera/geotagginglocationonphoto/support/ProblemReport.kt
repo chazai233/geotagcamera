@@ -19,8 +19,8 @@ object ProblemReport {
     enum class Kind(val label: String) { PROBLEM("Problem"), IDEA("Idea"), QUESTION("Question") }
 
     /** Facts that help reproduce a problem. Never location, photos or captures. */
-    fun deviceInfo(): String = buildString {
-        appendLine("App: GeoTag Camera ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}, ${BuildConfig.BUILD_TYPE})")
+    fun deviceInfo(context: Context): String = buildString {
+        appendLine("App: GeoTag Camera ${BuildConfig.VERSION_NAME} (${AppVersion.code(context)}, ${BuildConfig.BUILD_TYPE})")
         appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.firstOrNull().orEmpty()}")
@@ -31,9 +31,9 @@ object ProblemReport {
     fun subject(kind: Kind, message: String): String =
         "[GeoTag Camera ${BuildConfig.VERSION_NAME}] ${kind.label}: " + message.lineSequence().first().take(60)
 
-    fun body(message: String, includeDevice: Boolean, crash: String?): String = buildString {
+    fun body(context: Context, message: String, includeDevice: Boolean, crash: String?): String = buildString {
         appendLine(message.trim())
-        if (includeDevice) { appendLine(); appendLine("--"); appendLine(deviceInfo()) }
+        if (includeDevice) { appendLine(); appendLine("--"); appendLine(deviceInfo(context)) }
         if (crash != null) { appendLine(); appendLine("-- Crash details --"); appendLine(crash) }
     }
 

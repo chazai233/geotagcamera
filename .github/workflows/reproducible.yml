@@ -1,0 +1,117 @@
+name: Reproducible build check
+
+# F-Droid rebuilds the app from source and publishes our signed APK only if its
+# own build matches ours byte for byte. This workflow builds the same commit
+# twice: once the way release.yml does (Ubuntu, Temurin 17, all splits) and once
+# the way F-Droid does (Debian bookworm, OpenJDK 17, one ABI via -Pabi), then
+# compares the arm64-v8a APKs. Given a tag, it also checks the published
+# release APK with apksigcopier, the same tool F-Droid uses.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit, branch or tag to build"
+        required: true
+        default: main
+      tag:
+        description: "Release tag whose arm64-v8a APK to compare against (optional, e.g. v1.4.1)"
+        required: false
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+
+permissions:
+  contents: read
+
+env:
+  # workflow_run: the Release workflow ran on a tag push, so head_branch is the tag.
+  REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || inputs.ref }}
+  TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || inputs.tag }}
+
+jobs:
+  release-style:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REF }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+      - name: Build unsigned foss release (all splits, like release.yml)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleFossRelease --no-daemon --no-build-cache --stacktrace
+          cp app/build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk release-style.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-style
+          path: release-style.apk
+
+  fdroid-style:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container: debian:bookworm
+    env:
+      ANDROID_HOME: /opt/android-sdk
+    steps:
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends openjdk-17-jdk-headless git wget unzip ca-certificates
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REF }}
+          # A different checkout path than the other job, like F-Droid's build server.
+          path: build/com.geotagcamera.geotagginglocationonphoto
+      - name: Install Android SDK
+        run: |
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/clt.zip
+          unzip -q /tmp/clt.zip -d "$ANDROID_HOME/cmdline-tools"
+          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+      - name: Build unsigned foss release (one ABI, like F-Droid)
+        working-directory: build/com.geotagcamera.geotagginglocationonphoto
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleFossRelease -Pabi=arm64-v8a --no-daemon --no-build-cache --stacktrace
+          cp app/build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk "$GITHUB_WORKSPACE/fdroid-style.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fdroid-style
+          path: fdroid-style.apk
+
+  compare:
+    needs: [release-style, fdroid-style]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Compare the two builds
+        run: |
+          sha256sum release-style.apk fdroid-style.apk
+          python3 .github/scripts/apkdiff.py release-style.apk fdroid-style.apk
+          cmp release-style.apk fdroid-style.apk && echo "Byte-identical."
+      - name: Compare with the published release APK
+        if: env.TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pip install --quiet apksigcopier
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "geotagcamera-${TAG}-arm64-v8a.apk"
+          python3 .github/scripts/apkdiff.py "geotagcamera-${TAG}-arm64-v8a.apk" fdroid-style.apk
+          apksigcopier compare "geotagcamera-${TAG}-arm64-v8a.apk" --unsigned fdroid-style.apk
+          echo "Release APK matches the F-Droid-style build: F-Droid can ship our signed APK."

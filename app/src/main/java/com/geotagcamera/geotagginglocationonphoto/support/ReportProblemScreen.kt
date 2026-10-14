@@ -99,7 +99,7 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
                     modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp)
                 )
                 Spacer(Modifier.size(Spacing.S))
-                Check("Include device details", ProblemReport.deviceInfo().replace("\n", " · "), includeDevice) { includeDevice = it }
+                Check("Include device details", ProblemReport.deviceInfo(context).replace("\n", " · "), includeDevice) { includeDevice = it }
                 Check("Attach app log", "Recent messages from this app only. Map tile addresses are removed.", includeLog) { includeLog = it }
                 if (crash != null) Check("Include crash details", "From the last time the app closed unexpectedly.", includeCrash) { includeCrash = it }
                 Text(
@@ -115,7 +115,7 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
                             val sent = ProblemReport.send(
                                 context,
                                 ProblemReport.subject(kind, message.ifBlank { kind.label }),
-                                ProblemReport.body(message, includeDevice, if (includeCrash) crash else null),
+                                ProblemReport.body(context, message, includeDevice, if (includeCrash) crash else null),
                                 log
                             )
                             if (sent) {
