@@ -15,7 +15,7 @@ Made for field work: site inspections, surveys, construction progress, utility a
 <li>Projects: shoot into a project, filter and move photos</li>
 <li>Export photo locations as CSV, KML (Google Earth) or GeoJSON (QGIS, ArcGIS)</li>
 <li>PDF site report with an overview map and every photo re-verified</li>
-<li>Simple and Professional setups, chosen on first launch</li>
+<li>Field and Professional setups, chosen on first launch</li>
 </ul>
 
 <b>Tamper-evident photos</b>
