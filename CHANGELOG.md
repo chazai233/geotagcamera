@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] - 2026-10-14
+
+A maintenance release with no new features. It makes the build reproducible, so F-Droid can publish the same signed APK as GitHub. 1.4.1 installs over 1.4.0 and keeps your photos, projects and settings.
+
+### Changed
+- **Reproducible builds.** Building this version from source gives a byte-identical APK on any machine. F-Droid can check its own build against ours and ship the app with the same signature as the GitHub release, so you can switch between the two sources without reinstalling. A new CI check rebuilds every release the way F-Droid does and compares it.
+- Problem reports and crash details now show the version code of the APK you actually installed (for example 72 for arm64-v8a) instead of a shared one.
+
 ## [1.4.0] - 2026-10-14
 
 The first full release. Projects, notes, exports and reports for professional work, a build without Google Play services, and the legal and support pages a published app needs.

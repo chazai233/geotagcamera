@@ -87,12 +87,12 @@ Version 1.4.0 is the first full release. It adds projects, notes on the stamp, C
 
 ## Install
 
-1. Download the APK for your phone from the [latest release](https://github.com/konkomaji/geotagcamera/releases/latest). Most phones from the last several years want `geotagcamera-v1.4.0-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-v1.4.0-universal.apk`, which works everywhere but is bigger.
+1. Download the APK for your phone from the [latest release](https://github.com/konkomaji/geotagcamera/releases/latest). Most phones from the last several years want `geotagcamera-v1.4.1-arm64-v8a.apk`; older or budget phones may need `armeabi-v7a`. Not sure? Take `geotagcamera-v1.4.1-universal.apk`, which works everywhere but is bigger.
 2. Optional: check the download against the SHA-256 listed on the release page.
 3. Open the APK on your phone. Android asks you to allow installs from your browser or file manager the first time; allow it for that app only.
 4. Open GeoTag Camera and allow camera and location when asked.
 
-Coming from 1.3.0 or older? Those builds were signed with a development key, so **uninstall the old version first**, then install 1.4.0. Photos already in your gallery stay there and still verify. From 1.4.0 on, every release is signed with the same permanent key and updates in place. Android 8.0 or newer is required; Google Play services are not needed.
+Coming from 1.3.0 or older? Those builds were signed with a development key, so **uninstall the old version first**, then install the latest version. Photos already in your gallery stay there and still verify. From 1.4.0 on, every release is signed with the same permanent key and updates in place. Android 8.0 or newer is required; Google Play services are not needed.
 
 ## Using the app
 
