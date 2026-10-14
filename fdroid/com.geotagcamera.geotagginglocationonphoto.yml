@@ -16,11 +16,6 @@ AutoName: GeoTag Camera
 RepoType: git
 Repo: https://github.com/konkomaji/geotagcamera.git
 
-# One build per CPU type. versionCode = 10 * defaultConfig.versionCode + ABI digit
-# (1 armeabi-v7a, 2 arm64-v8a, 3 x86_64), computed by app/build.gradle.kts.
-# Builds are reproducible (checked by .github/workflows/reproducible.yml), so each
-# build is verified against the signed GitHub release APK via binary:, and F-Droid
-# ships the upstream-signed APK.
 Builds:
   - versionName: 1.4.1
     versionCode: 71
@@ -28,10 +23,11 @@ Builds:
     subdir: app
     gradle:
       - foss
+    output: build/outputs/apk/foss/release/app-foss-armeabi-v7a-release-unsigned.apk
+    binary: 
+      https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-armeabi-v7a.apk
     gradleprops:
       - abi=armeabi-v7a
-    output: build/outputs/apk/foss/release/app-foss-armeabi-v7a-release-unsigned.apk
-    binary: https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-armeabi-v7a.apk
 
   - versionName: 1.4.1
     versionCode: 72
@@ -39,10 +35,11 @@ Builds:
     subdir: app
     gradle:
       - foss
+    output: build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk
+    binary: 
+      https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-arm64-v8a.apk
     gradleprops:
       - abi=arm64-v8a
-    output: build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk
-    binary: https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-arm64-v8a.apk
 
   - versionName: 1.4.1
     versionCode: 73
@@ -50,10 +47,11 @@ Builds:
     subdir: app
     gradle:
       - foss
+    output: build/outputs/apk/foss/release/app-foss-x86_64-release-unsigned.apk
+    binary: 
+      https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-x86_64.apk
     gradleprops:
       - abi=x86_64
-    output: build/outputs/apk/foss/release/app-foss-x86_64-release-unsigned.apk
-    binary: https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-x86_64.apk
 
 AllowedAPKSigningKeys: eae984802fad821182bc3147c0f5067564f402833f56491146f25b600026f797
 
