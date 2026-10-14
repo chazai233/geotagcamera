@@ -2,10 +2,10 @@ name: Reproducible build check
 
 # F-Droid rebuilds the app from source and publishes our signed APK only if its
 # own build matches ours byte for byte. This workflow builds the same commit
-# twice: once the way release.yml does (Ubuntu, Temurin 17, all splits) and once
-# the way F-Droid does (Debian bookworm, OpenJDK 17, one ABI via -Pabi), then
-# compares the arm64-v8a APKs. Given a tag, it also checks the published
-# release APK with apksigcopier, the same tool F-Droid uses.
+# the way release.yml does (Ubuntu, Temurin 17, all splits) and the way F-Droid
+# does (one ABI via -Pabi, on Debian bookworm/OpenJDK 17 and trixie/OpenJDK 21),
+# then compares every ABI's APK. Given a tag, it also checks the published
+# release APKs with apksigcopier, the same tool F-Droid uses.
 
 on:
   workflow_dispatch:
@@ -49,24 +49,34 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew assembleFossRelease --no-daemon --no-build-cache --stacktrace
-          cp app/build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk release-style.apk
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            cp "app/build/outputs/apk/foss/release/app-foss-${abi}-release-unsigned.apk" "release-style-${abi}.apk"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: release-style
-          path: release-style.apk
+          path: release-style-*.apk
 
   fdroid-style:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    container: debian:bookworm
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [armeabi-v7a, arm64-v8a, x86_64]
+        # F-Droid's build server image moves between Debian releases; cover both.
+        server:
+          - { image: "debian:bookworm", jdk: "17" }
+          - { image: "debian:trixie", jdk: "21" }
+    container: ${{ matrix.server.image }}
     env:
       ANDROID_HOME: /opt/android-sdk
     steps:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends openjdk-17-jdk-headless git wget unzip ca-certificates
+          apt-get install -y --no-install-recommends openjdk-${{ matrix.server.jdk }}-jdk-headless git wget unzip ca-certificates
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.REF }}
@@ -83,15 +93,17 @@ jobs:
         working-directory: build/com.geotagcamera.geotagginglocationonphoto
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleFossRelease -Pabi=arm64-v8a --no-daemon --no-build-cache --stacktrace
-          cp app/build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk "$GITHUB_WORKSPACE/fdroid-style.apk"
+          ./gradlew assembleFossRelease -Pabi=${{ matrix.abi }} --no-daemon --no-build-cache --stacktrace
+          cp "app/build/outputs/apk/foss/release/app-foss-${{ matrix.abi }}-release-unsigned.apk" \
+            "$GITHUB_WORKSPACE/fdroid-${{ matrix.abi }}-jdk${{ matrix.server.jdk }}.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: fdroid-style
-          path: fdroid-style.apk
+          name: fdroid-${{ matrix.abi }}-jdk${{ matrix.server.jdk }}
+          path: fdroid-${{ matrix.abi }}-jdk${{ matrix.server.jdk }}.apk
 
   compare:
     needs: [release-style, fdroid-style]
+    if: always() && needs.release-style.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,12 +112,24 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-      - name: Compare the two builds
+      - name: Compare the F-Droid-style builds with the release-style build
         run: |
-          sha256sum release-style.apk fdroid-style.apk
-          python3 .github/scripts/apkdiff.py release-style.apk fdroid-style.apk
-          cmp release-style.apk fdroid-style.apk && echo "Byte-identical."
-      - name: Compare with the published release APK
+          sha256sum ./*.apk
+          fail=0
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            for jdk in 17 21; do
+              f="fdroid-${abi}-jdk${jdk}.apk"
+              echo "== ${abi}, JDK ${jdk}"
+              if [ ! -f "$f" ]; then echo "missing: $f (build failed)"; fail=1; continue; fi
+              if python3 .github/scripts/apkdiff.py "release-style-${abi}.apk" "$f" && cmp "release-style-${abi}.apk" "$f"; then
+                echo "Byte-identical."
+              else
+                fail=1
+              fi
+            done
+          done
+          exit $fail
+      - name: Compare with the published release APKs
         if: env.TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -113,7 +137,20 @@ jobs:
           pip install --quiet apksigcopier
           # apksigcopier calls apksigner, which lives in the SDK's build-tools.
           export PATH="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1):$PATH"
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "geotagcamera-${TAG}-arm64-v8a.apk"
-          python3 .github/scripts/apkdiff.py "geotagcamera-${TAG}-arm64-v8a.apk" fdroid-style.apk
-          apksigcopier compare "geotagcamera-${TAG}-arm64-v8a.apk" --unsigned fdroid-style.apk
-          echo "Release APK matches the F-Droid-style build: F-Droid can ship our signed APK."
+          fail=0
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            rel="geotagcamera-${TAG}-${abi}.apk"
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$rel"
+            for jdk in 17 21; do
+              f="fdroid-${abi}-jdk${jdk}.apk"
+              echo "== ${rel} vs ${f}"
+              [ -f "$f" ] || { echo "missing: $f"; fail=1; continue; }
+              if apksigcopier compare "$rel" --unsigned "$f"; then
+                echo "Match: F-Droid can ship our signed ${abi} APK."
+              else
+                python3 .github/scripts/apkdiff.py "$rel" "$f" || true
+                fail=1
+              fi
+            done
+          done
+          exit $fail

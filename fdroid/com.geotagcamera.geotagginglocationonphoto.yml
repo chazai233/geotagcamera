@@ -18,36 +18,44 @@ Repo: https://github.com/konkomaji/geotagcamera.git
 
 # One build per CPU type. versionCode = 10 * defaultConfig.versionCode + ABI digit
 # (1 armeabi-v7a, 2 arm64-v8a, 3 x86_64), computed by app/build.gradle.kts.
+# Builds are reproducible (checked by .github/workflows/reproducible.yml), so each
+# build is verified against the signed GitHub release APK via binary:, and F-Droid
+# ships the upstream-signed APK.
 Builds:
-  - versionName: 1.4.0
-    versionCode: 61
-    commit: v1.4.0
+  - versionName: 1.4.1
+    versionCode: 71
+    commit: 8bbf6a893b88fca140009d0f6244b9df5c93aecd
     subdir: app
     gradle:
       - foss
     gradleprops:
       - abi=armeabi-v7a
     output: build/outputs/apk/foss/release/app-foss-armeabi-v7a-release-unsigned.apk
+    binary: https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-armeabi-v7a.apk
 
-  - versionName: 1.4.0
-    versionCode: 62
-    commit: v1.4.0
+  - versionName: 1.4.1
+    versionCode: 72
+    commit: 8bbf6a893b88fca140009d0f6244b9df5c93aecd
     subdir: app
     gradle:
       - foss
     gradleprops:
       - abi=arm64-v8a
     output: build/outputs/apk/foss/release/app-foss-arm64-v8a-release-unsigned.apk
+    binary: https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-arm64-v8a.apk
 
-  - versionName: 1.4.0
-    versionCode: 63
-    commit: v1.4.0
+  - versionName: 1.4.1
+    versionCode: 73
+    commit: 8bbf6a893b88fca140009d0f6244b9df5c93aecd
     subdir: app
     gradle:
       - foss
     gradleprops:
       - abi=x86_64
     output: build/outputs/apk/foss/release/app-foss-x86_64-release-unsigned.apk
+    binary: https://github.com/konkomaji/geotagcamera/releases/download/v%v/geotagcamera-v%v-x86_64.apk
+
+AllowedAPKSigningKeys: eae984802fad821182bc3147c0f5067564f402833f56491146f25b600026f797
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
@@ -56,5 +64,5 @@ VercodeOperation:
   - 10 * %c + 2
   - 10 * %c + 3
 UpdateCheckData: app/build.gradle.kts|versionCode\s*=\s*(\d+)|.|versionName\s*=\s*"([^"]+)"
-CurrentVersion: 1.4.0
-CurrentVersionCode: 63
+CurrentVersion: 1.4.1
+CurrentVersionCode: 73
