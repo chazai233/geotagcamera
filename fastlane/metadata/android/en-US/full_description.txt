@@ -1,37 +1,35 @@
-GeoTag Camera is a free, open source camera for anyone who needs to show where and when a photo was taken: field surveyors, inspectors, students, NGO teams. There are no ads, no subscriptions and no account.
+GeoTag Camera is a free, open-source GPS camera with no ads, no tracking and no account. It stamps GPS coordinates, address, date, time and a small map on every photo, writes the location to EXIF, and signs each photo on your phone so later edits can be detected.
 
-<b>What it does</b>
+Made for field work: site inspections, surveys, construction progress, utility and pole audits, real estate, agriculture, and NGO or student field records.
+
+<b>GPS map camera features</b>
 <ul>
-<li>Stamps the GPS coordinates, address and time onto each photo, with a live preview of the stamp in the viewfinder</li>
-<li>Two stamp styles: Bar (the default), a full-width strip with every field you turn on, and Minimal, a small coordinates-and-time label</li>
-<li>Choose the stamp fields: place and country, address with Plus Code, coordinates, date and time with GMT offset, accuracy, altitude, bearing and more</li>
-<li>Move the stamp by holding and dragging it on the viewfinder</li>
-<li>Writes the location, altitude, accuracy, direction and time into the photo's EXIF data too, so GIS and photo tools can read it</li>
-<li>Adds your organization name and logo to the stamp</li>
-<li>Optional hand-drawn signature on the photo before saving</li>
-<li>Camera that adapts to your phone: zoom presets from the real lenses, flash only when there is one, and the phone maker's Night, HDR, Portrait and other modes when the phone offers them</li>
-<li>Tap-to-focus with exposure control, pinch zoom, grid, front/back camera, 4:3 / 16:9 / 1:1 / Full</li>
-<li>The saved photo matches the on-screen frame exactly</li>
-<li>Saves straight to your gallery in Pictures/GeoTagCamera</li>
-<li>Gallery grouped by day, with multi-select share and delete, open in maps and copy coordinates</li>
-<li>Projects: shoot into a project, filter and move photos between projects</li>
-<li>A note on the stamp (for example Pole 12) and a fixed custom text line</li>
-<li>Export locations as CSV, KML or GeoJSON for spreadsheets, Google Earth and GIS</li>
+<li>Location stamp with live preview: coordinates, address with Plus Code, date and time with GMT offset, accuracy, altitude, bearing and weather</li>
+<li>Map thumbnail on the stamp, drawn on the phone from OpenStreetMap data; save whole areas for offline use</li>
+<li>Two stamp styles (Bar and Minimal); move the stamp by dragging it</li>
+<li>Organization name, logo, a sticky note (for example Pole 12) and a fixed custom text line</li>
+<li>Optional hand-drawn signature on the photo</li>
+<li>Writes location, altitude, accuracy, direction and time to EXIF for GIS and photo tools</li>
+<li>Real camera controls: lens zoom presets, flash, tap-to-focus with exposure, grid, 4:3 / 16:9 / 1:1 / Full, and the phone maker's Night, HDR and Portrait modes where offered</li>
+<li>Saves to your gallery in Pictures/GeoTagCamera; the in-app gallery groups photos by day, with share, delete, open in maps and copy coordinates</li>
+<li>Projects: shoot into a project, filter and move photos</li>
+<li>Export photo locations as CSV, KML (Google Earth) or GeoJSON (QGIS, ArcGIS)</li>
 <li>PDF site report with an overview map and every photo re-verified</li>
-<li>Field and Professional setups chosen on first launch</li>
+<li>Simple and Professional setups, chosen on first launch</li>
 </ul>
 
-<b>Tamper evidence</b>
-Each photo is hashed with SHA-256 and signed with a key created on your phone in the Android Keystore. The proof is embedded in the file, so any copy of the app can check any photo, offline. Verification shows the signing key's fingerprint and whether it is this phone's key. A "verified" result means the image and its GPS latitude, longitude and capture time haven't changed since they were signed by the key stored in the file. It does not prove who took the photo, and it can't tell whether the phone's GPS or clock were telling the truth. Compressing or re-saving a photo breaks verification.
-
-<b>Works without signal</b>
-Taking, stamping, signing and verifying photos all work with no signal. With no connection the stamp uses the nearest address already cached on the phone, and the Plus Code is always calculated on the device.
+<b>Tamper-evident photos</b>
+Each photo is hashed with SHA-256 and signed with a key kept in the Android Keystore on your phone. The proof travels inside the file, so any copy of the app can verify any photo offline. "Verified" means the image, latitude, longitude and capture time have not changed since signing. It does not prove who took the photo or that the phone's GPS and clock were right. Re-saving or compressing a photo breaks verification.
 
 <b>Privacy</b>
-No ads, analytics or tracking. Nothing is sent to the developer. Location is only used while the camera screen is visible. The stamp map is drawn on the phone from OpenStreetMap tiles downloaded from OpenFreeMap (no account or key) and kept for offline use; you can also save whole areas before a trip. The weather chip is off by default and sends your position, rounded to about 1 km, to Open-Meteo. Address lookup uses the phone's built-in Android geocoder, which on most phones is provided by Google and uses the network. App data is excluded from cloud backup and device transfer, and can be wiped from the About screen.
+No ads, analytics or trackers, and nothing is sent to the developer. Location is used only while the camera is open. Map tiles come from OpenFreeMap (no account or key). The weather chip is off by default; when on, it sends your position rounded to about 1 km to Open-Meteo. Addresses come from the phone's built-in Android geocoder, which on most phones is run by Google and uses the network. App data is excluded from cloud backup and can be wiped from the About screen. No Google Play services are needed.
 
-Location comes from Android's own location services. No Google Play services are needed.
+<b>Common questions</b>
+<b>Is GeoTag Camera free?</b> Yes. It is free and open source (GPL-3.0-or-later), with no ads, subscriptions or in-app purchases.
+<b>Does it work offline?</b> Yes. Taking, stamping, signing and verifying photos work without signal. Offline, the stamp uses the nearest cached address, and the Plus Code is always calculated on the phone.
+<b>Does it need Google Play services?</b> No. Location comes from Android's own location services.
+<b>Can I get the photo locations out?</b> Yes, as CSV, KML, GeoJSON or a PDF report.
 
-Source code (GPL-3.0-or-later): https://github.com/konkomaji/geotagcamera
+Source code: https://github.com/konkomaji/geotagcamera
 Privacy policy: https://github.com/konkomaji/geotagcamera/blob/main/PRIVACY.md
 Website: https://konkomaji.com/geotagcamera/
