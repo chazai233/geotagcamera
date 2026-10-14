@@ -93,9 +93,14 @@ FAQ = [
      "treats them as different apps. Uninstall the old version first, then install 1.4.0. Your photos stay in the gallery "
      "and still verify, and Gallery, Import photos re-adds them to the in-app list. Later updates install in place."),
     ("Is it on F-Droid or Google Play?",
-     "Not yet. The F-Droid and IzzyOnDroid listings are in progress, and the download page will link them once they're "
-     "live. Until then, install the signed APK from GitHub, or let Obtainium keep it updated from there. A Play Store "
-     "release may come later."),
+     "Not yet. The app is submitted to F-Droid and in review, and IzzyOnDroid is next; the download page will link them "
+     "once they're live. The builds are reproducible, so the F-Droid APK will have the same signature as the GitHub one "
+     "and you can switch without reinstalling. Until then, install the signed APK from GitHub, or let Obtainium keep it "
+     "updated from there. A Play Store release may come later."),
+    ("Is the APK really built from the public source code?",
+     "Yes, and you can check it. From 1.4.1 the build is reproducible: building a tagged version from the GitHub source "
+     "gives a byte-identical APK. A CI job rebuilds every release on Debian with OpenJDK 17 and 21 and compares it with "
+     "the published APK, and F-Droid does the same check before it publishes."),
     ("How do I add GPS location and time to photos on Android?",
      "Install GeoTag Camera, allow camera and location, wait for Location locked, and take the photo. The place, address, "
      "coordinates, date and time (and a small map) are burned into the image, and the same location and time are written "
@@ -123,6 +128,7 @@ SCREENS = [
     ("3.png", "Gallery", "The gallery with a verified badge on each signed photo"),
     ("4.png", "Verify", "Photo details: unaltered since signing, with the signing key fingerprint"),
     ("5.png", "Settings", "Settings with Field or Professional setup and a live stamp preview"),
+    ("6.png", "Setup", "First launch: choose Field for quick capture or Professional for every detail"),
 ]
 SCREEN_DEFAULT_SIZE = (1080, 2340)
 
