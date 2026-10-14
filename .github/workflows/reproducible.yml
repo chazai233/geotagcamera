@@ -111,6 +111,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           pip install --quiet apksigcopier
+          # apksigcopier calls apksigner, which lives in the SDK's build-tools.
+          export PATH="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1):$PATH"
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "geotagcamera-${TAG}-arm64-v8a.apk"
           python3 .github/scripts/apkdiff.py "geotagcamera-${TAG}-arm64-v8a.apk" fdroid-style.apk
           apksigcopier compare "geotagcamera-${TAG}-arm64-v8a.apk" --unsigned fdroid-style.apk
