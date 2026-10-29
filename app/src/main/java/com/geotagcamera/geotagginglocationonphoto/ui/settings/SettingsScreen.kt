@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -185,29 +186,20 @@ private fun SettingsContent(
     var showAll by rememberSaveable(profile) { mutableStateOf(profile.showsAllSettings) }
     val pickLogo = rememberPhotoPicker { uri -> viewModel.setOrgLogo(uri) }
 
+    // 预览固定在顶部，往下调设置时也一直看得到效果
+    Column(Modifier.fillMaxSize().padding(contentPadding)) {
+        StampPreview(fields, customTime, Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp))
+        HorizontalDivider()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(contentPadding)
             .padding(horizontal = 16.dp)
-            .padding(bottom = 24.dp),
+            .padding(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        StampPreview(fields, customTime)
-
-        PhotoSettingsCard(
-            resolution = resolution,
-            jpegQuality = jpegQuality,
-            saveOriginal = saveOriginal,
-            onResolution = viewModel::setResolution,
-            onJpegQuality = viewModel::setJpegQuality,
-            onSaveOriginal = viewModel::setSaveOriginal
-        )
-
+        SectionHeader("水印内容")
         CustomFieldsCard(fields) { transform -> viewModel.update(transform) }
-
-        StyleSettingsCard(fields) { transform -> viewModel.update(transform) }
 
         DateTimeSettingsCard(
             fields = fields,
@@ -217,26 +209,7 @@ private fun SettingsContent(
             onCustomTimeEnabled = viewModel::setCustomTimeEnabled
         )
 
-        SettingsCard("使用场景") {
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                UserProfile.entries.forEachIndexed { i, p ->
-                    SegmentedButton(
-                        selected = p == profile,
-                        onClick = { if (p != profile) viewModel.setProfile(p) },
-                        shape = SegmentedButtonDefaults.itemShape(i, UserProfile.entries.size),
-                        label = { Text(p.title) }
-                    )
-                }
-            }
-            Text(
-                profile.summary + " 切换后会套用该场景推荐的水印字段。",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-        }
-
-        SettingsCard("水印内容") {
+        SettingsCard("显示哪些信息") {
             SURFACED.forEach { ToggleRow(it, fields, viewModel) }
             AnimatedVisibility(visible = showAll) {
                 Column { MORE.forEach { ToggleRow(it, fields, viewModel) } }
@@ -312,6 +285,19 @@ private fun SettingsContent(
             }
         }
 
+        SectionHeader("外观")
+        StyleSettingsCard(fields) { transform -> viewModel.update(transform) }
+
+        SectionHeader("拍照")
+        PhotoSettingsCard(
+            resolution = resolution,
+            jpegQuality = jpegQuality,
+            saveOriginal = saveOriginal,
+            onResolution = viewModel::setResolution,
+            onJpegQuality = viewModel::setJpegQuality,
+            onSaveOriginal = viewModel::setSaveOriginal
+        )
+
         SettingsCard("拍摄") {
             // Field keeps this one tucked away unless it's already on.
             if (profile.showsAllSettings || fields.requireSignature || showAll) {
@@ -337,6 +323,26 @@ private fun SettingsContent(
             )
         }
 
+        SettingsCard("使用场景") {
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                UserProfile.entries.forEachIndexed { i, p ->
+                    SegmentedButton(
+                        selected = p == profile,
+                        onClick = { if (p != profile) viewModel.setProfile(p) },
+                        shape = SegmentedButtonDefaults.itemShape(i, UserProfile.entries.size),
+                        label = { Text(p.title) }
+                    )
+                }
+            }
+            Text(
+                profile.summary + " 切换后会套用该场景推荐的水印字段。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+        }
+
+        SectionHeader("其他")
         SettingsCard("更多") {
             NavRow(Icons.Outlined.Map, "离线地图", "下载区域地图，没信号时水印地图也能显示", onOpenOfflineMaps)
             HorizontalDivider(Modifier.padding(start = 56.dp))
@@ -347,11 +353,12 @@ private fun SettingsContent(
             NavRow(Icons.Outlined.BugReport, "反馈问题", "给原作者发邮件（英文），可附设备信息", onOpenReport)
         }
     }
+    }
 }
 
 /** The current stamp settings drawn on a sample frame, exactly as the camera would burn them in. */
 @Composable
-private fun StampPreview(fields: StampFields, customTime: CustomTime) {
+private fun StampPreview(fields: StampFields, customTime: CustomTime, modifier: Modifier = Modifier) {
     val logo by produceState<android.graphics.Bitmap?>(null, fields.orgLogoUri) {
         value = fields.orgLogoUri?.let { path -> withContext(Dispatchers.IO) { LogoDecoder.decode(path) } }
     }
@@ -367,11 +374,10 @@ private fun StampPreview(fields: StampFields, customTime: CustomTime) {
             weatherChipText = "31°C 晴"
         )
     }
-    Column {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 520.dp)
+                .heightIn(max = 220.dp)
                 .aspectRatio(4f / 3f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(
@@ -383,7 +389,7 @@ private fun StampPreview(fields: StampFields, customTime: CustomTime) {
             StampOverlay(spec, Modifier.fillMaxSize())
         }
         Text(
-            "效果预览（示例位置和地图）",
+            "效果预览（示例位置）",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp, start = 4.dp)
@@ -446,3 +452,13 @@ private fun NavRow(icon: ImageVector, title: String, subtitle: String, onClick: 
 }
 
 
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+    )
+}

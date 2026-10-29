@@ -291,7 +291,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 orgLogo = if (fields.showOrgLogo) logo else null,
                 hasSignature = false,
                 weatherChipText = near?.weather?.chipText,
-                note = note
+                note = null
             ) }.getOrNull()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -666,7 +666,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             hasSignature = signature != null,
             weatherChipText = if (fields.showWeather) near?.weather?.chipText else null,
             signature = signature,
-            note = capture.note
+            note = null
         ).also { if (it !== image) image.recycle() }
         signature?.recycle()
 

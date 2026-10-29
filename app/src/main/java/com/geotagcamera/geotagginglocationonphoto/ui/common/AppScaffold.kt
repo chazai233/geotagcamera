@@ -51,9 +51,7 @@ fun AppScaffold(
                 title = {
                     Text(
                         title,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {

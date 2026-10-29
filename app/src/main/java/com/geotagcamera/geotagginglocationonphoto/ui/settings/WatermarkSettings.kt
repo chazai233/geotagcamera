@@ -209,8 +209,9 @@ internal fun StyleSettingsCard(fields: StampFields, update: ((StampFields) -> St
         )
 
         ToggleListRow(
-            title = "长文字自动换行",
-            subtitle = if (fields.wrapText) "字段内容太长时换到下一行（最多 4 行）" else "单行显示，超出部分用…省略",
+            title = "紧凑换行",
+            subtitle = if (fields.wrapText) "简洁模板：水印约占画面六成宽，长内容在框内换行"
+            else "简洁模板：尽量一行显示，可横跨整个画面，超出画面宽度才换行",
             checked = fields.wrapText,
             onChange = { on -> update { it.copy(wrapText = on) } }
         )
@@ -603,7 +604,7 @@ private fun DateFormatDialog(current: String, sampleMs: Long, onDismiss: () -> U
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DateStep(initialMs: Long, onDismiss: () -> Unit, onPicked: (Long) -> Unit) {
+internal fun DateStep(initialMs: Long, onDismiss: () -> Unit, onPicked: (Long) -> Unit) {
     // DatePicker 用 UTC 零点表示日期
     val localDate = Instant.ofEpochMilli(initialMs).atZone(ZoneId.systemDefault()).toLocalDate()
     val state = rememberDatePickerState(initialSelectedDateMillis = localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
@@ -620,7 +621,7 @@ private fun DateStep(initialMs: Long, onDismiss: () -> Unit, onPicked: (Long) ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeStep(initialMs: Long, onDismiss: () -> Unit, onPicked: (LocalTime) -> Unit) {
+internal fun TimeStep(initialMs: Long, onDismiss: () -> Unit, onPicked: (LocalTime) -> Unit) {
     val t = Instant.ofEpochMilli(initialMs).atZone(ZoneId.systemDefault()).toLocalTime()
     val state = rememberTimePickerState(initialHour = t.hour, initialMinute = t.minute, is24Hour = true)
     AlertDialog(

@@ -75,32 +75,44 @@ import kotlinx.coroutines.launch
 @Composable
 fun CaptureContextRow(
     project: ProjectEntity?,
-    note: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    fieldsSummary: String? = null,
+    fields: List<CustomField> = emptyList(),
     showProject: Boolean = true
 ) {
+    // 取景框下方的字段卡：每个字段一行、完整显示，点一下打开面板选预设
     Row(
         modifier = modifier
-            .widthIn(max = 420.dp)
-            .clip(RoundedCornerShape(50))
-            .border(BorderStroke(1.dp, ChromeTokens.GlassBorder), RoundedCornerShape(50))
+            .widthIn(max = 480.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(BorderStroke(1.dp, ChromeTokens.GlassBorder), RoundedCornerShape(16.dp))
             .background(ChromeTokens.Glass)
-            .clickable(onClickLabel = "修改项目和备注", onClick = onClick)
+            .clickable(onClickLabel = "修改水印字段", onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (showProject) {
-            Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier.weight(1f, fill = false))
-            Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (showProject) {
+                Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier)
+            }
+            if (fields.isEmpty()) {
+                Text("点此填写水印字段", color = ChromeTokens.InkMuted, style = MaterialTheme.typography.labelLarge)
+            }
+            fields.forEach { f ->
+                val v = f.value.trim()
+                Text(
+                    buildString {
+                        if (f.label.isNotBlank()) append(f.label).append("：")
+                        append(v.ifEmpty { "未填写" })
+                    },
+                    color = if (v.isEmpty()) ChromeTokens.InkMuted else ChromeTokens.Ink,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
         }
-        if (fieldsSummary != null) {
-            // 有自定义字段时优先显示字段内容；备注仍可在面板里改
-            Pill(Icons.Outlined.EditNote, fieldsSummary.ifBlank { "填写字段" }, fieldsSummary.isNotBlank(), Modifier.weight(1f, fill = false))
-        } else {
-            Pill(Icons.Outlined.StickyNote2, note.ifBlank { "添加备注" }, note.isNotBlank(), Modifier.weight(1f, fill = false))
-        }
+        Spacer(Modifier.width(8.dp))
+        Icon(Icons.Outlined.EditNote, contentDescription = null, tint = ChromeTokens.InkMuted, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -109,7 +121,7 @@ private fun Pill(icon: ImageVector, text: String, active: Boolean, modifier: Mod
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = if (active) ChromeTokens.Ink else ChromeTokens.InkMuted, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
-        Text(text, color = if (active) ChromeTokens.Ink else ChromeTokens.InkMuted, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, color = if (active) ChromeTokens.Ink else ChromeTokens.InkMuted, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -188,34 +200,18 @@ fun CaptureContextSheet(
                         TextButton(onClick = { onAddPreset(f.id, v.trim()) }) {
                             Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(Spacing.XS))
-                            Text("把「${v.trim()}」存为预设", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("把「${v.trim()}」存为预设")
                         }
                     }
                     Spacer(Modifier.size(Spacing.S))
                 }
                 Text(
-                    "字段名称、顺序和预设的增删在 设置 → 自定义字段 里管理。",
+                    "字段和预设在 设置 → 自定义字段 里管理。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.size(Spacing.L))
             }
-            Text("水印备注", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.size(Spacing.S))
-            OutlinedTextField(
-                value = noteText,
-                onValueChange = { noteText = it.take(CapturePreferences.MAX_NOTE_CHARS) },
-                placeholder = { Text("例如：3# 坝段 左岸边坡") },
-                singleLine = true,
-                trailingIcon = {
-                    if (noteText.isNotEmpty()) IconButton(onClick = { noteText = "" }) { Icon(Icons.Outlined.Close, contentDescription = "清除备注") }
-                },
-                supportingText = { Text("修改前会一直显示在每张照片上，写进画面并受签名保护。") },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { close() }),
-                modifier = Modifier.fillMaxWidth()
-            )
-
             if (showProjects) {
             Spacer(Modifier.size(Spacing.L))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -280,7 +276,7 @@ private fun ProjectRow(title: String, subtitle: String?, selected: Boolean, onCl
         RadioButton(selected = selected, onClick = null)
         Spacer(Modifier.width(Spacing.M))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.bodyLarge)
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }

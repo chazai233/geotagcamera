@@ -63,7 +63,7 @@ fun ProjectFilterRow(projects: List<ProjectWithCount>, filter: GalleryFilter, on
             FilterChip(
                 selected = (filter as? GalleryFilter.Project)?.id == p.id,
                 onClick = { onFilter(GalleryFilter.Project(p.id)) },
-                label = { Text(p.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label = { Text(p.name) },
                 leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null, modifier = Modifier.size(16.dp)) }
             )
         }
@@ -168,7 +168,7 @@ fun MoveToProjectDialog(
                     items(projects.filter { !it.archived }, key = { it.id }) { p ->
                         ListItem(
                             leadingContent = { Icon(Icons.Outlined.Folder, contentDescription = null) },
-                            headlineContent = { Text(p.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            headlineContent = { Text(p.name) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                             modifier = Modifier.clickable { onMove(p.id) }
                         )
@@ -231,7 +231,7 @@ fun ManageProjectsDialog(
                     items(projects, key = { it.id }) { p ->
                         Row(Modifier.fillMaxWidth().padding(vertical = Spacing.XS), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text(p.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(p.name, style = MaterialTheme.typography.bodyLarge)
                                 Text(
                                     "${p.photoCount} photo" + (if (p.photoCount == 1) "" else "s") + if (p.archived) " · archived" else "",
                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant

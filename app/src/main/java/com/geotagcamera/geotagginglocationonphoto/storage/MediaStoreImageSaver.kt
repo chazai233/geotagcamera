@@ -25,6 +25,9 @@ object MediaStoreImageSaver {
     /** 无水印原图的子文件夹：Pictures/GeoTagCamera/原图 */
     const val ORIGINALS_DIR = "原图"
 
+    /** 本地照片加水印后的子文件夹：Pictures/GeoTagCamera/本地水印 */
+    const val LOCAL_DIR = "本地水印"
+
     /** [subDir]：放在 Pictures/GeoTagCamera 下的子文件夹里，null = 直接放在该文件夹。 */
     fun save(context: Context, sourceFile: File, displayName: String, subDir: String? = null): Uri? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

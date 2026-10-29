@@ -152,8 +152,6 @@ private fun ColumnScope.Actions(
         review.filename,
         color = Ink,
         fontSize = 13.sp,
-        maxLines = 1,
-        overflow = TextOverflow.MiddleEllipsis,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
     )

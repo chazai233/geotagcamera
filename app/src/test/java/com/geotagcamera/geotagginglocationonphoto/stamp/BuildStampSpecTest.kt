@@ -161,4 +161,14 @@ class BuildStampSpecTest {
         f = f.withoutPreset("土方开挖")
         assertEquals(listOf("一期下游全年围堰石方开挖"), f.presets)
     }
+
+    @Test
+    fun `without a location only the time, fields and plain address show`() {
+        val s = buildStampSpec(null, address, t, StampFields(showAltitude = true, customFields = listOf(CustomField(1, "施工区域", "右岸基坑"))), null, null, false)
+        assertNull(s.coordinatesText)
+        assertTrue(s.chips.isEmpty())
+        assertEquals("BBD Bagh, Kolkata, 700001", s.addressLine)
+        assertEquals(listOf("施工区域：右岸基坑"), s.fieldLines)
+        assertTrue(s.dateTimeText != null)
+    }
 }

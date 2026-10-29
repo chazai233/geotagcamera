@@ -88,6 +88,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.NoPhotography
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Button
@@ -185,6 +186,7 @@ private val MIN_CONTROLS_HEIGHT = 196.dp
 fun CaptureScreen(
     onOpenGallery: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onOpenLocal: () -> Unit = {},
     viewModel: CaptureViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -230,7 +232,8 @@ fun CaptureScreen(
                     if (locationBlocked) openAppSettings(context) else launcher.launch(CAPTURE_PERMISSIONS)
                 },
                 onOpenGallery = onOpenGallery,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                onOpenLocal = onOpenLocal
             )
         } else {
             CameraPermissionScreen(
@@ -249,7 +252,8 @@ private fun CameraContent(
     hasLocation: Boolean,
     onRequestLocation: () -> Unit,
     onOpenGallery: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenLocal: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -606,7 +610,8 @@ private fun CameraContent(
                         onFlash = { viewModel.setFlashMode(nextFlash(flashMode)) },
                         onAspect = onAspect,
                         onGrid = { gridOn = !gridOn },
-                        onSettings = onOpenSettings
+                        onSettings = onOpenSettings,
+                        onLocal = onOpenLocal
                     )
                     GlassIconButton(Icons.Outlined.Folder, "水印字段和备注", { showContextSheet = true }, iconRotation)
                 }
@@ -647,6 +652,7 @@ private fun CameraContent(
                         onAspect = onAspect,
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings,
+                        onLocal = onOpenLocal,
                         beforeSettings = { Spacer(Modifier.weight(1f)) }
                     )
                 }
@@ -676,11 +682,10 @@ private fun CameraContent(
                         ) {
                             val enabledFields = stampFieldsState.customFields.filter { it.enabled }
                             CaptureContextRow(
-                                activeProject, captureNote,
+                                activeProject,
                                 onClick = { showContextSheet = true },
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                fieldsSummary = if (enabledFields.isEmpty()) null
-                                else enabledFields.mapNotNull { it.value.trim().ifEmpty { null } }.joinToString(" · "),
+                                fields = enabledFields,
                                 showProject = useProjects
                             )
                             ZoomPresets(zoomRatio, minZoom, maxZoom, vertical = false, onZoom = { applyZoom(it) })
@@ -970,12 +975,14 @@ private fun ControlButtons(
     onAspect: () -> Unit,
     onGrid: () -> Unit,
     onSettings: () -> Unit,
+    onLocal: () -> Unit,
     beforeSettings: @Composable () -> Unit = {}
 ) {
     if (showFlash) GlassIconButton(flashIcon(flashMode), flashLabel(flashMode), onFlash, iconModifier)
     GlassTextButton(aspectLabel(aspect), "画幅比例 ${aspectLabel(aspect)}", onAspect, iconModifier)
     GlassIconButton(if (gridOn) Icons.Filled.GridOn else Icons.Filled.GridOff, if (gridOn) "网格已开" else "网格已关", onGrid, iconModifier)
     beforeSettings()
+    GlassIconButton(Icons.Outlined.AddPhotoAlternate, "本地照片加水印", onLocal, iconModifier)
     GlassIconButton(Icons.Outlined.Settings, "设置", onSettings, iconModifier)
 }
 

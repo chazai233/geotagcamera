@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
@@ -51,11 +53,12 @@ import com.geotagcamera.geotagginglocationonphoto.ui.verify.VerifyScreen
  */
 private sealed class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
     data object Capture : Tab("capture", "拍照", Icons.Outlined.PhotoCamera, Icons.Filled.PhotoCamera)
+    data object Local : Tab("local", "加水印", Icons.Outlined.AddPhotoAlternate, Icons.Filled.AddPhotoAlternate)
     data object Gallery : Tab("gallery", "相册", Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)
     data object Settings : Tab("settings", "设置", Icons.Outlined.Settings, Icons.Filled.Settings)
 }
 
-private val tabs = listOf(Tab.Capture, Tab.Gallery, Tab.Settings)
+private val tabs = listOf(Tab.Capture, Tab.Local, Tab.Gallery, Tab.Settings)
 private val tabRoutes = tabs.map { it.route }.toSet()
 
 private object Routes {
@@ -195,8 +198,12 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
             composable(Tab.Capture.route) {
                 CaptureScreen(
                     onOpenGallery = { goToTab(Tab.Gallery.route) },
-                    onOpenSettings = { goToTab(Tab.Settings.route) }
+                    onOpenSettings = { goToTab(Tab.Settings.route) },
+                    onOpenLocal = { goToTab(Tab.Local.route) }
                 )
+            }
+            composable(Tab.Local.route) {
+                com.geotagcamera.geotagginglocationonphoto.ui.local.LocalWatermarkScreen()
             }
             composable(Tab.Gallery.route) {
                 GalleryScreen(

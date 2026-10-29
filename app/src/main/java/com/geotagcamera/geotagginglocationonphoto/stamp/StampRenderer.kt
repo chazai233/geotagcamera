@@ -45,7 +45,7 @@ object StampRenderer {
     fun stamp(
         context: Context,
         source: Bitmap,
-        fix: LocationFix,
+        fix: LocationFix?,
         addressParts: AddressParts?,
         capturedAtEpochMs: Long,
         fields: StampFields,

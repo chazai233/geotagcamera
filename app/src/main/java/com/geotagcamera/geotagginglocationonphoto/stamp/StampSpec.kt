@@ -83,7 +83,8 @@ data class StampSpec(
  * never a blocked capture) become one fully-formed [StampSpec].
  */
 fun buildStampSpec(
-    fix: LocationFix,
+    /** null = 没有位置（如本地照片没有 GPS）：不显示坐标、Plus Code 和 GPS 标签。 */
+    fix: LocationFix?,
     addressParts: AddressParts?,
     capturedAtEpochMs: Long,
     fields: StampFields,
@@ -103,14 +104,15 @@ fun buildStampSpec(
 
     val addressLine = if (fields.showAddress) {
         val base = addressParts?.addressLine
-        val plusCode = PlusCode.encode(fix.latitude, fix.longitude)
+        val plusCode = fix?.let { PlusCode.encode(it.latitude, it.longitude) }
         when {
             base.isNullOrBlank() -> plusCode
+            plusCode == null -> base
             else -> "$plusCode, $base"
         }
     } else null
 
-    val coordinatesText = if (fields.showCoordinates) {
+    val coordinatesText = if (fields.showCoordinates && fix != null) {
         // The gap after "Lat" and "Long" is a non-breaking space (U+00A0): if the
         // line wraps, it wraps between the two pairs, never inside one.
         "纬度 %.6f°  经度 %.6f°".format(Locale.US, fix.latitude, fix.longitude)
@@ -125,9 +127,9 @@ fun buildStampSpec(
     val gmtOffsetText = if (fields.showTimestamp && fields.showGmtOffset) formatGmtOffset(capturedAtEpochMs) else null
 
     val chips = buildList {
-        if (fields.showAltitude) fix.altitudeMeters?.takeIf { it.isFinite() }?.let { add(StampChip("海拔 ${it.roundToInt()} m")) }
-        if (fields.showAccuracy) fix.accuracyMeters?.takeIf { it.isFinite() }?.let { add(StampChip("±${it.roundToInt()} m")) }
-        if (fields.showBearing) fix.bearingDegrees?.takeIf { it.isFinite() }?.let { add(StampChip("方向 ${it.roundToInt()}°")) }
+        if (fields.showAltitude) fix?.altitudeMeters?.takeIf { it.isFinite() }?.let { add(StampChip("海拔 ${it.roundToInt()} m")) }
+        if (fields.showAccuracy) fix?.accuracyMeters?.takeIf { it.isFinite() }?.let { add(StampChip("±${it.roundToInt()} m")) }
+        if (fields.showBearing) fix?.bearingDegrees?.takeIf { it.isFinite() }?.let { add(StampChip("方向 ${it.roundToInt()}°")) }
         // Weather text is fetched by the caller (WeatherRepository needs network,
         // which this pure function has none of) and passed in already-formatted;
         // gated here so the live overlay and the burn-in stay identical.

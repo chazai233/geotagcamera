@@ -75,7 +75,7 @@ internal fun CustomFieldsCard(fields: StampFields, update: ((StampFields) -> Sta
                 supportingContent = {
                     val content = field.value.trim().ifEmpty { "未填写" }
                     val presets = if (field.presets.isEmpty()) "" else " · ${field.presets.size} 个预设"
-                    Text(content + presets, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(content + presets)
                 },
                 trailingContent = {
                     Switch(checked = field.enabled, onCheckedChange = { on -> edit(field.id) { it.copy(enabled = on) } })
@@ -273,7 +273,7 @@ private fun FieldEditorSheet(
                 )
                 if (value.isNotBlank() && value.trim() !in field.presets) {
                     TextButton(onClick = { addPresets(value) }) {
-                        Text("把当前内容存为预设", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("把当前内容存为预设")
                     }
                 }
             }

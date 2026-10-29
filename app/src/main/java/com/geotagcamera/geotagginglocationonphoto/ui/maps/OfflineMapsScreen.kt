@@ -201,9 +201,7 @@ private fun SaveAreaCard(here: HereState, network: NetworkState, onRetryLocate: 
                 Text(
                     here.placeName ?: "%.5f, %.5f".format(Locale.US, here.fix.latitude, here.fix.longitude),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.size(12.dp))
                 Text("半径", style = MaterialTheme.typography.labelLarge)
@@ -244,7 +242,7 @@ private fun AreaRow(area: OfflineArea, onPause: () -> Unit, onResume: () -> Unit
             Icon(icon, contentDescription = null, tint = tint)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(area.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(area.name, style = MaterialTheme.typography.titleSmall)
                 val status = when {
                     area.complete -> "可离线使用 · ${area.radiusKm} 公里 · ${formatBytes(area.completedBytes)}"
                     area.downloading -> "下载中 ${(area.progress * 100).toInt()}% · ${formatBytes(area.completedBytes)}"
