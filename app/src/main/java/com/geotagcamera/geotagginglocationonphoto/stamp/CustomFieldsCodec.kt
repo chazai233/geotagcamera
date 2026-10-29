@@ -29,11 +29,11 @@ object CustomFieldsCodec {
             val p = o.optJSONArray("presets")
             CustomField(
                 id = o.getLong("id"),
-                label = o.optString("label", ""),
-                value = o.optString("value", ""),
+                label = CustomField.clean(o.optString("label", "")),
+                value = CustomField.clean(o.optString("value", "")),
                 enabled = o.optBoolean("enabled", true),
-                history = if (h == null) emptyList() else (0 until h.length()).map { h.getString(it) },
-                presets = if (p == null) emptyList() else (0 until p.length()).map { p.getString(it) }
+                history = if (h == null) emptyList() else (0 until h.length()).map { CustomField.clean(h.getString(it)).trim() }.filter { it.isNotEmpty() }.distinct(),
+                presets = if (p == null) emptyList() else (0 until p.length()).map { CustomField.clean(p.getString(it)).trim() }.filter { it.isNotEmpty() }.distinct()
             )
         }
     }.getOrElse { CustomField.DEFAULTS }

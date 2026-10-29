@@ -16,6 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.maxLength
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.flow.drop
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -153,17 +163,35 @@ private fun FieldEditorSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // 本地文本状态，输入不等设置回写，不会吞字或跳光标
-    var label by remember(field.id) { mutableStateOf(field.label) }
-    var value by remember(field.id) { mutableStateOf(field.value) }
-    var newPreset by remember(field.id) { mutableStateOf("") }
+    // TextFieldState 保留输入法拼写状态，中文输入不会重复上屏；
+    // 文本只从输入框流向设置，设置回写不会再改输入框。
+    val labelInput = rememberTextFieldState(field.label)
+    val valueInput = rememberTextFieldState(field.value)
+    val presetInput = rememberTextFieldState("")
     var arranging by remember(field.id) { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    val currentOnChange by rememberUpdatedState(onChange)
+
+    LaunchedEffect(labelInput) {
+        snapshotFlow { labelInput.text.toString() }.drop(1).collect { t -> currentOnChange { f -> f.copy(label = CustomField.clean(t)) } }
+    }
+    LaunchedEffect(valueInput) {
+        snapshotFlow { valueInput.text.toString() }.drop(1).collect { t -> currentOnChange { f -> f.copy(value = CustomField.clean(t)) } }
+    }
+    val value = valueInput.text.toString()
 
     fun addPresets(raw: String) {
         val items = raw.lines().map { it.trim() }.filter { it.isNotEmpty() }
-        if (items.isNotEmpty()) onChange { it.withPresets(items) }
-        newPreset = ""
+        if (items.isNotEmpty()) currentOnChange { it.withPresets(items) }
+    }
+    // 预设输入框允许回车/粘贴多行：一出现换行就把已输入的各行加为预设并清空
+    LaunchedEffect(presetInput) {
+        snapshotFlow { presetInput.text.toString() }.collect { t ->
+            if (t.contains('\n')) {
+                addPresets(t)
+                presetInput.clearText()
+            }
+        }
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
@@ -178,22 +206,22 @@ private fun FieldEditorSheet(
             Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = label,
-                onValueChange = { label = it.take(CustomField.MAX_LABEL); onChange { f -> f.copy(label = label) } },
+                state = labelInput,
                 label = { Text("名称") },
                 placeholder = { Text("例如 施工部位") },
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                inputTransformation = InputTransformation.maxLength(CustomField.MAX_LABEL),
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
-                value = value,
-                onValueChange = { value = it.take(CustomField.MAX_VALUE); onChange { f -> f.copy(value = value) } },
+                state = valueInput,
                 label = { Text("当前内容") },
                 placeholder = { Text("输入或从下方预设中选") },
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
+                inputTransformation = InputTransformation.maxLength(CustomField.MAX_VALUE),
                 trailingIcon = {
-                    if (value.isNotEmpty()) IconButton(onClick = { value = ""; onChange { f -> f.copy(value = "") } }) {
+                    if (value.isNotEmpty()) IconButton(onClick = { valueInput.clearText() }) {
                         Icon(Icons.Outlined.Close, contentDescription = "清空")
                     }
                 },
@@ -226,7 +254,7 @@ private fun FieldEditorSheet(
                         field.presets.forEach { pr ->
                             FilterChip(
                                 selected = pr == value.trim(),
-                                onClick = { value = pr; onChange { f -> f.copy(value = pr) } },
+                                onClick = { valueInput.setTextAndPlaceCursorAtEnd(pr) },
                                 label = { Text(pr) }
                             )
                         }
@@ -255,17 +283,14 @@ private fun FieldEditorSheet(
             if (!arranging) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = newPreset,
-                    onValueChange = { input ->
-                        // 粘贴多行时直接整批加入
-                        if (input.contains('\n')) addPresets(input) else newPreset = input.take(CustomField.MAX_VALUE)
-                    },
-                    placeholder = { Text("添加预设，可粘贴多行") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { addPresets(newPreset) }),
+                    state = presetInput,
+                    placeholder = { Text("添加预设，回车添加，可粘贴多行") },
+                    lineLimits = TextFieldLineLimits.MultiLine(minHeightInLines = 1, maxHeightInLines = 4),
                     trailingIcon = {
-                        IconButton(onClick = { addPresets(newPreset) }, enabled = newPreset.isNotBlank()) {
+                        IconButton(
+                            onClick = { addPresets(presetInput.text.toString()); presetInput.clearText() },
+                            enabled = presetInput.text.isNotBlank()
+                        ) {
                             Icon(Icons.Outlined.Add, contentDescription = "添加预设")
                         }
                     },

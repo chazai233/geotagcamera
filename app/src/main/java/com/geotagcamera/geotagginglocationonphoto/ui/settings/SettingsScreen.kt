@@ -1,5 +1,14 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.settings
 
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.maxLength
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import com.geotagcamera.geotagginglocationonphoto.stamp.CustomField
+import kotlinx.coroutines.flow.drop
+
 import com.geotagcamera.geotagginglocationonphoto.data.CaptureResolution
 import com.geotagcamera.geotagginglocationonphoto.data.CustomTime
 
@@ -226,31 +235,29 @@ private fun SettingsContent(
 
         SettingsCard("单位信息") {
             Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
-                // Local text state: the field never waits on a DataStore round trip,
-                // so fast typing can't drop characters or move the cursor.
-                var orgText by rememberSaveable { mutableStateOf(fields.orgLabel) }
+                // TextFieldState：中文输入法拼写状态完整保留，不会重复上屏
+                val orgInput = rememberTextFieldState(fields.orgLabel)
+                LaunchedEffect(orgInput) {
+                    snapshotFlow { orgInput.text.toString() }.drop(1).collect { t -> viewModel.update { it.copy(orgLabel = CustomField.clean(t)) } }
+                }
                 OutlinedTextField(
-                    value = orgText,
-                    onValueChange = { value ->
-                        orgText = value
-                        viewModel.update { it.copy(orgLabel = value) }
-                    },
+                    state = orgInput,
                     label = { Text("单位、公司或项目名称") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(12.dp))
-                var customText by rememberSaveable { mutableStateOf(fields.customText) }
+                val customInput = rememberTextFieldState(fields.customText)
+                LaunchedEffect(customInput) {
+                    snapshotFlow { customInput.text.toString() }.drop(1).collect { t -> viewModel.update { it.copy(customText = CustomField.clean(t)) } }
+                }
                 OutlinedTextField(
-                    value = customText,
-                    onValueChange = { value ->
-                        customText = value.take(120)
-                        viewModel.update { it.copy(customText = customText) }
-                    },
+                    state = customInput,
                     label = { Text("每张照片都显示的文字（可选）") },
-                    supportingText = { Text("例如合同编号、监理姓名。单张照片的备注在拍照界面设置。") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    supportingText = { Text("例如合同编号、监理姓名。") },
+                    lineLimits = TextFieldLineLimits.SingleLine,
+                    inputTransformation = InputTransformation.maxLength(120),
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

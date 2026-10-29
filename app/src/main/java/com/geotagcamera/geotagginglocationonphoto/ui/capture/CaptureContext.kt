@@ -1,6 +1,15 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.capture
 
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.maxLength
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.key
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.outlined.EditNote
@@ -169,22 +178,28 @@ fun CaptureContextSheet(
             if (shownFields.isNotEmpty()) {
                 Text("水印字段", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.size(Spacing.S))
-                shownFields.forEach { f ->
-                    val v = fieldValues[f.id] ?: ""
+                shownFields.forEach { f -> key(f.id) {
+                    // TextFieldState 完整保留输入法的拼写状态；用简单的 String 写法时，
+                    // 拍照界面每秒刷新会让中文输入法重复上屏（"船闸开挖开挖"）。
+                    val input = rememberTextFieldState(fieldValues[f.id] ?: f.value)
+                    LaunchedEffect(input) {
+                        snapshotFlow { input.text.toString() }.collect { fieldValues[f.id] = CustomField.clean(it) }
+                    }
+                    val v = input.text.toString()
                     OutlinedTextField(
-                        value = v,
-                        onValueChange = { fieldValues[f.id] = it.take(CustomField.MAX_VALUE) },
+                        state = input,
                         label = { Text(f.label.ifBlank { "（无名称）" }) },
-                        singleLine = true,
+                        lineLimits = TextFieldLineLimits.SingleLine,
+                        inputTransformation = InputTransformation.maxLength(CustomField.MAX_VALUE),
                         trailingIcon = {
-                            if (v.isNotEmpty()) IconButton(onClick = { fieldValues[f.id] = "" }) { Icon(Icons.Outlined.Close, contentDescription = "清空") }
+                            if (v.isNotEmpty()) IconButton(onClick = { input.clearText() }) { Icon(Icons.Outlined.Close, contentDescription = "清空") }
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
                     // 预设：点一下就选中
                     if (f.presets.isNotEmpty()) {
                         Spacer(Modifier.size(Spacing.XS))
-                        PresetChips(presets = f.presets, selected = v, onSelect = { fieldValues[f.id] = it })
+                        PresetChips(presets = f.presets, selected = v, onSelect = { input.setTextAndPlaceCursorAtEnd(it) })
                     }
                     // 最近用过但不在预设里的
                     val recent = f.history.filter { it != v && it !in f.presets }
@@ -192,7 +207,7 @@ fun CaptureContextSheet(
                         Text("最近", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = Spacing.XS))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.S)) {
                             items(recent) { h ->
-                                SuggestionChip(onClick = { fieldValues[f.id] = h }, label = { Text(h, maxLines = 1) })
+                                SuggestionChip(onClick = { input.setTextAndPlaceCursorAtEnd(h) }, label = { Text(h) })
                             }
                         }
                     }
@@ -204,7 +219,7 @@ fun CaptureContextSheet(
                         }
                     }
                     Spacer(Modifier.size(Spacing.S))
-                }
+                } }
                 Text(
                     "字段和预设在 设置 → 自定义字段 里管理。",
                     style = MaterialTheme.typography.bodySmall,

@@ -132,7 +132,7 @@ data class CustomField(
 ) {
     /** 加入预设（去空白、去重，保持原顺序，新的追加在后面）。 */
     fun withPresets(added: List<String>): CustomField {
-        val clean = added.map { it.trim().take(MAX_VALUE) }.filter { it.isNotEmpty() }
+        val clean = added.map { clean(it).trim().take(MAX_VALUE) }.filter { it.isNotEmpty() }
         return copy(presets = (presets + clean).distinct().take(MAX_PRESETS))
     }
 
@@ -151,20 +151,23 @@ data class CustomField(
     /** 在水印上显示的一行；没开或没填值时为 null。 */
     val line: String?
         get() {
-            val v = value.trim()
+            val v = clean(value).trim()
             if (!enabled || v.isEmpty()) return null
-            val l = label.trim()
+            val l = clean(label).trim()
             return if (l.isEmpty()) v else "$l：$v"
         }
 
     /** 把当前值记进历史（去重，最多 [MAX_HISTORY] 条）。 */
     fun withValueInHistory(): CustomField {
-        val v = value.trim()
+        val v = clean(value).trim()
         if (v.isEmpty()) return this
         return copy(history = (listOf(v) + history.filter { it != v }).take(MAX_HISTORY))
     }
 
     companion object {
+        /** 换行、制表符等换成一个空格：字段只能是一行文字。 */
+        fun clean(s: String): String = s.replace(Regex("[\\r\\n\\t\\u2028\\u2029]+"), " ")
+
         const val MAX_HISTORY = 8
         const val MAX_PRESETS = 100
         const val MAX_LABEL = 20

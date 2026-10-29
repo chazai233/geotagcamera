@@ -171,4 +171,16 @@ class BuildStampSpecTest {
         assertEquals(listOf("施工区域：右岸基坑"), s.fieldLines)
         assertTrue(s.dateTimeText != null)
     }
+
+    @Test
+    fun `line breaks never get into fields, presets or history`() {
+        val f = CustomField(1, "施工内容", "船闸开挖\n石方").withPresets(listOf("右岸\r\n基坑")).withValueInHistory()
+        assertEquals("施工内容：船闸开挖 石方", f.line)
+        assertEquals(listOf("右岸 基坑"), f.presets)
+        assertEquals(listOf("船闸开挖 石方"), f.history)
+        val stored = """[{"id":1,"label":"施工内容","value":"a\\nb","presets":["x\\ny","x y",""],"history":[]}]"""
+        val decoded = CustomFieldsCodec.decode(stored).single()
+        assertEquals("a b", decoded.value)
+        assertEquals(listOf("x y"), decoded.presets)
+    }
 }
