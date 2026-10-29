@@ -191,6 +191,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun addCustomFieldPreset(id: Long, value: String) {
+        viewModelScope.launch {
+            stampPreferences.edit { f ->
+                f.copy(customFields = f.customFields.map { if (it.id == id) it.withPresets(listOf(value)) else it })
+            }
+        }
+    }
+
     fun selectProject(id: Long?) {
         viewModelScope.launch { capturePreferences.setActiveProject(id) }
     }

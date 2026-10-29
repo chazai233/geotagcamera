@@ -707,7 +707,8 @@ private fun CameraContent(
                 onNoteChange = { viewModel.setCaptureNote(it) },
                 onDismiss = { showContextSheet = false },
                 customFields = stampFieldsState.customFields,
-                onFieldValues = { viewModel.setCustomFieldValues(it) }
+                onFieldValues = { viewModel.setCustomFieldValues(it) },
+                onAddPreset = { id, v -> viewModel.addCustomFieldPreset(id, v) }
             )
         }
 

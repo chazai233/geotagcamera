@@ -15,6 +15,7 @@ object CustomFieldsCodec {
                     .put("value", f.value)
                     .put("enabled", f.enabled)
                     .put("history", JSONArray(f.history))
+                    .put("presets", JSONArray(f.presets))
             )
         }
         return arr.toString()
@@ -25,12 +26,14 @@ object CustomFieldsCodec {
         (0 until arr.length()).map { i ->
             val o = arr.getJSONObject(i)
             val h = o.optJSONArray("history")
+            val p = o.optJSONArray("presets")
             CustomField(
                 id = o.getLong("id"),
                 label = o.optString("label", ""),
                 value = o.optString("value", ""),
                 enabled = o.optBoolean("enabled", true),
-                history = if (h == null) emptyList() else (0 until h.length()).map { h.getString(it) }
+                history = if (h == null) emptyList() else (0 until h.length()).map { h.getString(it) },
+                presets = if (p == null) emptyList() else (0 until p.length()).map { p.getString(it) }
             )
         }
     }.getOrElse { CustomField.DEFAULTS }

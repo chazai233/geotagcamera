@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.runtime.mutableStateMapOf
 import com.geotagcamera.geotagginglocationonphoto.stamp.CustomField
+import com.geotagcamera.geotagginglocationonphoto.ui.settings.PresetChips
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -121,7 +122,8 @@ fun CaptureContextSheet(
     onNoteChange: (String) -> Unit,
     onDismiss: () -> Unit,
     customFields: List<CustomField> = emptyList(),
-    onFieldValues: (Map<Long, String>) -> Unit = {}
+    onFieldValues: (Map<Long, String>) -> Unit = {},
+    onAddPreset: (Long, String) -> Unit = { _, _ -> }
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -162,21 +164,32 @@ fun CaptureContextSheet(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    val recent = f.history.filter { it != v }
+                    // 预设：点一下就选中
+                    if (f.presets.isNotEmpty()) {
+                        Spacer(Modifier.size(Spacing.XS))
+                        PresetChips(presets = f.presets, selected = v, onSelect = { fieldValues[f.id] = it })
+                    }
+                    // 最近用过但不在预设里的
+                    val recent = f.history.filter { it != v && it !in f.presets }
                     if (recent.isNotEmpty()) {
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.S),
-                            modifier = Modifier.padding(top = Spacing.XS)
-                        ) {
+                        Text("最近", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = Spacing.XS))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.S)) {
                             items(recent) { h ->
                                 SuggestionChip(onClick = { fieldValues[f.id] = h }, label = { Text(h, maxLines = 1) })
                             }
                         }
                     }
+                    if (v.isNotBlank() && v.trim() !in f.presets) {
+                        TextButton(onClick = { onAddPreset(f.id, v.trim()) }) {
+                            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(Spacing.XS))
+                            Text("把「${v.trim()}」存为预设", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
                     Spacer(Modifier.size(Spacing.S))
                 }
                 Text(
-                    "字段的名称、顺序和增删在 设置 → 自定义字段 里改。",
+                    "字段名称、顺序和预设的增删在 设置 → 自定义字段 里管理。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

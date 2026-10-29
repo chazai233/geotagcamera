@@ -30,6 +30,8 @@ import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.key
 import com.geotagcamera.geotagginglocationonphoto.stamp.CustomField
 import androidx.compose.material.icons.outlined.Palette
@@ -712,7 +714,10 @@ internal fun CustomFieldsCard(fields: StampFields, update: ((StampFields) -> Sta
                     onEnabled = { v -> edit(field.id) { it.copy(enabled = v) } },
                     onUp = { move(field.id, -1) },
                     onDown = { move(field.id, 1) },
-                    onDelete = { update { f -> f.copy(customFields = f.customFields.filter { it.id != field.id }) } }
+                    onDelete = { update { f -> f.copy(customFields = f.customFields.filter { it.id != field.id }) } },
+                    onAddPresets = { added -> edit(field.id) { it.withPresets(added) } },
+                    onRemovePreset = { pr -> edit(field.id) { it.withoutPreset(pr) } },
+                    onMovePreset = { pr, d -> edit(field.id) { it.movePreset(pr, d) } }
                 )
             }
             if (index < list.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
@@ -749,8 +754,13 @@ private fun CustomFieldEditor(
     onEnabled: (Boolean) -> Unit,
     onUp: () -> Unit,
     onDown: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onAddPresets: (List<String>) -> Unit,
+    onRemovePreset: (String) -> Unit,
+    onMovePreset: (String, Int) -> Unit
 ) {
+    var showAddPresets by remember { mutableStateOf(false) }
+    var showManage by remember { mutableStateOf(false) }
     // 本地文本状态：输入不等 DataStore 回写，光标不会跳。
     var label by remember(field.id) { mutableStateOf(field.label) }
     // 设置页打开时拍照界面不会同时改内容，所以不用回写同步（回写会在快速输入时吞字）。
@@ -781,7 +791,135 @@ private fun CustomFieldEditor(
             IconButton(onClick = onDown, enabled = canMoveDown) { Icon(Icons.Outlined.ArrowDownward, contentDescription = "下移") }
             IconButton(onClick = onDelete) { Icon(Icons.Outlined.Delete, contentDescription = "删除字段") }
         }
+        // 预设：点一下填入内容，× 删除
+        Text(
+            "预设（${field.presets.size}）",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+        )
+        PresetChips(
+            presets = field.presets,
+            selected = value,
+            onSelect = { v -> value = v; onValue(v) },
+            onRemove = onRemovePreset
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = { showAddPresets = true }) {
+                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("添加预设")
+            }
+            if (value.isNotBlank() && value.trim() !in field.presets) {
+                TextButton(onClick = { onAddPresets(listOf(value)) }) { Text("把当前内容存为预设") }
+            }
+            if (field.presets.size > 1) {
+                TextButton(onClick = { showManage = true }) { Text("排序") }
+            }
+        }
     }
+
+    if (showAddPresets) {
+        AddPresetsDialog(
+            fieldLabel = field.label,
+            onDismiss = { showAddPresets = false },
+            onAdd = { added -> onAddPresets(added); showAddPresets = false }
+        )
+    }
+    if (showManage) {
+        ManagePresetsDialog(field.presets, onMove = onMovePreset, onRemove = onRemovePreset, onDismiss = { showManage = false })
+    }
+}
+
+/** 预设标签：选中的高亮；[onRemove] 为 null 时不显示删除。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun PresetChips(
+    presets: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    onRemove: ((String) -> Unit)? = null
+) {
+    if (presets.isEmpty()) {
+        Text(
+            "还没有预设。点\"添加预设\"，可以一次粘贴多行。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        presets.forEach { pr ->
+            FilterChip(
+                selected = pr == selected.trim(),
+                onClick = { onSelect(pr) },
+                label = { Text(pr) },
+                trailingIcon = onRemove?.let { remove ->
+                    {
+                        Icon(
+                            Icons.Outlined.Close,
+                            contentDescription = "删除预设 $pr",
+                            modifier = Modifier.size(16.dp).clickable { remove(pr) }
+                        )
+                    }
+                }
+            )
+        }
+    }
+}
+
+/** 批量添加：每行一个。 */
+@Composable
+private fun AddPresetsDialog(fieldLabel: String, onDismiss: () -> Unit, onAdd: (List<String>) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("添加预设 · ${fieldLabel.ifBlank { "字段" }}") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("每行一个，可一次粘贴多行") },
+                placeholder = { Text("右岸坝肩\n右岸基坑\n一期下游全年围堰石方开挖") },
+                minLines = 4,
+                maxLines = 10,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onAdd(lines) }, enabled = lines.isNotEmpty()) {
+                Text(if (lines.size > 1) "添加 ${lines.size} 条" else "添加")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
+}
+
+@Composable
+private fun ManagePresetsDialog(
+    presets: List<String>,
+    onMove: (String, Int) -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("预设排序") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                presets.forEachIndexed { i, pr ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(pr, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        IconButton(onClick = { onMove(pr, -1) }, enabled = i > 0) { Icon(Icons.Outlined.ArrowUpward, contentDescription = "上移") }
+                        IconButton(onClick = { onMove(pr, 1) }, enabled = i < presets.lastIndex) { Icon(Icons.Outlined.ArrowDownward, contentDescription = "下移") }
+                        IconButton(onClick = { onRemove(pr) }) { Icon(Icons.Outlined.Delete, contentDescription = "删除") }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("完成") } }
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)

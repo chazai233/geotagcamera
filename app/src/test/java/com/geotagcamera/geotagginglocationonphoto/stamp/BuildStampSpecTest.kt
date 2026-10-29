@@ -147,8 +147,18 @@ class BuildStampSpecTest {
 
     @Test
     fun `custom fields survive a json round trip and bad json falls back`() {
-        val list = listOf(CustomField(1, "施工区域", "右岸坝肩", true, listOf("右岸坝肩", "左岸")), CustomField(7, "桩号", "", false))
+        val list = listOf(CustomField(1, "施工区域", "右岸坝肩", true, listOf("右岸坝肩", "左岸"), listOf("右岸坝肩", "右岸基坑")), CustomField(7, "桩号", "", false))
         assertEquals(list, CustomFieldsCodec.decode(CustomFieldsCodec.encode(list)))
         assertEquals(CustomField.DEFAULTS, CustomFieldsCodec.decode("not json"))
+    }
+
+    @Test
+    fun `presets dedupe, trim, remove and reorder`() {
+        var f = CustomField(2, "施工内容").withPresets(listOf(" 一期下游全年围堰石方开挖 ", "", "土方开挖", "土方开挖"))
+        assertEquals(listOf("一期下游全年围堰石方开挖", "土方开挖"), f.presets)
+        f = f.movePreset("土方开挖", -1)
+        assertEquals(listOf("土方开挖", "一期下游全年围堰石方开挖"), f.presets)
+        f = f.withoutPreset("土方开挖")
+        assertEquals(listOf("一期下游全年围堰石方开挖"), f.presets)
     }
 }

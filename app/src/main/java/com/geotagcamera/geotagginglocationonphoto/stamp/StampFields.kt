@@ -124,8 +124,28 @@ data class CustomField(
     val label: String,
     val value: String = "",
     val enabled: Boolean = true,
-    val history: List<String> = emptyList()
+    val history: List<String> = emptyList(),
+    /** 用户维护的预设内容，拍照时一点即选。 */
+    val presets: List<String> = emptyList()
 ) {
+    /** 加入预设（去空白、去重，保持原顺序，新的追加在后面）。 */
+    fun withPresets(added: List<String>): CustomField {
+        val clean = added.map { it.trim().take(MAX_VALUE) }.filter { it.isNotEmpty() }
+        return copy(presets = (presets + clean).distinct().take(MAX_PRESETS))
+    }
+
+    fun withoutPreset(preset: String): CustomField = copy(presets = presets.filter { it != preset })
+
+    /** 预设上移/下移。 */
+    fun movePreset(preset: String, delta: Int): CustomField {
+        val l = presets.toMutableList()
+        val i = l.indexOf(preset)
+        val j = i + delta
+        if (i < 0 || j !in l.indices) return this
+        l.add(j, l.removeAt(i))
+        return copy(presets = l)
+    }
+
     /** 在水印上显示的一行；没开或没填值时为 null。 */
     val line: String?
         get() {
@@ -144,6 +164,7 @@ data class CustomField(
 
     companion object {
         const val MAX_HISTORY = 8
+        const val MAX_PRESETS = 100
         const val MAX_LABEL = 20
         const val MAX_VALUE = 60
         val DEFAULTS = listOf(CustomField(1, "施工区域"), CustomField(2, "施工内容"))
