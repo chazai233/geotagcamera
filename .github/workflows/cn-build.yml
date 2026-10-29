@@ -3,7 +3,8 @@ name: CN Build
 # 工程水印相机（中文版）的构建与发布。
 #
 # - 推送到 main：跑单元测试，编译用正式密钥签名的 APK，更新"测试版"（标签 cn-latest，会被覆盖）。
-# - 推送标签 v*-cn*（如 v1.4.1-cn2）：发布正式版本。正式版本永久保留，标签固定对应发布时的源码。
+#   如果当前 versionName 还没有发布过（不存在标签 v版本号），同时发布正式版：自动打上固定标签 v版本号，永久保留。
+# - 也可以手动推送标签 v*-cn* 发布正式版。
 #
 # 签名密钥只从仓库的 Actions Secrets 读取，仓库里不存放任何密钥：
 #   KEYSTORE_BASE64   正式密钥库文件（.jks）的 Base64
@@ -56,6 +57,13 @@ jobs:
           VERSION=$(sed -n 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -n1)
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "versionName: $VERSION"
+          # 这个版本还没发布过 → 本次同时发布正式版
+          if [ "$IS_TAG" = "true" ] || ! git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "IS_RELEASE=true" >> "$GITHUB_ENV"
+            echo "本次发布正式版 v$VERSION"
+          else
+            echo "IS_RELEASE=false" >> "$GITHUB_ENV"
+          fi
           if [ "$IS_TAG" = "true" ] && [ "${GITHUB_REF_NAME#v}" != "$VERSION" ]; then
             echo "::error::标签 $GITHUB_REF_NAME 与 app/build.gradle.kts 里的 versionName \"$VERSION\" 不一致"
             exit 1
@@ -96,9 +104,11 @@ jobs:
           apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)/apksigner"
           "$apksigner" verify --print-certs "$APK" | tee cert.txt
           mkdir -p dist
-          if [ "$IS_TAG" = "true" ]; then NAME="GongChengCamera-${VERSION}.apk"; else NAME="GongChengCamera.apk"; fi
-          cp "$APK" "dist/$NAME"
-          (cd dist && sha256sum "$NAME" > "$NAME.sha256")
+          mkdir -p dist-release
+          cp "$APK" dist/GongChengCamera.apk
+          (cd dist && sha256sum GongChengCamera.apk > GongChengCamera.apk.sha256)
+          cp "$APK" "dist-release/GongChengCamera-${VERSION}.apk"
+          (cd dist-release && sha256sum "GongChengCamera-${VERSION}.apk" > "GongChengCamera-${VERSION}.apk.sha256")
 
       - name: Remove signing key
         if: always()
@@ -126,7 +136,7 @@ jobs:
         if: success()
         run: |
           # 正式版取 CHANGELOG_CN.md 中对应版本的一节；测试版取最上面一节
-          if [ "$IS_TAG" = "true" ]; then
+          if [ "$IS_RELEASE" = "true" ]; then
             awk -v ver="$VERSION" '/^## /{ if (found) exit; if (index($0, "## " ver) == 1) { found = 1 } } found' CHANGELOG_CN.md > notes.md
           else
             {
@@ -152,11 +162,11 @@ jobs:
             echo '```'
             grep -E 'SHA-256 digest' cert.txt | head -1
             echo '```'
-            echo "### 文件校验 SHA-256"
-            echo '```'
-            cat dist/*.sha256
-            echo '```'
           } >> notes.md
+          # 正式版和测试版文件名不同，各自附上自己的 SHA-256
+          cp notes.md notes-release.md
+          { echo "### 文件校验 SHA-256"; echo '```'; cat dist/*.sha256; echo '```'; } >> notes.md
+          { echo "### 文件校验 SHA-256"; echo '```'; cat dist-release/*.sha256; echo '```'; } >> notes-release.md
           cat notes.md
 
       - name: Publish test build
@@ -172,16 +182,17 @@ jobs:
             --prerelease
 
       - name: Publish release
-        if: success() && env.IS_TAG == 'true'
+        if: success() && env.IS_RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist-release/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" dist/* \
+            gh release create "$TAG" dist-release/* \
+              --target "${GITHUB_SHA}" \
               --title "工程水印相机 ${VERSION}" \
-              --notes-file notes.md \
-              --verify-tag \
+              --notes-file notes-release.md \
               --latest
           fi
