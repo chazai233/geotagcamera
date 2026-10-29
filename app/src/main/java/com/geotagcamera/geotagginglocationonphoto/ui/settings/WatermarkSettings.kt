@@ -209,9 +209,9 @@ internal fun StyleSettingsCard(fields: StampFields, update: ((StampFields) -> St
         )
 
         ToggleListRow(
-            title = "紧凑换行",
-            subtitle = if (fields.wrapText) "简洁模板：水印约占画面六成宽，长内容在框内换行"
-            else "简洁模板：尽量一行显示，可横跨整个画面，超出画面宽度才换行",
+            title = "长文字换行",
+            subtitle = if (fields.wrapText) "开：内容放不下时换到下一行，完整显示"
+            else "关：严格单行，不换行、不省略、不缩字号；水印框随最长一行变宽，超出照片的部分会被切掉",
             checked = fields.wrapText,
             onChange = { on -> update { it.copy(wrapText = on) } }
         )
