@@ -28,8 +28,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // Split APKs get versionCode * 10 + ABI digit (see androidComponents below).
-        versionCode = 7
-        versionName = "1.4.1-cn1"
+        versionCode = 8
+        versionName = "1.4.1-cn2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -44,13 +44,6 @@ android {
     }
 
     signingConfigs {
-        // 固定签名：每次自动构建的 APK 都能直接覆盖安装升级
-        getByName("debug") {
-            storeFile = rootProject.file("cn-debug.keystore")
-            storePassword = "android"
-            keyAlias = "cn"
-            keyPassword = "android"
-        }
         if (releaseStoreFile != null) {
             create("release") {
                 storeFile = file(releaseStoreFile)

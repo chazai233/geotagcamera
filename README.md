@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chazai233/geotagcamera/releases/download/cn-latest/GongChengCamera.apk"><b>下载最新 APK</b></a> ·
+  <a href="https://github.com/chazai233/geotagcamera/releases/latest"><b>下载最新正式版</b></a> ·
   <a href="#功能">功能</a> ·
   <a href="#安装">安装</a> ·
   <a href="#与原版的区别">与原版的区别</a> ·
@@ -53,9 +53,14 @@
 
 ## 安装
 
-1. 在手机上打开 [GongChengCamera.apk](https://github.com/chazai233/geotagcamera/releases/download/cn-latest/GongChengCamera.apk) 下载。
+1. 在手机上打开 [Releases 页面的最新正式版](https://github.com/chazai233/geotagcamera/releases/latest)，下载 `GongChengCamera-版本号.apk`。
 2. 安装时如提示"未知来源"，按提示允许浏览器或文件管理器安装应用。
-3. 以后每次更新都用同一个链接下载，直接覆盖安装，设置和照片都会保留。
+3. 以后的新版本直接覆盖安装，设置和照片都会保留。
+
+版本说明：
+- **正式版**：标签形如 `v1.4.1-cn2`，永久保留；发行说明里写明对应的源码提交、签名证书指纹和文件 SHA-256。
+- **测试版**：标签 `cn-latest`，每次推送代码后自动更新，用于试用新改动。正式版和测试版用同一把密钥签名，可以互相覆盖安装。
+- **1.4.1-cn1 及更早的版本**用的是公开的调试密钥，已经作废。装过这些版本的手机需要先卸载再安装新版；系统相册里的照片不受影响，应用内的字段、预设和设置需要重新填写。
 
 说明：
 - 包名为 `com.geotagcamera.geotagginglocationonphoto.cn`，可以和原版 GeoTag Camera 同时安装，互不影响。
@@ -90,7 +95,12 @@
 ## 从源码编译
 
 ### GitHub Actions（推荐）
-每次推送到 `main` 分支，[CN Build](.github/workflows/cn-build.yml) 工作流会自动运行单元测试、编译 APK，并更新 Releases 中的 `cn-latest`。编译失败时，构建日志会推送到 `ci-logs` 分支。
+[CN Build](.github/workflows/cn-build.yml) 工作流：
+- 推送到 `main`：运行单元测试，编译正式签名的 APK，更新测试版 `cn-latest`。
+- 推送标签 `v版本号`（须与 `app/build.gradle.kts` 的 versionName 一致）：发布永久保留的正式版，发行说明取自 [CHANGELOG_CN.md](CHANGELOG_CN.md) 对应版本的一节。
+- 编译失败时，构建日志推送到 `ci-logs` 分支。
+
+签名密钥只从仓库的 Actions Secrets 读取（`KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`），仓库里不存放任何密钥。没有配置时只运行测试，不发布 APK。
 
 ### 本地编译
 需要 JDK 17 和 Android SDK（platform 36）。
@@ -101,10 +111,7 @@ cd geotagcamera
 ./gradlew testFossDebugUnitTest assembleFossDebug
 ```
 
-APK 在 `app/build/outputs/apk/foss/debug/`。
-
-### 关于签名密钥
-为了让每次自动构建的 APK 都能覆盖安装，仓库中带有一个固定的调试签名密钥 `cn-debug.keystore`（密码 `android`）。仓库是公开的，任何人都能用这个密钥签名，所以本仓库发布的 APK 只适合自用，不要作为正式渠道对外分发。正式分发请换成自己保管的密钥。
+APK 在 `app/build/outputs/apk/foss/debug/`，使用你本机的 Android 调试密钥签名，不能覆盖安装 Releases 里发布的版本。
 
 ## 问题反馈
 

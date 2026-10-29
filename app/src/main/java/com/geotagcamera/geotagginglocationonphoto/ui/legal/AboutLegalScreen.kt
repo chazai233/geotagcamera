@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 private const val SOURCE_URL = "https://github.com/konkomaji/geotagcamera"
+/** 本中文修改版的源码与发布页（GPL 要求能方便取得对应源码）。 */
+private const val FORK_URL = "https://github.com/chazai233/geotagcamera"
 private const val WEBSITE_URL = "https://konkomaji.com/geotagcamera/"
 
 /**
@@ -73,7 +75,7 @@ fun AboutLegalScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold
             )
-            Body("基于开源项目 GeoTag Camera（GPLv3）的中文修改版。免费开源，无广告、无账号、无跟踪。")
+            Body("基于开源项目 GeoTag Camera（作者 Konko Maji，GPL-3.0-or-later）修改的中文版，同样以 GPL-3.0-or-later 发布。免费开源，无广告、无账号、无跟踪。每个版本对应的完整源码见下方\"本应用源代码\"。")
 
             Section("不收集数据") {
                 Body("无账号、无统计、无广告 SDK、无崩溃上报。水印地图会下载你所在位置（以及你选择保存的区域）的地图瓦片；天气默认关闭。")
@@ -113,6 +115,8 @@ fun AboutLegalScreen(
             }
 
             Section("链接") {
+                LinkRow("本应用源代码（中文版）", FORK_URL, context)
+                LinkRow("本应用所有版本下载", "$FORK_URL/releases", context)
                 LinkRow("原项目网站", WEBSITE_URL, context)
                 LinkRow("原项目源代码", SOURCE_URL, context)
                 LinkRow("隐私政策（在线）", "$SOURCE_URL/blob/main/PRIVACY.md", context)

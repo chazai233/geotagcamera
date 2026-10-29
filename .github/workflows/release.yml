@@ -1,9 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  # 中文版的正式发布由 cn-build.yml 负责；原版发布流程只保留手动运行
+  workflow_dispatch:
 
 permissions:
   contents: write
