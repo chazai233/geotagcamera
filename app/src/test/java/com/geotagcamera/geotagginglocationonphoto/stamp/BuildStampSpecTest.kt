@@ -178,7 +178,7 @@ class BuildStampSpecTest {
         assertEquals("施工内容：船闸开挖 石方", f.line)
         assertEquals(listOf("右岸 基坑"), f.presets)
         assertEquals(listOf("船闸开挖 石方"), f.history)
-        val stored = """[{"id":1,"label":"施工内容","value":"a\\nb","presets":["x\\ny","x y",""],"history":[]}]"""
+        val stored = """[{"id":1,"label":"施工内容","value":"a\nb","presets":["x\ny","x y",""],"history":[]}]"""
         val decoded = CustomFieldsCodec.decode(stored).single()
         assertEquals("a b", decoded.value)
         assertEquals(listOf("x y"), decoded.presets)
