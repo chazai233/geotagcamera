@@ -266,6 +266,8 @@ private fun CameraContent(
     val jpegQuality by viewModel.jpegQuality.collectAsStateWithLifecycle()
     val customTime by viewModel.customTime.collectAsStateWithLifecycle()
     val stampFieldsState by viewModel.stampFields.collectAsStateWithLifecycle()
+    val useProjects by viewModel.useProjects.collectAsStateWithLifecycle()
+    var showManageProjects by remember { mutableStateOf(false) }
     // "最高"档位在部分手机上绑定失败（高像素模式不被支持）时，自动退回 1200 万。
     var maxResolutionFailed by remember { mutableStateOf(false) }
     val effectiveResolution = if (resolution == CaptureResolution.MAX && maxResolutionFailed) CaptureResolution.MP12 else resolution
@@ -606,7 +608,7 @@ private fun CameraContent(
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings
                     )
-                    GlassIconButton(Icons.Outlined.Folder, "项目和备注：${activeProject?.name ?: "无"}", { showContextSheet = true }, iconRotation)
+                    GlassIconButton(Icons.Outlined.Folder, "水印字段和备注", { showContextSheet = true }, iconRotation)
                 }
                 Box(
                     Modifier.weight(1f).fillMaxHeight()
@@ -678,7 +680,8 @@ private fun CameraContent(
                                 onClick = { showContextSheet = true },
                                 modifier = Modifier.padding(horizontal = 16.dp),
                                 fieldsSummary = if (enabledFields.isEmpty()) null
-                                else enabledFields.mapNotNull { it.value.trim().ifEmpty { null } }.joinToString(" · ")
+                                else enabledFields.mapNotNull { it.value.trim().ifEmpty { null } }.joinToString(" · "),
+                                showProject = useProjects
                             )
                             ZoomPresets(zoomRatio, minZoom, maxZoom, vertical = false, onZoom = { applyZoom(it) })
                             ModePicker(availableModes, cameraMode, vertical = false) { cameraMode = it }
@@ -708,7 +711,18 @@ private fun CameraContent(
                 onDismiss = { showContextSheet = false },
                 customFields = stampFieldsState.customFields,
                 onFieldValues = { viewModel.setCustomFieldValues(it) },
-                onAddPreset = { id, v -> viewModel.addCustomFieldPreset(id, v) }
+                onAddPreset = { id, v -> viewModel.addCustomFieldPreset(id, v) },
+                showProjects = useProjects,
+                onManageProjects = { showManageProjects = true }
+            )
+        }
+        if (showManageProjects) {
+            com.geotagcamera.geotagginglocationonphoto.ui.gallery.ManageProjectsDialog(
+                projects = projects,
+                onRename = viewModel::renameProject,
+                onArchive = viewModel::setProjectArchived,
+                onDelete = viewModel::deleteProject,
+                onDismiss = { showManageProjects = false }
             )
         }
 

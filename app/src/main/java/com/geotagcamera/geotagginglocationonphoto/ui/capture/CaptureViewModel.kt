@@ -191,6 +191,26 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    val useProjects: StateFlow<Boolean> = capturePreferences.useProjects
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun renameProject(id: Long, name: String) {
+        val clean = name.trim().take(80)
+        if (clean.isNotEmpty()) viewModelScope.launch { projectDao.rename(id, clean) }
+    }
+
+    fun setProjectArchived(id: Long, archived: Boolean) {
+        viewModelScope.launch { projectDao.setArchived(id, archived) }
+    }
+
+    /** 只删项目本身，照片保留（变为未分项目）。 */
+    fun deleteProject(id: Long) {
+        viewModelScope.launch {
+            projectDao.delete(id)
+            if (activeProject.value?.id == id) capturePreferences.setActiveProject(null)
+        }
+    }
+
     fun addCustomFieldPreset(id: Long, value: String) {
         viewModelScope.launch {
             stampPreferences.edit { f ->
@@ -410,7 +430,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val capture = PendingCapture(
             file, capturedAt, customTime.value.toStampTime(capturedAt), squareCrop = aspect == CaptureAspect.RATIO_1_1,
             note = captureNote.value.trim().ifEmpty { null },
-            projectId = activeProject.value?.id
+            projectId = if (useProjects.value) activeProject.value?.id else null
         )
 
         _uiState.value = CaptureUiState.Processing

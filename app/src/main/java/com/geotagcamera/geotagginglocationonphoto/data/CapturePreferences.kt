@@ -31,6 +31,7 @@ class CapturePreferences(private val context: Context) {
         val RESOLUTION = stringPreferencesKey("capture_resolution")
         val JPEG_QUALITY = intPreferencesKey("jpeg_quality")
         val SAVE_ORIGINAL = booleanPreferencesKey("save_original")
+        val USE_PROJECTS = booleanPreferencesKey("use_projects")
         val CUSTOM_TIME_ON = booleanPreferencesKey("custom_time_on")
         val CUSTOM_TIME_OFFSET = longPreferencesKey("custom_time_offset_ms")
     }
@@ -49,6 +50,20 @@ class CapturePreferences(private val context: Context) {
 
     suspend fun setJpegQuality(value: Int) {
         context.captureDataStore.edit { it[Keys.JPEG_QUALITY] = value.coerceIn(60, 100) }
+    }
+
+    /**
+     * 项目分组：开启后，拍照界面可选择"当前项目"，新照片自动归入该项目，
+     * 相册里可按项目筛选、导出、生成 PDF 报告。默认关闭。
+     */
+    val useProjects: Flow<Boolean> = context.captureDataStore.data.map { it[Keys.USE_PROJECTS] ?: false }
+
+    /** 关闭项目分组时同时清掉"当前项目"，否则照片仍会悄悄归入它。 */
+    suspend fun setUseProjects(value: Boolean) {
+        context.captureDataStore.edit {
+            it[Keys.USE_PROJECTS] = value
+            if (!value) it.remove(Keys.ACTIVE_PROJECT)
+        }
     }
 
     /** 同时保存一张无水印原图。 */

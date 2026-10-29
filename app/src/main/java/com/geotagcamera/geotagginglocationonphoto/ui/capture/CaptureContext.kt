@@ -78,7 +78,8 @@ fun CaptureContextRow(
     note: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    fieldsSummary: String? = null
+    fieldsSummary: String? = null,
+    showProject: Boolean = true
 ) {
     Row(
         modifier = modifier
@@ -90,8 +91,10 @@ fun CaptureContextRow(
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier.weight(1f, fill = false))
-        Spacer(Modifier.width(12.dp))
+        if (showProject) {
+            Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier.weight(1f, fill = false))
+            Spacer(Modifier.width(12.dp))
+        }
         if (fieldsSummary != null) {
             // 有自定义字段时优先显示字段内容；备注仍可在面板里改
             Pill(Icons.Outlined.EditNote, fieldsSummary.ifBlank { "填写字段" }, fieldsSummary.isNotBlank(), Modifier.weight(1f, fill = false))
@@ -123,7 +126,9 @@ fun CaptureContextSheet(
     onDismiss: () -> Unit,
     customFields: List<CustomField> = emptyList(),
     onFieldValues: (Map<Long, String>) -> Unit = {},
-    onAddPreset: (Long, String) -> Unit = { _, _ -> }
+    onAddPreset: (Long, String) -> Unit = { _, _ -> },
+    showProjects: Boolean = true,
+    onManageProjects: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -211,8 +216,17 @@ fun CaptureContextSheet(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            if (showProjects) {
             Spacer(Modifier.size(Spacing.L))
-            Text("项目", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("当前项目", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = onManageProjects) { Text("管理项目") }
+            }
+            Text(
+                "选中的项目会自动归入之后拍的每张照片（不显示在水印上）。相册里可按项目筛选、导出位置数据、生成 PDF 报告。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(Modifier.size(Spacing.XS))
             val active = projects.filter { !it.archived }
             // 面板整体可滚动，这里不能再嵌套 LazyColumn
@@ -247,6 +261,7 @@ fun CaptureContextSheet(
                     Spacer(Modifier.width(Spacing.S))
                     Text("新建项目")
                 }
+            }
             }
             Spacer(Modifier.size(Spacing.L))
         }

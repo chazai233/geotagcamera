@@ -109,12 +109,13 @@ object StampPainter {
         // First pass assumes a tile, then the tile is sized from the text height.
         // Text height doesn't depend on width (every line is one line), so one
         // pass with an estimated tile width is exact.
-        val textHeightProbe = barTextHeight(spec, tm, lineGap, pal)
-        val cardHeight = (textHeightProbe + padV * 2).coerceAtLeast(px(28f))
-        val tileSize = if (spec.mapTile != null) cardHeight else 0f
+        // 地图方块按"每项一行"的高度定；自定义字段和备注过长时会换行，卡片随之变高。
+        val textHeightProbe = barTextHeight(spec, tm, lineGap, pal, wrapWidth = null)
+        val tileSize = if (spec.mapTile != null) (textHeightProbe + padV * 2).coerceAtLeast(px(28f)) else 0f
         val cardWidth = outerWidth - (if (tileSize > 0f) tileSize + gap else 0f)
         val rightColWidth = if (hasRightColumn) cardWidth * 0.24f else 0f
         val textWidth = (cardWidth - padH * 2 - (if (hasRightColumn) rightColWidth + padH else 0f)).coerceAtLeast(1f)
+        val cardHeight = (barTextHeight(spec, tm, lineGap, pal, wrapWidth = textWidth) + padV * 2).coerceAtLeast(maxOf(px(28f), tileSize))
 
         val totalWidth = (if (tileSize > 0f) tileSize + gap else 0f) + cardWidth
         val x0 = when (spec.anchor.column) {
@@ -156,9 +157,9 @@ object StampPainter {
         }
         spec.addressLine?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
         spec.coordinatesText?.let { y += drawLine(tm, it, pal.data, textX, y, textWidth) + lineGap }
-        spec.fieldLines.forEach { y += drawLine(tm, it, pal.note, textX, y, textWidth) + lineGap }
+        spec.fieldLines.forEach { y += drawWrapped(tm, it, pal.note, textX, y, textWidth) + lineGap }
         dateTimeLine(spec)?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
-        spec.noteLine?.let { y += drawLine(tm, it, pal.note, textX, y, textWidth) + lineGap }
+        spec.noteLine?.let { y += drawWrapped(tm, it, pal.note, textX, y, textWidth) + lineGap }
 
         // Last line: meta chips as one dotted run on the left, marks on the right.
         val marks = marksText(spec)
@@ -201,15 +202,19 @@ object StampPainter {
     }
 
     /** Height of the Bar's text column; every line is single-line so width doesn't matter. */
-    private fun barTextHeight(spec: StampSpec, tm: TextMeasurer, lineGap: Float, pal: Palette): Float {
+    /** [wrapWidth] 为 null 时每项按一行算；否则按实际换行后的高度算。 */
+    private fun barTextHeight(spec: StampSpec, tm: TextMeasurer, lineGap: Float, pal: Palette, wrapWidth: Float?): Float {
+        fun wrappedH(text: String, style: TextStyle): Int =
+            if (wrapWidth == null) tm.measure(PROBE, style, maxLines = 1).size.height
+            else wrap(tm, text, style, wrapWidth).size.height
         // 用含中文的探针测行高：中文字体的行高可能比拉丁字母高。
         val heights = buildList {
             if (spec.placeName != null) add(tm.measure(PROBE, pal.title, maxLines = 1).size.height)
             if (spec.addressLine != null) add(tm.measure(PROBE, pal.body, maxLines = 1).size.height)
             if (spec.coordinatesText != null) add(tm.measure(PROBE, pal.data, maxLines = 1).size.height)
-            spec.fieldLines.forEach { _ -> add(tm.measure(PROBE, pal.note, maxLines = 1).size.height) }
+            spec.fieldLines.forEach { add(wrappedH(it, pal.note)) }
             if (dateTimeLine(spec) != null) add(tm.measure(PROBE, pal.body, maxLines = 1).size.height)
-            if (spec.noteLine != null) add(tm.measure(PROBE, pal.note, maxLines = 1).size.height)
+            spec.noteLine?.let { add(wrappedH(it, pal.note)) }
             if (spec.chips.isNotEmpty() || marksText(spec) != null) {
                 add(maxOf(tm.measure(PROBE, pal.meta, maxLines = 1).size.height, tm.measure(PROBE, pal.mark, maxLines = 1).size.height))
             }
@@ -233,8 +238,9 @@ object StampPainter {
         val padH = px(7f)
         val padV = px(5f)
         val lineGap = px(1.5f)
-        val maxW = size.width * 0.7f
-        val lines = spec.fieldLines.map { one(tm, it, pal.note, maxW) } + listOfNotNull(
+        // 最宽可占满画面（扣掉两侧边距），长内容自动换行
+        val maxW = (size.width - marginX * 2 - padH * 2).coerceAtLeast(1f)
+        val lines = spec.fieldLines.map { wrap(tm, it, pal.note, maxW) } + listOfNotNull(
             spec.coordinatesText?.let { one(tm, it, pal.data, maxW) },
             dateTimeLine(spec)?.let { one(tm, it, pal.note, maxW) }
         )
@@ -268,6 +274,23 @@ object StampPainter {
             softWrap = false,
             constraints = Constraints(maxWidth = maxWidth.roundToInt().coerceAtLeast(1))
         )
+
+    /** 自动换行，最多 [MAX_WRAP_LINES] 行，超出才省略。 */
+    private fun wrap(tm: TextMeasurer, text: String, style: TextStyle, maxWidth: Float): TextLayoutResult =
+        tm.measure(
+            text = text,
+            style = style,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = MAX_WRAP_LINES,
+            softWrap = true,
+            constraints = Constraints(maxWidth = maxWidth.roundToInt().coerceAtLeast(1))
+        )
+
+    private fun DrawScope.drawWrapped(tm: TextMeasurer, text: String, style: TextStyle, x: Float, y: Float, maxWidth: Float): Float {
+        val layout = wrap(tm, text, style, maxWidth)
+        drawText(layout, topLeft = Offset(x, y))
+        return layout.size.height.toFloat()
+    }
 
     /** Draws one ellipsized line and returns its height. */
     private fun DrawScope.drawLine(tm: TextMeasurer, text: String, style: TextStyle, x: Float, y: Float, maxWidth: Float): Float {
@@ -311,4 +334,6 @@ object StampPainter {
     private const val MAX_BAR_WIDTH_DP = 560f
 
     private const val PROBE = "Ag中"
+
+    private const val MAX_WRAP_LINES = 4
 }

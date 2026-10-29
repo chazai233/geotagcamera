@@ -137,6 +137,7 @@ fun SettingsScreen(
     val jpegQuality by viewModel.jpegQuality.collectAsStateWithLifecycle()
     val saveOriginal by viewModel.saveOriginal.collectAsStateWithLifecycle()
     val customTime by viewModel.customTime.collectAsStateWithLifecycle()
+    val useProjects by viewModel.useProjects.collectAsStateWithLifecycle()
 
     AppScaffold(title = "设置") { padding ->
         val fields = loaded
@@ -152,6 +153,7 @@ fun SettingsScreen(
             jpegQuality = jpegQuality,
             saveOriginal = saveOriginal,
             customTime = customTime,
+            useProjects = useProjects,
             contentPadding = padding,
             viewModel = viewModel,
             onOpenVerify = onOpenVerify,
@@ -172,6 +174,7 @@ private fun SettingsContent(
     jpegQuality: Int,
     saveOriginal: Boolean,
     customTime: CustomTime,
+    useProjects: Boolean,
     contentPadding: PaddingValues,
     viewModel: SettingsViewModel,
     onOpenVerify: () -> Unit,
@@ -319,6 +322,13 @@ private fun SettingsContent(
                     onChange = { checked -> viewModel.update { it.copy(requireSignature = checked) } }
                 )
             }
+            SwitchRow(
+                title = "按项目分组照片",
+                subtitle = if (useProjects) "拍照界面可选当前项目，新照片自动归入；相册可按项目筛选、导出、出 PDF 报告"
+                else "关闭：拍照界面不显示项目",
+                checked = useProjects,
+                onChange = { viewModel.setUseProjects(it) }
+            )
             SwitchRow(
                 title = "自动关闭预览",
                 subtitle = "拍完 4 秒后自动回到相机",

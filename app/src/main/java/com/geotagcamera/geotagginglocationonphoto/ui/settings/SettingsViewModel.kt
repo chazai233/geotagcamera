@@ -38,6 +38,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val customTime: StateFlow<CustomTime> = capturePreferences.customTime
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustomTime(false, 0L))
 
+    val useProjects: StateFlow<Boolean> = capturePreferences.useProjects
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setUseProjects(value: Boolean) { viewModelScope.launch { capturePreferences.setUseProjects(value) } }
+
     fun setResolution(value: CaptureResolution) { viewModelScope.launch { capturePreferences.setResolution(value) } }
     fun setJpegQuality(value: Int) { viewModelScope.launch { capturePreferences.setJpegQuality(value) } }
     fun setSaveOriginal(value: Boolean) { viewModelScope.launch { capturePreferences.setSaveOriginal(value) } }
