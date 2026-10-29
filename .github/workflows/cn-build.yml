@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths-ignore:
       - "site/**"
-      - "*.md"
+      - "README*.md"
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -64,8 +66,23 @@ jobs:
         run: |
           APK=$(ls app/build/outputs/apk/foss/debug/*universal*.apk | head -1)
           cp "$APK" GongChengCamera.apk
+          VERSION=$(grep -m1 'versionName' app/build.gradle.kts | sed -E 's/.*"(.*)".*/\1/')
+          # 发行说明 = CHANGELOG_CN.md 最上面一节 + 安装说明 + 本次构建信息
+          awk '/^## /{n++} n==1' CHANGELOG_CN.md > notes.md
+          {
+            echo
+            echo "---"
+            echo "### 安装"
+            echo "在手机上下载下方的 **GongChengCamera.apk** 直接安装；已安装旧版的直接覆盖安装，设置和照片都会保留。"
+            echo "包名带 .cn 后缀，可与原版 GeoTag Camera 同时安装。需要 Android 8.0 及以上。"
+            echo
+            echo "### 本次构建"
+            echo "提交 ${GITHUB_SHA::7}，构建时间 $(TZ=Asia/Vientiane date '+%Y-%m-%d %H:%M')（UTC+7）。最近的改动："
+            echo
+            git log -8 --no-merges --pretty='- %s (%h)' | grep -v '^- 测试'
+          } >> notes.md
           gh release delete cn-latest --cleanup-tag -y 2>/dev/null || true
           gh release create cn-latest GongChengCamera.apk \
             --target "${GITHUB_SHA}" \
-            --title "工程水印相机 最新构建" \
-            --notes "自动构建，提交 ${GITHUB_SHA::7}。手机上下载 GongChengCamera.apk 直接安装即可。"
+            --title "工程水印相机 ${VERSION}" \
+            --notes-file notes.md
