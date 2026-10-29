@@ -9,21 +9,21 @@ import com.geotagcamera.geotagginglocationonphoto.stamp.StampFields
  */
 enum class UserProfile(val title: String, val summary: String, val details: List<String>) {
     FIELD(
-        title = "Field",
-        summary = "Students, NGO and field staff. Quick, simple, light on the phone.",
+        title = "简单",
+        summary = "学生、一般现场人员：快速、简单、省电。",
         details = listOf(
-            "Point and shoot: place, address, coordinates and time on every photo",
-            "Fewer settings to think about",
-            "Signing happens quietly in the background"
+            "即拍即用：每张照片都带地点、地址、坐标和时间",
+            "需要关心的设置更少",
+            "签名在后台自动完成"
         )
     ),
     PROFESSIONAL(
-        title = "Professional",
-        summary = "Surveyors, inspectors, engineers. Every detail, signed and reportable.",
+        title = "专业",
+        summary = "测量、监理、工程师：信息完整，可签名、可出报告。",
         details = listOf(
-            "Altitude, accuracy and bearing on the stamp",
-            "Field worker signature before each photo is saved",
-            "All stamp and capture settings visible"
+            "水印包含海拔、精度和方向",
+            "每张照片保存前手写签名",
+            "显示全部水印和拍摄设置"
         )
     );
 

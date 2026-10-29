@@ -37,7 +37,7 @@ fun AppScaffold(
     title: String,
     onBack: (() -> Unit)? = null,
     backIcon: ImageVector = Icons.AutoMirrored.Filled.ArrowBack,
-    backDescription: String = "Back",
+    backDescription: String = "返回",
     actions: @Composable RowScope.() -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },

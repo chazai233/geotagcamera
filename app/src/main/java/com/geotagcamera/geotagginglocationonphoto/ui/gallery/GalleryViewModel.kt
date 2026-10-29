@@ -60,15 +60,15 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     /** What the current filter is called, for file names and report titles. */
     fun scopeTitle(): String = when (val f = _filter.value) {
-        GalleryFilter.All -> "All photos"
-        GalleryFilter.Unfiled -> "Photos without a project"
-        is GalleryFilter.Project -> projects.value.firstOrNull { it.id == f.id }?.name ?: "Project"
+        GalleryFilter.All -> "全部照片"
+        GalleryFilter.Unfiled -> "未分项目的照片"
+        is GalleryFilter.Project -> projects.value.firstOrNull { it.id == f.id }?.name ?: "项目"
     }
 
     fun exportLocations(format: com.geotagcamera.geotagginglocationonphoto.export.ExportFormat, photos: List<PhotoEntity>, title: String) {
         if (photos.isEmpty()) return
         exportJob?.cancel()
-        _export.value = ExportState.Working("Exporting ${photos.size} location" + if (photos.size == 1) "" else "s")
+        _export.value = ExportState.Working("正在导出 ${photos.size} 条位置数据")
         exportJob = viewModelScope.launch {
             _export.value = runCatching {
                 withContext(Dispatchers.IO) {
@@ -79,29 +79,29 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                     file.writeText(text, Charsets.UTF_8)
                     ExportState.Ready(file, format.mimeType, "$title (${format.label})")
                 }
-            }.getOrElse { ExportState.Failed("Couldn't write the export. Check free storage and try again.") }
+            }.getOrElse { ExportState.Failed("导出文件写入失败，请检查存储空间后重试。") }
         }
     }
 
     fun buildReport(photos: List<PhotoEntity>, title: String, organisation: String?) {
         if (photos.isEmpty()) return
         exportJob?.cancel()
-        _export.value = ExportState.Working("Building report", 0, photos.size)
+        _export.value = ExportState.Working("正在生成报告", 0, photos.size)
         exportJob = viewModelScope.launch {
             _export.value = runCatching {
                 val context = getApplication<Application>()
                 val file = com.geotagcamera.geotagginglocationonphoto.export.ExportFiles.newFile(context, title, "pdf")
                 com.geotagcamera.geotagginglocationonphoto.export.ProjectReport(context).build(
                     com.geotagcamera.geotagginglocationonphoto.export.ProjectReport.Input(
-                        title = title, subtitle = "Site photo report", organisation = organisation, photos = photos
+                        title = title, subtitle = "现场照片报告", organisation = organisation, photos = photos
                     ),
                     file
-                ) { done, total -> _export.value = ExportState.Working("Building report", done, total) }
-                ExportState.Ready(file, "application/pdf", "$title (PDF report)")
+                ) { done, total -> _export.value = ExportState.Working("正在生成报告", done, total) }
+                ExportState.Ready(file, "application/pdf", "$title（PDF 报告）")
             }.getOrElse { e ->
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                if (e is OutOfMemoryError) ExportState.Failed("Not enough memory for this report. Try fewer photos.")
-                else ExportState.Failed("Couldn't build the report. Check free storage and try again.")
+                if (e is OutOfMemoryError) ExportState.Failed("内存不足，请减少照片数量后重试。")
+                else ExportState.Failed("报告生成失败，请检查存储空间后重试。")
             }
         }
     }
@@ -118,7 +118,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
             val result = withContext(Dispatchers.IO) {
                 runCatching { com.geotagcamera.geotagginglocationonphoto.data.PhotoImporter(getApplication()).import(uris, project) }.getOrNull()
             }
-            _message.value = result?.summary() ?: "Couldn't import those photos."
+            _message.value = result?.summary() ?: "无法导入这些照片。"
         }
     }
 
@@ -129,8 +129,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     /** Creates a project and moves [ids] into it. Returns an error message or null. */
     suspend fun createProjectAndMove(name: String, ids: Collection<Long>): String? {
         val clean = name.trim().take(80)
-        if (clean.isEmpty()) return "Give the project a name."
-        if (projectDao.countWithName(clean) > 0) return "A project with that name already exists."
+        if (clean.isEmpty()) return "请输入项目名称。"
+        if (projectDao.countWithName(clean) > 0) return "已有同名项目。"
         val id = projectDao.insert(com.geotagcamera.geotagginglocationonphoto.data.ProjectEntity(name = clean, createdAtEpochMs = System.currentTimeMillis()))
         photoDao.moveToProject(ids.toList(), id)
         return null

@@ -19,11 +19,11 @@ class PhotoImporter(private val context: Context) {
 
     data class Result(val added: Int, val alreadyThere: Int, val noProof: Int, val unreadable: Int) {
         fun summary(): String = buildList {
-            add("$added photo" + (if (added == 1) "" else "s") + " added")
-            if (alreadyThere > 0) add("$alreadyThere already in the list")
-            if (noProof > 0) add("$noProof not from GeoTag Camera")
-            if (unreadable > 0) add("$unreadable couldn't be read")
-        }.joinToString(", ")
+            add("已添加 $added 张")
+            if (alreadyThere > 0) add("$alreadyThere 张已在列表中")
+            if (noProof > 0) add("$noProof 张不是本应用拍的")
+            if (unreadable > 0) add("$unreadable 张无法读取")
+        }.joinToString("，")
     }
 
     suspend fun import(uris: List<Uri>, projectId: Long?): Result {

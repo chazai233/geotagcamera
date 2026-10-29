@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import com.geotagcamera.geotagginglocationonphoto.data.ProjectWithCount
 import com.geotagcamera.geotagginglocationonphoto.data.ProjectEntity
 import com.geotagcamera.geotagginglocationonphoto.data.CapturePreferences
+import com.geotagcamera.geotagginglocationonphoto.data.CaptureResolution
+import com.geotagcamera.geotagginglocationonphoto.data.CustomTime
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -70,7 +72,19 @@ sealed interface CaptureUiState {
     /** [required]: the user turned on "Require signature", so the sheet offers no Skip. */
     data class AwaitingSignature(val required: Boolean) : CaptureUiState
     /** Post-capture review takeover: the saved, signed photo plus its quotable name/size. */
-    data class Review(val photoId: Long, val uri: String, val filename: String, val sizeBytes: Long) : CaptureUiState
+    data class Review(
+        val photoId: Long,
+        val uri: String,
+        val filename: String,
+        val sizeBytes: Long,
+        /** 成片像素尺寸，例如 4000×3000。 */
+        val width: Int = 0,
+        val height: Int = 0,
+        /** 另存的无水印原图；null = 没存。 */
+        val originalUri: String? = null,
+        /** 内存不足时降了一半分辨率。 */
+        val downscaled: Boolean = false
+    ) : CaptureUiState
     data class Error(val message: String) : CaptureUiState
     /**
      * Shot taken but no GPS fix yet. The photo is held (not lost) and saved
@@ -145,6 +159,18 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     val flashMode: StateFlow<Int> = capturePreferences.flashMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, androidx.camera.core.ImageCapture.FLASH_MODE_AUTO)
 
+    val resolution: StateFlow<CaptureResolution> = capturePreferences.resolution
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CaptureResolution.MP12)
+
+    val jpegQuality: StateFlow<Int> = capturePreferences.jpegQuality
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CapturePreferences.DEFAULT_JPEG_QUALITY)
+
+    val saveOriginal: StateFlow<Boolean> = capturePreferences.saveOriginal
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val customTime: StateFlow<CustomTime> = capturePreferences.customTime
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CustomTime(false, 0L))
+
     fun setFlashMode(mode: Int) {
         viewModelScope.launch { capturePreferences.setFlashMode(mode) }
     }
@@ -160,8 +186,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     /** Creates a project and makes it active. Returns an error message, or null. */
     suspend fun createProject(name: String): String? {
         val clean = name.trim().take(80)
-        if (clean.isEmpty()) return "Give the project a name."
-        if (projectDao.countWithName(clean) > 0) return "A project with that name already exists."
+        if (clean.isEmpty()) return "请输入项目名称。"
+        if (projectDao.countWithName(clean) > 0) return "已有同名项目。"
         val id = projectDao.insert(ProjectEntity(name = clean, createdAtEpochMs = System.currentTimeMillis()))
         capturePreferences.setActiveProject(id)
         return null
@@ -198,12 +224,12 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     val autoDismissReview: StateFlow<Boolean> = stampPreferences.autoDismissReview
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    /** Ticks once per minute boundary so the overlay's clock never freezes. */
+    /** 每秒走一次，水印里的秒数才会实时更新。 */
     private val minuteTicker: Flow<Long> = flow {
         while (true) {
             val now = System.currentTimeMillis()
             emit(now)
-            delay(60_000L - now % 60_000L)
+            delay(1_000L - now % 1_000L)
         }
     }
 
@@ -213,13 +239,13 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
      * weather from the last resolve near it.
      */
     val liveSpec: StateFlow<StampSpec?> =
-        combine(combine(stampFields, captureNote) { f, n -> f to n }, _liveData, _latestFix, orgLogo, minuteTicker) { (fields, note), data, latest, logo, now ->
+        combine(combine(stampFields, captureNote, customTime) { f, n, ct -> Triple(f, n, ct) }, _liveData, _latestFix, orgLogo, minuteTicker) { (fields, note, ct), data, latest, logo, now ->
             val fix = latest ?: data?.fix ?: return@combine null
             val near = data?.takeIf { distanceMeters(it.fix, fix) <= REUSE_RESOLVE_WITHIN_M }
             runCatching { buildStampSpec(
                 fix = fix,
                 addressParts = near?.geocode,
-                capturedAtEpochMs = now,
+                capturedAtEpochMs = ct.toStampTime(now),
                 fields = fields,
                 mapTile = if (fields.showMap) near?.mapTile else null,
                 orgLogo = if (fields.showOrgLogo) logo else null,
@@ -235,7 +261,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
     /** [note] and [projectId] are read at the shutter press, like the capture time. */
     private data class PendingCapture(
         val file: File,
+        /** 按下快门的真实时间（用于 GPS 新鲜度判断和签名证明）。 */
         val capturedAtEpochMs: Long,
+        /** 写进水印、EXIF 和相册的时间；没开自定义时间时等于真实时间。 */
+        val stampTimeMs: Long,
         val squareCrop: Boolean,
         val note: String? = null,
         val projectId: Long? = null
@@ -359,7 +388,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             .setMetadata(ImageCapture.Metadata().apply { isReversedHorizontal = mirror })
             .build()
         val capture = PendingCapture(
-            file, capturedAt, squareCrop = aspect == CaptureAspect.RATIO_1_1,
+            file, capturedAt, customTime.value.toStampTime(capturedAt), squareCrop = aspect == CaptureAspect.RATIO_1_1,
             note = captureNote.value.trim().ifEmpty { null },
             projectId = activeProject.value?.id
         )
@@ -384,10 +413,10 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                         file.delete()
                         _uiState.value = CaptureUiState.Error(
                             when (exception.imageCaptureError) {
-                                ImageCapture.ERROR_CAMERA_CLOSED -> "The camera was interrupted by another app. Try again."
-                                ImageCapture.ERROR_FILE_IO -> if (lowOnStorage(context)) STORAGE_FULL else "Couldn't write the photo. Try again."
-                                ImageCapture.ERROR_CAPTURE_FAILED -> "The camera couldn't take the shot. Hold still and try again."
-                                else -> "Capture failed. Try again."
+                                ImageCapture.ERROR_CAMERA_CLOSED -> "相机被其他应用打断，请重试。"
+                                ImageCapture.ERROR_FILE_IO -> if (lowOnStorage(context)) STORAGE_FULL else "照片写入失败，请重试。"
+                                ImageCapture.ERROR_CAPTURE_FAILED -> "相机未能拍摄，请拿稳后重试。"
+                                else -> "拍摄失败，请重试。"
                             }
                         )
                     }
@@ -395,7 +424,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             )
         } catch (e: IllegalStateException) {
             // Camera not bound yet (e.g. a tap during a lens switch).
-            _uiState.value = CaptureUiState.Error("Camera isn't ready yet.")
+            _uiState.value = CaptureUiState.Error("相机尚未就绪。")
         }
     }
 
@@ -431,6 +460,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         val review = _uiState.value as? CaptureUiState.Review ?: return
         _uiState.value = CaptureUiState.Idle
         viewModelScope.launch(Dispatchers.IO) {
+            // 重拍时一并删掉刚存的原图
+            review.originalUri?.let { runCatching { MediaStoreImageSaver.delete(getApplication(), listOf(Uri.parse(it))) } }
             val outcome = MediaStoreImageSaver.delete(getApplication(), listOf(Uri.parse(review.uri)))
             // Keep the index row if the file couldn't be removed, so it isn't orphaned.
             if (outcome.deleted.isNotEmpty()) photoDao.delete(review.photoId)
@@ -506,7 +537,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 val fix = knownFix ?: pickFix(capturedAtEpochMs)
                 if (fix == null) {
                     if (_locationChip.value == LocationChipState.PermissionDenied) {
-                        _uiState.value = CaptureUiState.Error("Location is off. Allow location to geotag photos.")
+                        _uiState.value = CaptureUiState.Error("定位未开启。请允许定位权限，才能给照片加地理位置。")
                     } else {
                         // Never lose the shot to a slow GPS: hold it and save when a fix lands.
                         held = true
@@ -525,18 +556,18 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     saveStampedPhoto(file, capture, fix, geocode, near, fields, signature, capturedAtEpochMs)
                 }
                 if (saved == null) {
-                    _uiState.value = CaptureUiState.Error("Couldn't save the photo to your gallery.")
+                    _uiState.value = CaptureUiState.Error("无法保存到相册。")
                     return@launch
                 }
                 _uiState.value = saved
             } catch (e: CancellationException) {
                 throw e
             } catch (e: OutOfMemoryError) {
-                _uiState.value = CaptureUiState.Error("Not enough memory to process this photo. Close other apps and try again.")
+                _uiState.value = CaptureUiState.Error("内存不足，无法处理这张照片。请关闭其他应用，或在设置中降低分辨率。")
             } catch (e: java.io.IOException) {
-                _uiState.value = CaptureUiState.Error(if (lowOnStorage(context)) STORAGE_FULL else "Couldn't save the photo. Try again.")
+                _uiState.value = CaptureUiState.Error(if (lowOnStorage(context)) STORAGE_FULL else "照片保存失败，请重试。")
             } catch (e: Exception) {
-                _uiState.value = CaptureUiState.Error("Couldn't process the photo. Try again.")
+                _uiState.value = CaptureUiState.Error("照片处理失败，请重试。")
             } finally {
                 if (!held) withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) { file.delete() }
             }
@@ -562,7 +593,21 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         capturedAtEpochMs: Long
     ): CaptureUiState.Review? {
         val context = getApplication<Application>()
-        var image = loadUprightBitmap(file) ?: return null
+        val stampTimeMs = capture.stampTimeMs
+        val quality = jpegQuality.value
+
+        // 原图：在打水印、覆盖 file 之前，先把相机原始 JPEG 另存一份。
+        val originalUri = if (saveOriginal.value) saveOriginalCopy(file, fix, geocode, stampTimeMs) else null
+
+        // 超高像素照片解码可能内存不足：退一步按一半尺寸处理，保证照片不丢。
+        var downscaled = false
+        var image = try {
+            loadUprightBitmap(file)
+        } catch (e: OutOfMemoryError) {
+            downscaled = true
+            System.gc()
+            loadUprightBitmap(file, sampleSize = 2)
+        } ?: return null
         if (capture.squareCrop) image = centerSquare(image)
 
         // Both draws go into the same bitmap when it is mutable: no extra
@@ -572,7 +617,7 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
             source = image,
             fix = fix,
             addressParts = geocode,
-            capturedAtEpochMs = capturedAtEpochMs,
+            capturedAtEpochMs = stampTimeMs,
             fields = fields,
             mapTile = if (fields.showMap) near?.mapTile else null,
             orgLogo = if (fields.showOrgLogo) orgLogo.value else null,
@@ -583,25 +628,32 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         ).also { if (it !== image) image.recycle() }
         signature?.recycle()
 
-        FileOutputStream(file).use { out -> image.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
+        val width = image.width
+        val height = image.height
+        FileOutputStream(file).use { out -> image.compress(Bitmap.CompressFormat.JPEG, quality, out) }
         image.recycle()
 
         // Sign the canonical image first — the hash is blind to metadata (see
         // JpegCanonical), so embedding the proof below can't invalidate it —
         // then carry the proof in EXIF UserComment and mirror it in XMP so any
         // device can verify this photo, not just the one that shot it.
-        val integrity = PhotoIntegrity.sign(file, ProofClaims(fix.latitude, fix.longitude, capturedAtEpochMs))
-        val proof = UserCommentCodec.encode(integrity, capturedAtEpochMs)
-        ExifWriter.write(file, fix, capturedAtEpochMs, proof)
+        // 自定义了时间：EXIF 写设定的时间；签名证明同时记下真实快门时间，校验时如实显示。
+        val claims = ProofClaims(
+            fix.latitude, fix.longitude, stampTimeMs,
+            realEpochMs = capturedAtEpochMs.takeIf { stampTimeMs != capturedAtEpochMs }
+        )
+        val integrity = PhotoIntegrity.sign(file, claims)
+        val proof = UserCommentCodec.encode(integrity, stampTimeMs)
+        ExifWriter.write(file, fix, stampTimeMs, proof)
         XmpWriter.write(file, proof)
 
-        val filename = ReviewFilename.generate(geocode?.place, capturedAtEpochMs)
+        val filename = ReviewFilename.generate(geocode?.place, stampTimeMs)
         val sizeBytes = file.length()
         val uri = MediaStoreImageSaver.save(context, file, filename) ?: return null
         val id = photoDao.insert(
             PhotoEntity(
                 filePath = uri.toString(),
-                capturedAtEpochMs = capturedAtEpochMs,
+                capturedAtEpochMs = stampTimeMs,
                 latitude = fix.latitude,
                 longitude = fix.longitude,
                 altitudeMeters = fix.altitudeMeters,
@@ -619,7 +671,26 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                 placeName = geocode?.place
             )
         )
-        return CaptureUiState.Review(id, uri.toString(), filename, sizeBytes)
+        return CaptureUiState.Review(id, uri.toString(), filename, sizeBytes, width, height, originalUri?.toString(), downscaled)
+    }
+
+    /**
+     * 另存一张无水印原图到 Pictures/GeoTagCamera/原图。写入 GPS 和（设定后的）时间，
+     * 保留相机自己的方向标记；原图不带签名证明。失败不影响成片。
+     */
+    private fun saveOriginalCopy(file: File, fix: LocationFix, geocode: AddressParts?, stampTimeMs: Long): Uri? {
+        val context = getApplication<Application>()
+        val copy = File(context.cacheDir, "original_${System.nanoTime()}.jpg")
+        return try {
+            file.copyTo(copy, overwrite = true)
+            runCatching { ExifWriter.write(copy, fix, stampTimeMs, userComment = null, keepOrientation = true) }
+            val name = ReviewFilename.generate(geocode?.place, stampTimeMs).replace(".jpg", "_原图.jpg")
+            MediaStoreImageSaver.save(context, copy, name, subDir = MediaStoreImageSaver.ORIGINALS_DIR)
+        } catch (e: Exception) {
+            null
+        } finally {
+            copy.delete()
+        }
     }
 
     override fun onCleared() {
@@ -638,9 +709,9 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         const val RERESOLVE_AFTER_M = 30f
         const val RERESOLVE_AFTER_MS = 5 * 60_000L
         const val MAP_RETRY_AFTER_MS = 20_000L
-        const val STORAGE_FULL = "Phone storage is almost full. Free up some space to keep shooting."
+        const val STORAGE_FULL = "手机存储空间快满了，请清理后再继续拍摄。"
         /** Room for the full-size working copy, the stamped JPEG and the gallery copy. */
-        private const val MIN_FREE_BYTES = 60L * 1024 * 1024
+        private const val MIN_FREE_BYTES = 150L * 1024 * 1024
 
         fun lowOnStorage(context: android.content.Context): Boolean = runCatching {
             val stat = android.os.StatFs(context.cacheDir.absolutePath)
@@ -649,7 +720,6 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         /** Address/tile resolved within this distance of the capture point still describe it. */
         const val REUSE_RESOLVE_WITHIN_M = 50f
         const val WEATHER_REUSE_MS = 10 * 60_000L
-        const val JPEG_QUALITY = 92
 
         fun distanceMeters(a: LocationFix, b: LocationFix): Float {
             val out = FloatArray(1)
@@ -674,12 +744,13 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
 
         /** Decodes mutable (so the stamp draws in place) and applies the EXIF orientation. */
-        fun loadUprightBitmap(file: File): Bitmap? {
+        fun loadUprightBitmap(file: File, sampleSize: Int = 1): Bitmap? {
             val orientation = ExifInterface(file.absolutePath)
                 .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
             val opts = BitmapFactory.Options().apply {
                 inMutable = true
                 inPreferredConfig = Bitmap.Config.ARGB_8888
+                inSampleSize = sampleSize
             }
             val bitmap = BitmapFactory.decodeFile(file.absolutePath, opts) ?: return null
 

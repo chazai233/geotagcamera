@@ -120,9 +120,9 @@ fun PermissionPrimerScreen(onContinue: () -> Unit) {
 
 @Composable
 private fun ProfileStep(selected: UserProfile, onSelect: (UserProfile) -> Unit, onNext: () -> Unit) {
-    Text("How will you use it?", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+    Text("你打算怎么用？", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(6.dp))
-    Text("This only sets defaults. You can change it any time in Settings.", color = Muted, fontSize = 13.sp)
+    Text("这里只决定默认设置，之后随时可以在设置里修改。", color = Muted, fontSize = 13.sp)
     Spacer(Modifier.height(Spacing.XL))
     UserProfile.entries.forEach { profile ->
         ProfileOption(
@@ -134,7 +134,7 @@ private fun ProfileStep(selected: UserProfile, onSelect: (UserProfile) -> Unit, 
         Spacer(Modifier.height(Spacing.M))
     }
     Spacer(Modifier.height(Spacing.L))
-    Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Continue") }
+    Button(onClick = onNext, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("继续") }
 }
 
 @Composable
@@ -169,22 +169,22 @@ private fun ProfileOption(profile: UserProfile, icon: ImageVector, selected: Boo
 
 @Composable
 private fun PermissionStep(onContinue: () -> Unit) {
-    Text("Before your first shot", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
+    Text("拍第一张照片之前", color = Ink, fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(6.dp))
-    Text("What each permission is for, and where it stops.", color = Muted, fontSize = 13.sp)
+    Text("每项权限用来做什么，以及不会做什么。", color = Muted, fontSize = 13.sp)
     Spacer(Modifier.height(Spacing.XL))
 
-    PermissionRow("Camera", "To take the photo. Nothing else.")
+    PermissionRow("相机", "只用来拍照。")
     PermissionRow(
-        "Location",
-        "To stamp where the photo was taken. Only while the camera is open, never in the background. Precise or approximate both work."
+        "位置",
+        "用来在水印上标注拍摄地点。只在相机打开时使用，从不在后台定位。精确或大致位置都可以。"
     )
     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-        PermissionRow("Storage", "Only on older Android (9 and below), only to save the photo into your gallery.")
+        PermissionRow("存储", "只在 Android 9 及以下需要，只用来把照片存进相册。")
     }
     PermissionRow(
-        "Network",
-        "For the small map on the stamp (OpenStreetMap, drawn on your phone and kept for offline use), the optional weather, and your phone's own address lookup. Taking, stamping and signing photos works offline."
+        "网络",
+        "用于水印上的小地图（OpenStreetMap，在手机上绘制并缓存）、可选的天气，以及手机自带的地址查询。拍照、加水印和签名都可以离线完成。"
     )
 
     Spacer(Modifier.height(20.dp))
@@ -192,15 +192,15 @@ private fun PermissionStep(onContinue: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text("No ads. No paywall. No accounts.", color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text("无广告、不收费、无账号。", color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         Text(
-            "No analytics, no ad SDK. Your photos never leave the device unless you share them.",
+            "无统计、无广告 SDK。除非你主动分享，照片不会离开手机。",
             color = Muted, fontSize = 12.sp
         )
     }
 
     Spacer(Modifier.height(28.dp))
-    Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Continue") }
+    Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("继续") }
 }
 
 @Composable

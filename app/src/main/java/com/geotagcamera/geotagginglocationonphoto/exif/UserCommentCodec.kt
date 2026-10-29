@@ -42,7 +42,11 @@ object UserCommentCodec {
 
     fun encode(result: IntegrityResult, capturedAtEpochMs: Long): String =
         JSONObject()
-            .put("v", if (result.claims != null) VERSION else 1)
+            .put("v", when {
+                result.claims?.realEpochMs != null -> 3
+                result.claims != null -> VERSION
+                else -> 1
+            })
             .put("alg", ALG)
             .put("h", result.sha256Hex)
             .put("sig", result.signatureBase64)
@@ -53,6 +57,7 @@ object UserCommentCodec {
                     put("lat", it.latitude)
                     put("lon", it.longitude)
                     put("ms", it.epochMs)
+                    it.realEpochMs?.let { rt -> put("rt", rt) }
                 }
             }
             .toString()
@@ -65,7 +70,11 @@ object UserCommentCodec {
             val version = o.getInt("v")
             val claims = if (version >= 2) {
                 // Corrupt claims stay null; ProofVerifier rejects v2+ without them (Edited, not NoProof).
-                runCatching { ProofClaims(o.getDouble("lat"), o.getDouble("lon"), o.getLong("ms")) }.getOrNull()
+                runCatching {
+                    // v3 必须带真实时间；缺了就当损坏（校验失败），不能退化成 v2。
+                    val rt = if (version >= 3) o.getLong("rt") else null
+                    ProofClaims(o.getDouble("lat"), o.getDouble("lon"), o.getLong("ms"), rt)
+                }.getOrNull()
             } else null
             val payload = SignedPayload(
                 version = version,

@@ -6,12 +6,32 @@ import androidx.compose.ui.graphics.asImageBitmap
 import com.geotagcamera.geotagginglocationonphoto.location.AddressParts
 import com.geotagcamera.geotagginglocationonphoto.location.LocationFix
 import com.geotagcamera.geotagginglocationonphoto.location.PlusCode
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
+
+/** 水印外观：直接由 [StampFields] 里的样式设置换算而来。 */
+data class StampStyle(
+    val scale: Float = 1f,
+    val bgArgb: Int = 0xB3121417.toInt(),
+    val textArgb: Int = 0xFFFFFFFF.toInt(),
+    val marginX: Float = 8f,
+    val marginY: Float = 8f
+) {
+    companion object {
+        fun from(fields: StampFields): StampStyle {
+            fun argb(rgb: Int, alpha: Float) = ((alpha.coerceIn(0f, 1f) * 255f).toInt() shl 24) or (rgb and 0xFFFFFF)
+            return StampStyle(
+                scale = fields.styleScale.coerceIn(0.5f, 2.5f),
+                bgArgb = argb(fields.bgColor, fields.bgOpacity),
+                textArgb = argb(fields.textColor, fields.textOpacity),
+                marginX = fields.marginX,
+                marginY = fields.marginY
+            )
+        }
+    }
+}
 
 /** One meta chip, e.g. "ALT 34 m" or "31°C HAZE" — see docs/GeoTag Camera Design System.dc.html section 04. */
 data class StampChip(val text: String)
@@ -45,7 +65,9 @@ data class StampSpec(
     /** The field worker's drawn signature, shown in the Bar's right column. */
     val signature: ImageBitmap? = null,
     /** Capture note and/or the fixed custom text, as one line. */
-    val noteLine: String? = null
+    val noteLine: String? = null,
+    /** 大小、颜色、透明度、边距。 */
+    val style: StampStyle = StampStyle()
 ) {
     val hasFooterRow: Boolean get() = orgLabel != null || orgLogo != null || showSignedMark || showBrandMark
 }
@@ -87,19 +109,19 @@ fun buildStampSpec(
     val coordinatesText = if (fields.showCoordinates) {
         // The gap after "Lat" and "Long" is a non-breaking space (U+00A0): if the
         // line wraps, it wraps between the two pairs, never inside one.
-        "Lat %.6f°  Long %.6f°".format(Locale.US, fix.latitude, fix.longitude)
+        "纬度 %.6f°  经度 %.6f°".format(Locale.US, fix.latitude, fix.longitude)
     } else null
 
     val dateTimeText = if (fields.showTimestamp) {
-        SimpleDateFormat("EEEE, dd/MM/yyyy hh:mm a", Locale.getDefault()).format(Date(capturedAtEpochMs))
+        DateFormats.format(fields.dateFormat, capturedAtEpochMs)
     } else null
 
     val gmtOffsetText = if (fields.showTimestamp && fields.showGmtOffset) formatGmtOffset(capturedAtEpochMs) else null
 
     val chips = buildList {
-        if (fields.showAltitude) fix.altitudeMeters?.takeIf { it.isFinite() }?.let { add(StampChip("ALT ${it.roundToInt()} m")) }
+        if (fields.showAltitude) fix.altitudeMeters?.takeIf { it.isFinite() }?.let { add(StampChip("海拔 ${it.roundToInt()} m")) }
         if (fields.showAccuracy) fix.accuracyMeters?.takeIf { it.isFinite() }?.let { add(StampChip("±${it.roundToInt()} m")) }
-        if (fields.showBearing) fix.bearingDegrees?.takeIf { it.isFinite() }?.let { add(StampChip("${it.roundToInt()}°")) }
+        if (fields.showBearing) fix.bearingDegrees?.takeIf { it.isFinite() }?.let { add(StampChip("方向 ${it.roundToInt()}°")) }
         // Weather text is fetched by the caller (WeatherRepository needs network,
         // which this pure function has none of) and passed in already-formatted;
         // gated here so the live overlay and the burn-in stay identical.
@@ -127,7 +149,8 @@ fun buildStampSpec(
         noteLine = listOfNotNull(
             note?.trim()?.takeIf { it.isNotEmpty() },
             fields.customText.trim().takeIf { fields.showCustomText && it.isNotEmpty() }
-        ).joinToString("  ·  ").ifEmpty { null }
+        ).joinToString("  ·  ").ifEmpty { null },
+        style = StampStyle.from(fields)
     )
 }
 

@@ -15,7 +15,10 @@ import java.util.TimeZone
  */
 object ExifWriter {
 
-    fun write(file: File, fix: LocationFix, capturedAtEpochMs: Long, userComment: String? = null) {
+    /**
+     * [keepOrientation]：原图（未经本应用旋转的相机原始 JPEG）保留相机写入的方向标记。
+     */
+    fun write(file: File, fix: LocationFix, capturedAtEpochMs: Long, userComment: String? = null, keepOrientation: Boolean = false) {
         val exif = ExifInterface(file.absolutePath)
 
         exif.setLatLong(fix.latitude, fix.longitude)
@@ -24,6 +27,11 @@ object ExifWriter {
         val dateTimeFormat = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US)
         exif.setAttribute(ExifInterface.TAG_DATETIME, dateTimeFormat.format(capturedAtEpochMs))
         exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, dateTimeFormat.format(capturedAtEpochMs))
+        exif.setAttribute(ExifInterface.TAG_DATETIME_DIGITIZED, dateTimeFormat.format(capturedAtEpochMs))
+        // 相机自己写的亚秒值对应真实时间，改了时间就不能留着
+        exif.setAttribute(ExifInterface.TAG_SUBSEC_TIME, null)
+        exif.setAttribute(ExifInterface.TAG_SUBSEC_TIME_ORIGINAL, null)
+        exif.setAttribute(ExifInterface.TAG_SUBSEC_TIME_DIGITIZED, null)
 
         val gpsDateFormat = SimpleDateFormat("yyyy:MM:dd", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
@@ -36,11 +44,12 @@ object ExifWriter {
 
         // The pixels are already upright (the pipeline applies the camera's
         // rotation before stamping), so say so explicitly: 0 is not a valid value.
-        exif.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
+        if (!keepOrientation) exif.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
         // Local time offset, so DateTimeOriginal isn't ambiguous across time zones.
         val offset = SimpleDateFormat("XXX", Locale.US).format(capturedAtEpochMs)
         exif.setAttribute(ExifInterface.TAG_OFFSET_TIME, offset)
         exif.setAttribute(ExifInterface.TAG_OFFSET_TIME_ORIGINAL, offset)
+        exif.setAttribute(ExifInterface.TAG_OFFSET_TIME_DIGITIZED, offset)
         // Horizontal accuracy and direction of travel, when the fix has them.
         fix.accuracyMeters?.takeIf { it.isFinite() && it >= 0f }?.let {
             exif.setAttribute(ExifInterface.TAG_GPS_H_POSITIONING_ERROR, "${(it * 100).toInt()}/100")
@@ -49,7 +58,7 @@ object ExifWriter {
             exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION_REF, ExifInterface.GPS_DIRECTION_TRUE)
             exif.setAttribute(ExifInterface.TAG_GPS_IMG_DIRECTION, "${(it * 100).toInt()}/100")
         }
-        exif.setAttribute(ExifInterface.TAG_SOFTWARE, "GeoTag Camera ${BuildConfig.VERSION_NAME}")
+        exif.setAttribute(ExifInterface.TAG_SOFTWARE, "GeoTag Camera CN ${BuildConfig.VERSION_NAME}")
 
         userComment?.let { exif.setAttribute(ExifInterface.TAG_USER_COMMENT, it) }
 

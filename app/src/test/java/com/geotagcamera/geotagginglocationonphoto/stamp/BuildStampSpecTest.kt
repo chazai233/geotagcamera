@@ -24,7 +24,7 @@ class BuildStampSpecTest {
         val (code, rest) = s.addressLine!!.split(", ", limit = 2)
         assertTrue(code, plusCodeShape.matches(code))
         assertEquals("BBD Bagh, Kolkata, 700001", rest)
-        assertEquals("Lat 22.572600°  Long 88.363900°", s.coordinatesText)
+        assertEquals("纬度 22.572600°  经度 88.363900°", s.coordinatesText)
         assertTrue(s.dateTimeText != null && s.gmtOffsetText != null)
         assertEquals("IND", s.countryCode)
     }
@@ -57,7 +57,7 @@ class BuildStampSpecTest {
             StampFields(showAltitude = true, showAccuracy = true, showBearing = true, showWeather = true),
             weather = "31°C CLEAR"
         )
-        assertEquals(listOf("ALT 11 m", "±5 m", "135°", "31°C CLEAR"), s.chips.map { it.text })
+        assertEquals(listOf("海拔 11 m", "±5 m", "方向 135°", "31°C CLEAR"), s.chips.map { it.text })
         assertTrue(spec(StampFields(showWeather = false), weather = "31°C CLEAR").chips.none { "CLEAR" in it.text })
     }
 
@@ -85,5 +85,34 @@ class BuildStampSpecTest {
         val s = buildStampSpec(fix, null, t, StampFields(), null, null, false)
         assertNull(s.placeName)
         assertTrue(s.addressLine!!, plusCodeShape.matches(s.addressLine!!))
+    }
+
+    @Test
+    fun `date format follows the chosen pattern`() {
+        val tz = java.util.TimeZone.getDefault()
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
+        try {
+            val s = spec(StampFields(dateFormat = "yyyy-MM-dd HH:mm"))
+            assertEquals("2026-09-21 14:13", s.dateTimeText)
+            val zh = spec(StampFields(dateFormat = "yyyy年MM月dd日 EEEE"))
+            assertEquals("2026年09月21日 星期一", zh.dateTimeText)
+        } finally {
+            java.util.TimeZone.setDefault(tz)
+        }
+    }
+
+    @Test
+    fun `invalid date pattern falls back instead of failing`() {
+        assertTrue(DateFormats.format("yyyy-MM-dd qqq", t).isNotBlank())
+        assertFalse(DateFormats.isValid("yyyy-MM-dd qqq"))
+        assertTrue(DateFormats.isValid("yyyy-MM-dd"))
+    }
+
+    @Test
+    fun `style carries colour and opacity`() {
+        val s = spec(StampFields(bgColor = 0x0D47A1, bgOpacity = 0.5f, textColor = 0xFFEB3B, textOpacity = 1f, styleScale = 1.5f))
+        assertEquals(0x7F0D47A1, s.style.bgArgb)
+        assertEquals(0xFFFFEB3B.toInt(), s.style.textArgb)
+        assertEquals(1.5f, s.style.scale)
     }
 }

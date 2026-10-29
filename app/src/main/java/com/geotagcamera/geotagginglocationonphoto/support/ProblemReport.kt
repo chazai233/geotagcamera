@@ -16,7 +16,7 @@ object ProblemReport {
     const val EMAIL = "konkomaji@gmail.com"
     const val ISSUES_URL = "https://github.com/konkomaji/geotagcamera/issues/new"
 
-    enum class Kind(val label: String) { PROBLEM("Problem"), IDEA("Idea"), QUESTION("Question") }
+    enum class Kind(val label: String) { PROBLEM("问题"), IDEA("建议"), QUESTION("提问") }
 
     /** Facts that help reproduce a problem. Never location, photos or captures. */
     fun deviceInfo(context: Context): String = buildString {
@@ -63,7 +63,7 @@ object ProblemReport {
             selector = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
         }
         return try {
-            context.startActivity(Intent.createChooser(send, "Send report with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            context.startActivity(Intent.createChooser(send, "选择发送方式").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             true
         } catch (e: ActivityNotFoundException) {
             false

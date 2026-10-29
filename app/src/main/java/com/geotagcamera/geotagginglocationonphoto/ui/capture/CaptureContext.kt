@@ -71,13 +71,13 @@ fun CaptureContextRow(project: ProjectEntity?, note: String, onClick: () -> Unit
             .clip(RoundedCornerShape(50))
             .border(BorderStroke(1.dp, ChromeTokens.GlassBorder), RoundedCornerShape(50))
             .background(ChromeTokens.Glass)
-            .clickable(onClickLabel = "Change project and note", onClick = onClick)
+            .clickable(onClickLabel = "修改项目和备注", onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "No project", project != null, Modifier.weight(1f, fill = false))
+        Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(12.dp))
-        Pill(Icons.Outlined.StickyNote2, note.ifBlank { "Add note" }, note.isNotBlank(), Modifier.weight(1f, fill = false))
+        Pill(Icons.Outlined.StickyNote2, note.ifBlank { "添加备注" }, note.isNotBlank(), Modifier.weight(1f, fill = false))
     }
 }
 
@@ -113,28 +113,28 @@ fun CaptureContextSheet(
 
     ModalBottomSheet(onDismissRequest = { close() }, sheetState = sheetState) {
         Column(Modifier.padding(horizontal = Spacing.XL).navigationBarsPadding()) {
-            Text("Note on the stamp", style = MaterialTheme.typography.titleMedium)
+            Text("水印备注", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.size(Spacing.S))
             OutlinedTextField(
                 value = noteText,
                 onValueChange = { noteText = it.take(CapturePreferences.MAX_NOTE_CHARS) },
-                placeholder = { Text("For example: Pole 12, north wall") },
+                placeholder = { Text("例如：3# 坝段 左岸边坡") },
                 singleLine = true,
                 trailingIcon = {
-                    if (noteText.isNotEmpty()) IconButton(onClick = { noteText = "" }) { Icon(Icons.Outlined.Close, contentDescription = "Clear note") }
+                    if (noteText.isNotEmpty()) IconButton(onClick = { noteText = "" }) { Icon(Icons.Outlined.Close, contentDescription = "清除备注") }
                 },
-                supportingText = { Text("Stays on every photo until you change it. Burned into the image and covered by the signature.") },
+                supportingText = { Text("修改前会一直显示在每张照片上，写进画面并受签名保护。") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { close() }),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.size(Spacing.L))
-            Text("Project", style = MaterialTheme.typography.titleMedium)
+            Text("项目", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.size(Spacing.XS))
             val active = projects.filter { !it.archived }
             LazyColumn(Modifier.heightIn(max = 280.dp)) {
-                item { ProjectRow("No project", null, activeProjectId == null) { onSelectProject(null) } }
+                item { ProjectRow("不选项目", null, activeProjectId == null) { onSelectProject(null) } }
                 items(active, key = { it.id }) { p ->
                     ProjectRow(p.name, "${p.photoCount} photo" + if (p.photoCount == 1) "" else "s", p.id == activeProjectId) { onSelectProject(p.id) }
                 }
@@ -144,7 +144,7 @@ fun CaptureContextSheet(
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it.take(80); error = null },
-                    label = { Text("New project name") },
+                    label = { Text("新项目名称") },
                     isError = error != null,
                     supportingText = { error?.let { Text(it) } },
                     singleLine = true,
@@ -155,16 +155,16 @@ fun CaptureContextSheet(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { creating = false; newName = ""; error = null }) { Text("Cancel") }
+                    TextButton(onClick = { creating = false; newName = ""; error = null }) { Text("取消") }
                     TextButton(onClick = {
                         scope.launch { error = onCreateProject(newName); if (error == null) { creating = false; newName = "" } }
-                    }) { Text("Create") }
+                    }) { Text("创建") }
                 }
             } else {
                 TextButton(onClick = { creating = true }) {
                     Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(Spacing.S))
-                    Text("New project")
+                    Text("新建项目")
                 }
             }
             Spacer(Modifier.size(Spacing.L))

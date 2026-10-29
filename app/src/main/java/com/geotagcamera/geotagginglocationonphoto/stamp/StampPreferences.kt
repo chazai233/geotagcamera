@@ -5,6 +5,8 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -54,6 +56,14 @@ class StampPreferences(private val context: Context) {
         val AUTO_DISMISS_REVIEW = booleanPreferencesKey("auto_dismiss_review")
         val CUSTOM_TEXT = stringPreferencesKey("custom_text")
         val CUSTOM_TEXT_TOGGLE = booleanPreferencesKey("show_custom_text")
+        val STYLE_SCALE = floatPreferencesKey("style_scale")
+        val BG_COLOR = intPreferencesKey("style_bg_color")
+        val BG_OPACITY = floatPreferencesKey("style_bg_opacity")
+        val TEXT_COLOR = intPreferencesKey("style_text_color")
+        val TEXT_OPACITY = floatPreferencesKey("style_text_opacity")
+        val MARGIN_X = floatPreferencesKey("style_margin_x")
+        val MARGIN_Y = floatPreferencesKey("style_margin_y")
+        val DATE_FORMAT = stringPreferencesKey("date_format")
     }
 
     val fields: Flow<StampFields> = context.stampDataStore.data.map { it.toFields() }
@@ -83,7 +93,15 @@ class StampPreferences(private val context: Context) {
             requireSignature = prefs[Keys.REQUIRE_SIGNATURE] ?: false,
             showBrandMark = prefs[Keys.BRAND_MARK] ?: true,
             customText = prefs[Keys.CUSTOM_TEXT] ?: "",
-            showCustomText = prefs[Keys.CUSTOM_TEXT_TOGGLE] ?: true
+            showCustomText = prefs[Keys.CUSTOM_TEXT_TOGGLE] ?: true,
+            styleScale = (prefs[Keys.STYLE_SCALE] ?: 1f).coerceIn(0.5f, 2.5f),
+            bgColor = prefs[Keys.BG_COLOR] ?: 0x121417,
+            bgOpacity = (prefs[Keys.BG_OPACITY] ?: 0.70f).coerceIn(0f, 1f),
+            textColor = prefs[Keys.TEXT_COLOR] ?: 0xFFFFFF,
+            textOpacity = (prefs[Keys.TEXT_OPACITY] ?: 1f).coerceIn(0.2f, 1f),
+            marginX = (prefs[Keys.MARGIN_X] ?: 8f).coerceIn(0f, 80f),
+            marginY = (prefs[Keys.MARGIN_Y] ?: 8f).coerceIn(0f, 80f),
+            dateFormat = prefs[Keys.DATE_FORMAT] ?: DateFormats.DEFAULT
         )
     }
 
@@ -142,5 +160,13 @@ class StampPreferences(private val context: Context) {
         prefs[Keys.BRAND_MARK] = fields.showBrandMark
         prefs[Keys.CUSTOM_TEXT] = fields.customText
         prefs[Keys.CUSTOM_TEXT_TOGGLE] = fields.showCustomText
+        prefs[Keys.STYLE_SCALE] = fields.styleScale
+        prefs[Keys.BG_COLOR] = fields.bgColor
+        prefs[Keys.BG_OPACITY] = fields.bgOpacity
+        prefs[Keys.TEXT_COLOR] = fields.textColor
+        prefs[Keys.TEXT_OPACITY] = fields.textOpacity
+        prefs[Keys.MARGIN_X] = fields.marginX
+        prefs[Keys.MARGIN_Y] = fields.marginY
+        prefs[Keys.DATE_FORMAT] = fields.dateFormat
     }
 }

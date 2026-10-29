@@ -118,6 +118,17 @@ class ProofVerifierTest {
         assertFalse(ProofVerifier.verify(jpeg, v2Payload(jpeg).copy(claims = null), goodMeta))
     }
 
+    /** 手动设定时间：EXIF 与设定时间一致即通过；把证明里的真实时间改掉会破坏签名。 */
+    @Test
+    fun v3EditedTimeVerifiesAndRealTimeIsBound() {
+        val jpeg = TestJpeg.minimal()
+        val edited = ProofClaims(12.971599, 77.594566, 1_700_000_000_123L, realEpochMs = 1_700_500_000_000L)
+        val payload = v2Payload(jpeg, edited).copy(version = 3)
+        assertTrue(ProofVerifier.verify(jpeg, payload, goodMeta))
+        val hidden = payload.copy(claims = edited.copy(realEpochMs = 1_700_000_000_123L))
+        assertFalse(ProofVerifier.verify(jpeg, hidden, goodMeta))
+    }
+
     @Test
     fun longitudeWrapsAcrossAntimeridian() {
         val c = ProofClaims(0.0, 179.9999999, 1_700_000_000_000L)

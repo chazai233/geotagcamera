@@ -92,7 +92,7 @@ object OfflineMaps {
                     override fun onCreate(offlineRegion: OfflineRegion) { if (cont.isActive) cont.resume(offlineRegion) }
                     override fun onError(error: String) { failure = error; if (cont.isActive) cont.resume(null) }
                 })
-            } ?: return@withContext (failure ?: "Couldn't create the map area")
+            } ?: return@withContext (failure ?: "无法创建地图区域")
             regions[region.id] = region
             _areas.update { it + OfflineArea(region.id, name, latitude, longitude, radiusKm, created, downloading = true) }
             observe(region)
@@ -156,15 +156,15 @@ object OfflineMaps {
             }
             override fun onError(error: OfflineRegionError) {
                 val message = when (error.reason) {
-                    OfflineRegionError.REASON_CONNECTION -> "No connection. Download resumes when you're back online."
-                    OfflineRegionError.REASON_SERVER -> "Map server busy. Retrying."
-                    else -> "Download problem: ${error.message}"
+                    OfflineRegionError.REASON_CONNECTION -> "无网络。恢复联网后会继续下载。"
+                    OfflineRegionError.REASON_SERVER -> "地图服务器繁忙，正在重试。"
+                    else -> "下载出错：${error.message}"
                 }
                 patch(region.id) { it.copy(error = message) }
             }
             override fun mapboxTileCountLimitExceeded(limit: Long) {
                 region.setDownloadState(OfflineRegion.STATE_INACTIVE)
-                patch(region.id) { it.copy(downloading = false, error = "Area too large ($limit tiles max). Pick a smaller radius.") }
+                patch(region.id) { it.copy(downloading = false, error = "区域太大（最多 $limit 个瓦片），请选小一点的半径。") }
             }
         })
     }
@@ -201,7 +201,7 @@ object OfflineMaps {
         val json = JSONObject(String(region.metadata))
         OfflineArea(
             id = region.id,
-            name = json.optString("name", "Saved area"),
+            name = json.optString("name", "已保存区域"),
             latitude = json.getDouble("lat"),
             longitude = json.getDouble("lon"),
             radiusKm = json.optInt("radiusKm", 5),

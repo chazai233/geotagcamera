@@ -9,12 +9,27 @@ import kotlin.math.abs
  * could be rewritten and the photo would still verify. These claims are folded
  * into the signed message and must agree with the EXIF a verifier observes.
  */
-data class ProofClaims(val latitude: Double, val longitude: Double, val epochMs: Long) {
+data class ProofClaims(
+    val latitude: Double,
+    val longitude: Double,
+    val epochMs: Long,
+    /**
+     * v3：用户手动设定了拍摄时间时，[epochMs] 是设定的时间（与 EXIF 一致），
+     * 这里记录按下快门的真实时间，同样签入证明，校验时如实显示。
+     */
+    val realEpochMs: Long? = null
+) {
 
     /** Exact bytes that get signed: binds the image hash to the claims. */
     fun signedMessage(sha256Hex: String): ByteArray =
-        String.format(Locale.US, "geotag-v2|h=%s|lat=%.6f|lon=%.6f|t=%d", sha256Hex, latitude, longitude, epochMs)
-            .toByteArray(Charsets.UTF_8)
+        (if (realEpochMs == null) {
+            String.format(Locale.US, "geotag-v2|h=%s|lat=%.6f|lon=%.6f|t=%d", sha256Hex, latitude, longitude, epochMs)
+        } else {
+            String.format(Locale.US, "geotag-v3|h=%s|lat=%.6f|lon=%.6f|t=%d|rt=%d", sha256Hex, latitude, longitude, epochMs, realEpochMs)
+        }).toByteArray(Charsets.UTF_8)
+
+    /** 时间是否被手动设定过。 */
+    val timeEdited: Boolean get() = realEpochMs != null
 }
 
 /** What a verifier actually finds in the file's EXIF; null = absent or unparseable. */

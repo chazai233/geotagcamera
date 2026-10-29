@@ -92,15 +92,15 @@ fun PhotoDetailScreen(
 
     val photo = state.photo
     AppScaffold(
-        title = "Photo",
+        title = "照片详情",
         onBack = onBack,
         actions = {
             if (photo != null) {
                 IconButton(onClick = { shareImage(context, photo.filePath) }) {
-                    Icon(Icons.Outlined.Share, contentDescription = "Share")
+                    Icon(Icons.Outlined.Share, contentDescription = "分享")
                 }
                 IconButton(onClick = { confirmDelete = true }) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                    Icon(Icons.Outlined.Delete, contentDescription = "删除")
                 }
             }
         }
@@ -108,7 +108,7 @@ fun PhotoDetailScreen(
         when {
             state.loading -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
             photo == null -> Box(Modifier.fillMaxSize().padding(padding).padding(32.dp), Alignment.Center) {
-                Text("This photo is no longer available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("这张照片已不存在。", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             else -> Column(
                 modifier = Modifier
@@ -121,7 +121,7 @@ fun PhotoDetailScreen(
             ) {
                 AsyncImage(
                     model = Uri.parse(photo.filePath),
-                    contentDescription = photo.address ?: "Photo",
+                    contentDescription = photo.address ?: "照片",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -135,30 +135,30 @@ fun PhotoDetailScreen(
                 val lat = state.exifLat ?: photo.latitude
                 val lng = state.exifLng ?: photo.longitude
                 DetailsCard {
-                    val taken = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                    val taken = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss EEEE", Locale.SIMPLIFIED_CHINESE)
                         .format(Date(photo.capturedAtEpochMs))
-                    DetailRow(Icons.Outlined.Schedule, "Taken", taken)
+                    DetailRow(Icons.Outlined.Schedule, "拍摄时间", taken)
                     DetailRow(
-                        Icons.Outlined.MyLocation, "Coordinates",
+                        Icons.Outlined.MyLocation, "坐标",
                         String.format(Locale.US, "%.6f, %.6f", lat, lng) +
                             (photo.accuracyMeters?.let { "  ·  ±${it.toInt()} m" } ?: ""),
                         copyable = true
                     )
                     photo.address?.let {
-                        DetailRow(Icons.Outlined.Place, "Address", it + if (photo.addressFromCache) "\n(from offline cache)" else "")
+                        DetailRow(Icons.Outlined.Place, "地址", it + if (photo.addressFromCache) "\n（来自离线缓存）" else "")
                     }
-                    photo.orgLabel?.let { DetailRow(Icons.Outlined.Business, "Organisation", it) }
-                    if (photo.fieldWorkerSignature) DetailRow(Icons.Outlined.Draw, "Signature", "Field worker signature attached")
+                    photo.orgLabel?.let { DetailRow(Icons.Outlined.Business, "单位", it) }
+                    if (photo.fieldWorkerSignature) DetailRow(Icons.Outlined.Draw, "签名", "已附现场人员签名")
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(onClick = { openInMaps(context, lat, lng) }, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Outlined.Map, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Open in maps")
+                        Text("在地图中打开")
                     }
                     OutlinedButton(onClick = { onVerify(photo.filePath) }, modifier = Modifier.weight(1f)) {
-                        Text("Verify again")
+                        Text("重新校验")
                     }
                 }
             }
@@ -169,15 +169,15 @@ fun PhotoDetailScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             icon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-            title = { Text("Delete this photo?") },
-            text = { Text("It will be removed from this device's gallery as well. This can't be undone.") },
+            title = { Text("删除这张照片？") },
+            text = { Text("照片也会从本机相册中删除，无法恢复。") },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     viewModel.delete()
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("取消") } }
         )
     }
 }
@@ -199,7 +199,7 @@ private fun DetailRow(icon: ImageVector, label: String, value: String, copyable:
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (copyable) Modifier.clickable(onClickLabel = "Copy") { clipboard.setText(AnnotatedString(value)) } else Modifier)
+            .then(if (copyable) Modifier.clickable(onClickLabel = "复制") { clipboard.setText(AnnotatedString(value)) } else Modifier)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -211,7 +211,7 @@ private fun DetailRow(icon: ImageVector, label: String, value: String, copyable:
         }
         if (copyable) {
             Icon(
-                Icons.Outlined.ContentCopy, contentDescription = "Copy",
+                Icons.Outlined.ContentCopy, contentDescription = "复制",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp)
             )
         }
@@ -235,5 +235,5 @@ private fun shareImage(context: Context, uriString: String) {
         clipData = ClipData.newRawUri(null, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, "Share photo"))
+    context.startActivity(Intent.createChooser(intent, "分享照片"))
 }

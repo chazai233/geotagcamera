@@ -10,9 +10,9 @@ import java.util.TimeZone
 
 /** Formats the user can pick when exporting photo locations. */
 enum class ExportFormat(val label: String, val extension: String, val mimeType: String, val hint: String) {
-    CSV("CSV", "csv", "text/csv", "Spreadsheets: Excel, Google Sheets, LibreOffice"),
-    KML("KML", "kml", "application/vnd.google-earth.kml+xml", "Google Earth, Google My Maps"),
-    GEOJSON("GeoJSON", "geojson", "application/geo+json", "QGIS, ArcGIS, web maps")
+    CSV("CSV", "csv", "text/csv", "表格：Excel、WPS、Google 表格"),
+    KML("KML", "kml", "application/vnd.google-earth.kml+xml", "奥维地图、Google Earth、两步路"),
+    GEOJSON("GeoJSON", "geojson", "application/geo+json", "QGIS、ArcGIS、网页地图")
 }
 
 /**
@@ -65,10 +65,10 @@ object PhotoExport {
             appendLine("    <name>${xml(p.note ?: p.placeName ?: shortTime(p.capturedAtEpochMs))}</name>")
             appendLine("    <TimeStamp><when>${iso(p.capturedAtEpochMs)}</when></TimeStamp>")
             val lines = listOfNotNull(
-                p.placeName, p.address, p.note?.let { "Note: $it" },
-                p.projectId?.let { projectNames[it] }?.let { "Project: $it" },
-                "Taken: ${iso(p.capturedAtEpochMs)}",
-                p.accuracyMeters?.let { "Accuracy: ±%.0f m".format(Locale.US, it) },
+                p.placeName, p.address, p.note?.let { "备注：$it" },
+                p.projectId?.let { projectNames[it] }?.let { "项目：$it" },
+                "拍摄时间：${iso(p.capturedAtEpochMs)}",
+                p.accuracyMeters?.let { "精度：±%.0f m".format(Locale.US, it) },
                 "SHA-256: ${p.sha256Hash}"
             )
             appendLine("    <description>${xml(lines.joinToString("\n"))}</description>")

@@ -97,10 +97,10 @@ class ProjectReport(private val context: Context) {
         input.subtitle?.let { y = text(c, it, MARGIN.toFloat(), y + 2, CONTENT_W, muted, 2) }
         y += 10
 
-        val range = if (photos.isEmpty()) "No photos" else {
+        val range = if (photos.isEmpty()) "无照片" else {
             val first = dateOnly(photos.first().capturedAtEpochMs)
             val last = dateOnly(photos.last().capturedAtEpochMs)
-            (if (first == last) first else "$first to $last") + "  ·  ${photos.size} photo" + if (photos.size == 1) "" else "s"
+            (if (first == last) first else "$first 至 $last") + "  ·  共 ${photos.size} 张"
         }
         y = text(c, range, MARGIN.toFloat(), y, CONTENT_W, body, 1)
         y += 12
@@ -113,11 +113,11 @@ class ProjectReport(private val context: Context) {
             y += h + 14
         }
 
-        y = text(c, "Index", MARGIN.toFloat(), y, CONTENT_W, heading, 1) + 4
+        y = text(c, "目录", MARGIN.toFloat(), y, CONTENT_W, heading, 1) + 4
         val bottom = PAGE_H - MARGIN - FOOTER
         for ((i, p) in photos.withIndex()) {
             if (y > bottom - 14) {
-                text(c, "… and ${photos.size - i} more on the following pages.", MARGIN.toFloat(), y, CONTENT_W, muted, 1)
+                text(c, "……其余 ${photos.size - i} 张见后续页面。", MARGIN.toFloat(), y, CONTENT_W, muted, 1)
                 break
             }
             val line = "${i + 1}.  ${timeShort(p.capturedAtEpochMs)}  ·  " +
@@ -145,25 +145,25 @@ class ProjectReport(private val context: Context) {
         } else {
             val dst = RectF(left, top, left + imageW, top + imageH * 0.6f)
             c.drawRect(dst, placeholder)
-            text(c, "Photo file not found on this phone", left + 10, top + 10, imageW - 20, muted, 2)
+            text(c, "本机上找不到这张照片的文件", left + 10, top + 10, imageW - 20, muted, 2)
         }
 
         val x = left + imageW + 14
         val w = CONTENT_W - imageW - 14
         var y = top
         y = text(c, "#$number", x, y, w, label, 1) + 2
-        y = text(c, p.note ?: p.placeName ?: "Photo $number", x, y, w, heading, 3) + 6
-        y = fact(c, "Taken", fullTime(p.capturedAtEpochMs), x, y, w)
-        p.placeName?.let { y = fact(c, "Place", it, x, y, w) }
-        p.address?.let { y = fact(c, "Address", it, x, y, w) }
-        y = fact(c, "Coordinates", coords(p), x, y, w)
+        y = text(c, p.note ?: p.placeName ?: "照片 $number", x, y, w, heading, 3) + 6
+        y = fact(c, "拍摄时间", fullTime(p.capturedAtEpochMs), x, y, w)
+        p.placeName?.let { y = fact(c, "地点", it, x, y, w) }
+        p.address?.let { y = fact(c, "地址", it, x, y, w) }
+        y = fact(c, "坐标", coords(p), x, y, w)
         val extras = listOfNotNull(
             p.accuracyMeters?.let { "±%.0f m".format(Locale.US, it) },
-            p.altitudeMeters?.let { "alt %.0f m".format(Locale.US, it) },
+            p.altitudeMeters?.let { "海拔 %.0f m".format(Locale.US, it) },
             p.bearingDegrees?.let { "%.0f°".format(Locale.US, it) }
         )
         if (extras.isNotEmpty()) y = fact(c, "GPS", extras.joinToString("  ·  "), x, y, w)
-        if (p.fieldWorkerSignature) y = fact(c, "Signature", "Field worker signed", x, y, w)
+        if (p.fieldWorkerSignature) y = fact(c, "签名", "现场人员已签名", x, y, w)
 
         val (status, color) = verificationLine(p)
         y += 4
@@ -175,11 +175,11 @@ class ProjectReport(private val context: Context) {
 
     private fun verificationLine(p: PhotoEntity): Pair<String, Int> =
         when (val outcome = runCatching { PhotoVerification.verifyUri(context, Uri.parse(p.filePath)) }.getOrDefault(VerificationOutcome.Unreadable)) {
-            is VerificationOutcome.Untampered -> "Verified: unchanged since capture" to GREEN
-            is VerificationOutcome.MetadataUnavailable -> "Image intact; location metadata missing, not checked" to AMBER
-            is VerificationOutcome.Edited -> "Changed since capture: does not match its signature" to RED
-            VerificationOutcome.NoProof -> "No GeoTag proof in this file" to GREY
-            VerificationOutcome.Unreadable -> "File missing or unreadable, not verified" to GREY
+            is VerificationOutcome.Untampered -> "已验证：拍摄后未被修改" to GREEN
+            is VerificationOutcome.MetadataUnavailable -> "画面完好；缺少位置元数据，未核对" to AMBER
+            is VerificationOutcome.Edited -> "拍摄后被修改：与签名不符" to RED
+            VerificationOutcome.NoProof -> "文件中没有防篡改证明" to GREY
+            VerificationOutcome.Unreadable -> "文件缺失或无法读取，未校验" to GREY
         }
 
     private fun fact(c: Canvas, label: String, value: String, x: Float, y: Float, w: Float): Float {
@@ -190,7 +190,7 @@ class ProjectReport(private val context: Context) {
     private fun footer(c: Canvas, page: Int, total: Int) {
         val y = (PAGE_H - MARGIN + 6).toFloat()
         c.drawLine(MARGIN.toFloat(), y - 8, (MARGIN + CONTENT_W).toFloat(), y - 8, hairline)
-        val left = "GeoTag Camera ${BuildConfig.VERSION_NAME}  ·  generated ${fullTime(System.currentTimeMillis())}"
+        val left = "工程水印相机 ${BuildConfig.VERSION_NAME}  ·  生成于 ${fullTime(System.currentTimeMillis())}"
         text(c, left, MARGIN.toFloat(), y, CONTENT_W * 0.8f, muted, 1)
         val right = "$page / $total"
         c.drawText(right, (MARGIN + CONTENT_W) - muted.measureText(right), y + muted.textSize, muted)
@@ -222,9 +222,9 @@ class ProjectReport(private val context: Context) {
     }.getOrNull()
 
     private fun coords(p: PhotoEntity) = "%.6f, %.6f".format(Locale.US, p.latitude, p.longitude)
-    private fun dateOnly(ms: Long) = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(ms))
-    private fun timeShort(ms: Long) = SimpleDateFormat("d MMM, HH:mm", Locale.getDefault()).format(Date(ms))
-    private fun fullTime(ms: Long) = SimpleDateFormat("d MMM yyyy, HH:mm (z)", Locale.getDefault()).format(Date(ms))
+    private fun dateOnly(ms: Long) = SimpleDateFormat("yyyy年M月d日", Locale.SIMPLIFIED_CHINESE).format(Date(ms))
+    private fun timeShort(ms: Long) = SimpleDateFormat("M月d日 HH:mm", Locale.SIMPLIFIED_CHINESE).format(Date(ms))
+    private fun fullTime(ms: Long) = SimpleDateFormat("yyyy-MM-dd HH:mm (z)", Locale.SIMPLIFIED_CHINESE).format(Date(ms))
 
     // ---- Type and paint ----
 

@@ -1,5 +1,9 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.settings
 
+import com.geotagcamera.geotagginglocationonphoto.data.CapturePreferences
+import com.geotagcamera.geotagginglocationonphoto.data.CaptureResolution
+import com.geotagcamera.geotagginglocationonphoto.data.CustomTime
+
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -23,6 +27,22 @@ import kotlinx.coroutines.flow.map
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val stampPreferences = StampPreferences(application)
     private val onboardingPreferences = OnboardingPreferences(application)
+    private val capturePreferences = CapturePreferences(application)
+
+    val resolution: StateFlow<CaptureResolution> = capturePreferences.resolution
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CaptureResolution.MP12)
+    val jpegQuality: StateFlow<Int> = capturePreferences.jpegQuality
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CapturePreferences.DEFAULT_JPEG_QUALITY)
+    val saveOriginal: StateFlow<Boolean> = capturePreferences.saveOriginal
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val customTime: StateFlow<CustomTime> = capturePreferences.customTime
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustomTime(false, 0L))
+
+    fun setResolution(value: CaptureResolution) { viewModelScope.launch { capturePreferences.setResolution(value) } }
+    fun setJpegQuality(value: Int) { viewModelScope.launch { capturePreferences.setJpegQuality(value) } }
+    fun setSaveOriginal(value: Boolean) { viewModelScope.launch { capturePreferences.setSaveOriginal(value) } }
+    fun setCustomTime(targetEpochMs: Long) { viewModelScope.launch { capturePreferences.setCustomTime(targetEpochMs) } }
+    fun setCustomTimeEnabled(enabled: Boolean) { viewModelScope.launch { capturePreferences.setCustomTimeEnabled(enabled) } }
 
     /** People who onboarded before profiles existed are treated as Field. */
     val profile: StateFlow<UserProfile> = onboardingPreferences.profile

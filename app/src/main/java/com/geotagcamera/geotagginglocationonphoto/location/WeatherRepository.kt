@@ -58,16 +58,16 @@ class WeatherRepository {
 
 /** WMO weather-interpretation code → short uppercase label for the stamp chip. */
 private fun describe(code: Int): String = when (code) {
-    0 -> "CLEAR"
-    1, 2 -> "PARTLY CLOUDY"
-    3 -> "OVERCAST"
-    45, 48 -> "FOG"
-    51, 53, 55, 56, 57 -> "DRIZZLE"
-    61, 63, 65, 66, 67 -> "RAIN"
-    71, 73, 75, 77 -> "SNOW"
-    80, 81, 82 -> "SHOWERS"
-    85, 86 -> "SNOW SHOWERS"
-    95 -> "THUNDERSTORM"
-    96, 99 -> "THUNDERSTORM"
+    0 -> "晴"
+    1, 2 -> "多云"
+    3 -> "阴"
+    45, 48 -> "雾"
+    51, 53, 55, 56, 57 -> "毛毛雨"
+    61, 63, 65, 66, 67 -> "雨"
+    71, 73, 75, 77 -> "雪"
+    80, 81, 82 -> "阵雨"
+    85, 86 -> "阵雪"
+    95 -> "雷阵雨"
+    96, 99 -> "雷阵雨伴冰雹"
     else -> "—"
 }

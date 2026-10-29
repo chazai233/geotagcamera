@@ -62,7 +62,7 @@ object StampRenderer {
         // the caller already owns [source]. Returns [source] itself in that case.
         val output = if (source.isMutable && source.config == Bitmap.Config.ARGB_8888) source
         else source.copy(Bitmap.Config.ARGB_8888, true)
-        val density = Density(density = minOf(output.width, output.height) / REFERENCE_SHORT_SIDE_DP, fontScale = 1f)
+        val density = Density(density = StampPainter.density(minOf(output.width, output.height).toFloat(), spec), fontScale = 1f)
         val fontFamilyResolver = createFontFamilyResolver(context)
         val textMeasurer = TextMeasurer(
             defaultFontFamilyResolver = fontFamilyResolver,

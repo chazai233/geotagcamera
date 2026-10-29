@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -48,16 +49,45 @@ import com.geotagcamera.geotagginglocationonphoto.ui.theme.StampType
 object StampPainter {
 
     fun draw(scope: DrawScope, spec: StampSpec, textMeasurer: TextMeasurer) {
+        val pal = Palette(spec.style)
         when (spec.template) {
-            StampTemplate.BAR -> drawBar(scope, spec, textMeasurer)
-            StampTemplate.MINIMAL -> drawMinimal(scope, spec, textMeasurer)
+            StampTemplate.BAR -> drawBar(scope, spec, textMeasurer, pal)
+            StampTemplate.MINIMAL -> drawMinimal(scope, spec, textMeasurer, pal)
         }
+    }
+
+    /**
+     * 画水印用的密度：画面短边按 [StampRenderer.REFERENCE_SHORT_SIDE_DP] dp 计，
+     * 再乘以用户设定的大小倍数。取景器预览和成片都必须用它，两者才会一致。
+     */
+    fun density(shortSidePx: Float, spec: StampSpec): Float =
+        shortSidePx / StampRenderer.REFERENCE_SHORT_SIDE_DP * spec.style.scale
+
+    /** 由样式设置得出的颜色和字体。 */
+    private class Palette(style: StampStyle) {
+        val scale = style.scale
+        val marginX = style.marginX
+        val marginY = style.marginY
+        val bg = Color(style.bgArgb)
+        val border = StampColors.Border.copy(alpha = StampColors.Border.alpha * (bg.alpha / 0.7f).coerceIn(0f, 1f))
+        private val text = Color(style.textArgb)
+        private fun t(base: TextStyle, k: Float) = base.copy(color = text.copy(alpha = (text.alpha * k).coerceIn(0f, 1f)))
+        val title = t(StampType.Title, 1f)
+        val body = t(StampType.Body, 0.9f)
+        val data = t(StampType.Data, 1f)
+        val meta = t(StampType.Meta, 0.9f)
+        val mark = t(StampType.Mark, 0.6f)
+        val note = t(StampType.Note, 1f)
+        val caption = t(StampType.Caption, 0.9f)
+        val country = StampType.Country
     }
 
     // ---- Bar (default) ----
 
-    private fun drawBar(scope: DrawScope, spec: StampSpec, tm: TextMeasurer) = with(scope) {
-        val margin = px(8f)
+    private fun drawBar(scope: DrawScope, spec: StampSpec, tm: TextMeasurer, pal: Palette) = with(scope) {
+        // 边距不随水印大小缩放：它是相对画面的位置
+        val marginX = px(pal.marginX / pal.scale)
+        val marginY = px(pal.marginY / pal.scale)
         val gap = px(4f)
         val padH = px(8f)
         val padV = px(6f)
@@ -65,7 +95,7 @@ object StampPainter {
 
         // Wide (landscape) frames would stretch the card into a thin ribbon;
         // cap it and let the anchor's column decide where it sits.
-        val outerWidth = (size.width - margin * 2).coerceAtMost(px(MAX_BAR_WIDTH_DP))
+        val outerWidth = (size.width - marginX * 2).coerceAtMost(px(MAX_BAR_WIDTH_DP))
 
         // Right column: logo and/or signature with the org name under them.
         val rightImages = listOfNotNull(spec.orgLogo, spec.signature)
@@ -74,7 +104,7 @@ object StampPainter {
         // First pass assumes a tile, then the tile is sized from the text height.
         // Text height doesn't depend on width (every line is one line), so one
         // pass with an estimated tile width is exact.
-        val textHeightProbe = barTextHeight(spec, tm, lineGap)
+        val textHeightProbe = barTextHeight(spec, tm, lineGap, pal)
         val cardHeight = (textHeightProbe + padV * 2).coerceAtLeast(px(28f))
         val tileSize = if (spec.mapTile != null) cardHeight else 0f
         val cardWidth = outerWidth - (if (tileSize > 0f) tileSize + gap else 0f)
@@ -83,32 +113,32 @@ object StampPainter {
 
         val totalWidth = (if (tileSize > 0f) tileSize + gap else 0f) + cardWidth
         val x0 = when (spec.anchor.column) {
-            0 -> margin
-            2 -> size.width - margin - totalWidth
+            0 -> marginX
+            2 -> size.width - marginX - totalWidth
             else -> (size.width - totalWidth) / 2f
         }
-        val y0 = if (spec.anchor.row == 0) margin else size.height - margin - cardHeight
+        val y0 = if (spec.anchor.row == 0) marginY else size.height - marginY - cardHeight
         val corner = CornerRadius(px(8f))
 
         // Map tile: its own rounded square, left of the card.
         spec.mapTile?.let { tile ->
             drawImageClipped(tile, Offset(x0, y0), Size(tileSize, tileSize), corner, crop = true)
-            drawRoundRect(StampColors.Border, Offset(x0, y0), Size(tileSize, tileSize), corner, style = Stroke(px(1f)))
+            drawRoundRect(pal.border, Offset(x0, y0), Size(tileSize, tileSize), corner, style = Stroke(px(1f)))
         }
 
         val cardX = x0 + (if (tileSize > 0f) tileSize + gap else 0f)
-        drawRoundRect(StampColors.Scrim, Offset(cardX, y0), Size(cardWidth, cardHeight), corner)
-        drawRoundRect(StampColors.Border, Offset(cardX, y0), Size(cardWidth, cardHeight), corner, style = Stroke(px(1f)))
+        drawRoundRect(pal.bg, Offset(cardX, y0), Size(cardWidth, cardHeight), corner)
+        if (pal.border.alpha > 0.01f) drawRoundRect(pal.border, Offset(cardX, y0), Size(cardWidth, cardHeight), corner, style = Stroke(px(1f)))
 
         val textX = cardX + padH
         var y = y0 + padV
 
         // Line 1: place name + ISO-3 country chip.
         spec.placeName?.let { place ->
-            val country = spec.countryCode?.let { tm.measure(it, StampType.Country, maxLines = 1) }
+            val country = spec.countryCode?.let { tm.measure(it, pal.country, maxLines = 1) }
             val chipPadH = px(3f)
             val chipReserve = country?.let { it.size.width + chipPadH * 2 + px(5f) } ?: 0f
-            val title = one(tm, place, StampType.Title, textWidth - chipReserve)
+            val title = one(tm, place, pal.title, textWidth - chipReserve)
             drawText(title, topLeft = Offset(textX, y))
             country?.let { c ->
                 val chipX = textX + title.size.width + px(5f)
@@ -119,20 +149,20 @@ object StampPainter {
             }
             y += title.size.height + lineGap
         }
-        spec.addressLine?.let { y += drawLine(tm, it, StampType.Body, textX, y, textWidth) + lineGap }
-        spec.coordinatesText?.let { y += drawLine(tm, it, StampType.Data, textX, y, textWidth) + lineGap }
-        dateTimeLine(spec)?.let { y += drawLine(tm, it, StampType.Body, textX, y, textWidth) + lineGap }
-        spec.noteLine?.let { y += drawLine(tm, it, StampType.Note, textX, y, textWidth) + lineGap }
+        spec.addressLine?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
+        spec.coordinatesText?.let { y += drawLine(tm, it, pal.data, textX, y, textWidth) + lineGap }
+        dateTimeLine(spec)?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
+        spec.noteLine?.let { y += drawLine(tm, it, pal.note, textX, y, textWidth) + lineGap }
 
         // Last line: meta chips as one dotted run on the left, marks on the right.
         val marks = marksText(spec)
         val meta = spec.chips.joinToString("  ·  ") { it.text }.takeIf { it.isNotBlank() }
         if (meta != null || marks != null) {
             val fullTextWidth = cardWidth - padH * 2
-            val marksLayout = marks?.let { tm.measure(it, StampType.Mark, maxLines = 1) }
+            val marksLayout = marks?.let { tm.measure(it, pal.mark, maxLines = 1) }
             val markReserve = marksLayout?.let { it.size.width + px(8f) } ?: 0f
             val metaWidth = (if (hasRightColumn) textWidth else fullTextWidth) - markReserve
-            val metaLayout = meta?.let { one(tm, it, StampType.Meta, metaWidth) }
+            val metaLayout = meta?.let { one(tm, it, pal.meta, metaWidth) }
             metaLayout?.let { drawText(it, topLeft = Offset(textX, y)) }
             marksLayout?.let {
                 val lineH = maxOf(metaLayout?.size?.height ?: 0, it.size.height)
@@ -144,9 +174,9 @@ object StampPainter {
             val colX = cardX + cardWidth - padH - rightColWidth
             val colTop = y0 + padV
             // Keep the bottom line free for the marks when there are any.
-            val reservedBottom = if (marks != null) tm.measure(marks, StampType.Mark, maxLines = 1).size.height + lineGap * 2 else 0f
+            val reservedBottom = if (marks != null) tm.measure(marks, pal.mark, maxLines = 1).size.height + lineGap * 2 else 0f
             val colHeight = cardHeight - padV * 2 - reservedBottom
-            val label = spec.orgLabel?.let { one(tm, it, StampType.Caption, rightColWidth) }
+            val label = spec.orgLabel?.let { one(tm, it, pal.caption, rightColWidth) }
             val labelHeight = label?.let { it.size.height + lineGap } ?: 0f
             val imagesHeight = (colHeight - labelHeight).coerceAtLeast(0f)
             if (rightImages.isNotEmpty() && imagesHeight > 0f) {
@@ -165,15 +195,16 @@ object StampPainter {
     }
 
     /** Height of the Bar's text column; every line is single-line so width doesn't matter. */
-    private fun barTextHeight(spec: StampSpec, tm: TextMeasurer, lineGap: Float): Float {
+    private fun barTextHeight(spec: StampSpec, tm: TextMeasurer, lineGap: Float, pal: Palette): Float {
+        // 用含中文的探针测行高：中文字体的行高可能比拉丁字母高。
         val heights = buildList {
-            if (spec.placeName != null) add(tm.measure("Ag", StampType.Title, maxLines = 1).size.height)
-            if (spec.addressLine != null) add(tm.measure("Ag", StampType.Body, maxLines = 1).size.height)
-            if (spec.coordinatesText != null) add(tm.measure("Ag", StampType.Data, maxLines = 1).size.height)
-            if (dateTimeLine(spec) != null) add(tm.measure("Ag", StampType.Body, maxLines = 1).size.height)
-            if (spec.noteLine != null) add(tm.measure("Ag", StampType.Note, maxLines = 1).size.height)
+            if (spec.placeName != null) add(tm.measure(PROBE, pal.title, maxLines = 1).size.height)
+            if (spec.addressLine != null) add(tm.measure(PROBE, pal.body, maxLines = 1).size.height)
+            if (spec.coordinatesText != null) add(tm.measure(PROBE, pal.data, maxLines = 1).size.height)
+            if (dateTimeLine(spec) != null) add(tm.measure(PROBE, pal.body, maxLines = 1).size.height)
+            if (spec.noteLine != null) add(tm.measure(PROBE, pal.note, maxLines = 1).size.height)
             if (spec.chips.isNotEmpty() || marksText(spec) != null) {
-                add(maxOf(tm.measure("Ag", StampType.Meta, maxLines = 1).size.height, tm.measure("AG", StampType.Mark, maxLines = 1).size.height))
+                add(maxOf(tm.measure(PROBE, pal.meta, maxLines = 1).size.height, tm.measure(PROBE, pal.mark, maxLines = 1).size.height))
             }
         }
         if (heights.isEmpty()) return 0f
@@ -184,36 +215,37 @@ object StampPainter {
         listOfNotNull(spec.dateTimeText, spec.gmtOffsetText).joinToString(" ").takeIf { it.isNotBlank() }
 
     private fun marksText(spec: StampSpec): String? =
-        listOfNotNull(if (spec.showSignedMark) "SIGNED" else null, if (spec.showBrandMark) "GEOTAG" else null)
+        listOfNotNull(if (spec.showSignedMark) "已签名" else null, if (spec.showBrandMark) "工程水印" else null)
             .joinToString("  ·  ").takeIf { it.isNotBlank() }
 
     // ---- Minimal: a small pill, coordinates and date/time only ----
 
-    private fun drawMinimal(scope: DrawScope, spec: StampSpec, tm: TextMeasurer) = with(scope) {
-        val margin = px(8f)
+    private fun drawMinimal(scope: DrawScope, spec: StampSpec, tm: TextMeasurer, pal: Palette) = with(scope) {
+        val marginX = px(pal.marginX / pal.scale)
+        val marginY = px(pal.marginY / pal.scale)
         val padH = px(7f)
         val padV = px(5f)
         val lineGap = px(1.5f)
         val maxW = size.width * 0.7f
         val lines = listOfNotNull(
-            spec.coordinatesText?.let { one(tm, it, StampType.Data, maxW) },
-            dateTimeLine(spec)?.let { one(tm, it, StampType.Body, maxW) }
+            spec.coordinatesText?.let { one(tm, it, pal.data, maxW) },
+            dateTimeLine(spec)?.let { one(tm, it, pal.body, maxW) }
         )
         if (lines.isEmpty()) return@with
 
         val width = lines.maxOf { it.size.width } + padH * 2
         val height = lines.sumOf { it.size.height } + lineGap * (lines.size - 1) + padV * 2
         val x = when (spec.anchor.column) {
-            0 -> margin
-            2 -> size.width - margin - width
+            0 -> marginX
+            2 -> size.width - marginX - width
             else -> (size.width - width) / 2f
         }
         val y = when (spec.anchor.row) {
-            0 -> margin
+            0 -> marginY
             1 -> (size.height - height) / 2f
-            else -> size.height - margin - height
+            else -> size.height - marginY - height
         }
-        drawRoundRect(StampColors.Scrim, Offset(x, y), Size(width, height), CornerRadius(px(7f)))
+        drawRoundRect(pal.bg, Offset(x, y), Size(width, height), CornerRadius(px(7f)))
         var ty = y + padV
         lines.forEach { drawText(it, topLeft = Offset(x + padH, ty)); ty += it.size.height + lineGap }
     }
@@ -270,4 +302,6 @@ object StampPainter {
 
     /** Widest the Bar gets, in reference dp (the frame's short side is 360). */
     private const val MAX_BAR_WIDTH_DP = 560f
+
+    private const val PROBE = "Ag中"
 }

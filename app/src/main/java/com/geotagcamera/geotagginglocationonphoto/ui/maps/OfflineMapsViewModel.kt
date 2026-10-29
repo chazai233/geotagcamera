@@ -60,8 +60,8 @@ class OfflineMapsViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             val error = runCatching {
                 OfflineMaps.download(getApplication(), name, found.fix.latitude, found.fix.longitude, radiusKm)
-            }.getOrElse { it.message ?: "Couldn't start the download" }
-            _message.value = error ?: "Downloading $name ($radiusKm km)"
+            }.getOrElse { it.message ?: "无法开始下载" }
+            _message.value = error ?: "正在下载 $name（$radiusKm 公里）"
         }
     }
 
@@ -70,7 +70,7 @@ class OfflineMapsViewModel(application: Application) : AndroidViewModel(applicat
 
     fun delete(id: Long) = viewModelScope.launch {
         val ok = runCatching { OfflineMaps.delete(id) }.getOrDefault(false)
-        _message.value = if (ok) "Area deleted" else "Couldn't delete the area. Try again."
+        _message.value = if (ok) "区域已删除" else "无法删除该区域，请重试。"
     }
 
     fun messageShown() { _message.value = null }

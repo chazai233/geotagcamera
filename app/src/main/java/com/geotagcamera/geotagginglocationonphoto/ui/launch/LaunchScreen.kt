@@ -90,10 +90,10 @@ fun LaunchScreen(onNavigateToOnboarding: () -> Unit, onNavigateToCapture: () -> 
                     BrandMark(pulse)
                 }
                 Spacer(Modifier.height(28.dp))
-                Text("GeoTag Camera", color = Ink, fontSize = 22.sp)
+                Text("工程水印相机", color = Ink, fontSize = 22.sp)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "No ads. No paywall. We know, it's suspicious.",
+                    "无广告，不收费。",
                     color = Ink.copy(alpha = 0.55f),
                     fontSize = 12.5.sp,
                     textAlign = TextAlign.Center

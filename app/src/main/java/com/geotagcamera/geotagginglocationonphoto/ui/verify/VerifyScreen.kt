@@ -63,7 +63,7 @@ fun VerifyScreen(
 
     val pickPhoto = com.geotagcamera.geotagginglocationonphoto.ui.common.rememberVerifyPicker { picked -> viewModel.verify(picked) }
 
-    AppScaffold(title = "Verify a photo", onBack = onBack) { padding ->
+    AppScaffold(title = "校验照片", onBack = onBack) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -81,7 +81,7 @@ fun VerifyScreen(
                     ) {
                         AsyncImage(
                             model = s.previewUri,
-                            contentDescription = "Photo being verified",
+                            contentDescription = "正在校验的照片",
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -97,7 +97,7 @@ fun VerifyScreen(
             Button(onClick = pickPhoto, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                 Icon(Icons.Outlined.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (state is VerifyUiState.Done) "Check another photo" else "Choose a photo")
+                Text(if (state is VerifyUiState.Done) "再校验一张" else "选择照片")
             }
         }
     }
@@ -112,11 +112,11 @@ private fun EmptyPrompt() {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(56.dp)
             )
             Spacer(Modifier.height(16.dp))
-            Text("Check a photo's proof", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text("检查照片的防篡改证明", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Pick any photo, including one someone sent you. GeoTag Camera checks whether it still matches " +
-                    "the signature it was saved with. Nothing is uploaded.",
+                "选择任意照片，包括别人发给你的。应用会检查它是否仍与保存时的签名一致。" +
+                    "不会上传任何内容。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

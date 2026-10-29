@@ -136,51 +136,51 @@ fun GalleryScreen(
 
     AppScaffold(
         snackbarHostState = snackbar,
-        title = if (selecting) "${selected.size} selected" else "Gallery",
+        title = if (selecting) "已选 ${selected.size} 张" else "相册",
         onBack = if (selecting) ({ selected = emptySet() }) else null,
         backIcon = Icons.Filled.Close,
-        backDescription = "Clear selection",
+        backDescription = "取消选择",
         actions = {
             // Export and report act on the selection if there is one, else on what the filter shows.
             val scope = photos.orEmpty().let { list -> if (selecting) list.filter { it.id in selected } else list }
             if (selecting) {
                 IconButton(onClick = { moveDialog = true }) {
-                    Icon(Icons.Outlined.DriveFileMove, contentDescription = "Move to project")
+                    Icon(Icons.Outlined.DriveFileMove, contentDescription = "移到项目")
                 }
                 IconButton(onClick = { selected = photos.orEmpty().map { it.id }.toSet() }) {
-                    Icon(Icons.Outlined.SelectAll, contentDescription = "Select all")
+                    Icon(Icons.Outlined.SelectAll, contentDescription = "全选")
                 }
                 IconButton(onClick = {
                     val uris = photos.orEmpty().filter { it.id in selected }.map { it.filePath }
                     if (uris.isNotEmpty()) shareMultiple(context, uris)
-                }) { Icon(Icons.Outlined.Share, contentDescription = "Share") }
+                }) { Icon(Icons.Outlined.Share, contentDescription = "分享") }
                 IconButton(onClick = { confirmDelete = true }) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Delete")
+                    Icon(Icons.Outlined.Delete, contentDescription = "删除")
                 }
             }
             if (allPhotos != null) {
                 Box {
-                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") }
+                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "更多") }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
-                            text = { Text("Export locations") },
+                            text = { Text("导出位置数据") },
                             leadingIcon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
                             enabled = scope.isNotEmpty(),
                             onClick = { menuOpen = false; pickFormat = true }
                         )
                         DropdownMenuItem(
-                            text = { Text("PDF report") },
+                            text = { Text("PDF 报告") },
                             leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, contentDescription = null) },
                             enabled = scope.isNotEmpty(),
                             onClick = { menuOpen = false; viewModel.buildReport(scope, viewModel.scopeTitle(), orgLabel) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Import photos") },
+                            text = { Text("导入照片") },
                             leadingIcon = { Icon(Icons.Outlined.AddPhotoAlternate, contentDescription = null) },
                             onClick = { menuOpen = false; importLauncher.launch(arrayOf("image/jpeg")) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Manage projects") },
+                            text = { Text("管理项目") },
                             leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
                             onClick = { menuOpen = false; manageProjects = true }
                         )
@@ -192,7 +192,7 @@ fun GalleryScreen(
             if (!selecting && !photos.isNullOrEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = pickToVerify,
-                    text = { Text("Verify a photo") },
+                    text = { Text("校验照片") },
                     icon = { Icon(Icons.Outlined.VerifiedUser, contentDescription = null) }
                 )
             }
@@ -213,7 +213,7 @@ fun GalleryScreen(
             photos == null -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
             photos.isEmpty() && filter != GalleryFilter.All -> Box(Modifier.fillMaxSize().padding(padding).padding(32.dp), Alignment.Center) {
                 Text(
-                    "No photos here yet. Choose this project under the viewfinder before shooting, or select photos and move them here.",
+                    "这里还没有照片。拍照前在取景框下方选择这个项目，或者选中照片移到这里。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -305,16 +305,16 @@ fun GalleryScreen(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             icon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-            title = { Text(if (count == 1) "Delete this photo?" else "Delete $count photos?") },
-            text = { Text("They will be removed from this device's gallery as well. This can't be undone.") },
+            title = { Text(if (count == 1) "删除这张照片？" else "删除 $count 张照片？") },
+            text = { Text("照片也会从本机相册中删除，无法恢复。") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.delete(photos.orEmpty().filter { it.id in selected })
                     selected = emptySet()
                     confirmDelete = false
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("取消") } }
         )
     }
 }
@@ -333,10 +333,10 @@ private fun EmptyGallery(modifier: Modifier, onOpenCamera: () -> Unit, onVerify:
                 modifier = Modifier.size(56.dp)
             )
             Spacer(Modifier.height(16.dp))
-            Text("No photos yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            Text("还没有照片", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Photos you take appear here with their location stamp and proof.",
+                "拍摄的照片会带着位置水印和防篡改证明显示在这里。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -345,12 +345,12 @@ private fun EmptyGallery(modifier: Modifier, onOpenCamera: () -> Unit, onVerify:
             androidx.compose.material3.Button(
                 onClick = onOpenCamera,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
-            ) { Text("Take a photo") }
+            ) { Text("去拍照") }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(
                 onClick = onVerify,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
-            ) { Text("Verify a photo someone sent you") }
+            ) { Text("校验别人发来的照片") }
         }
     }
 }
@@ -371,17 +371,17 @@ private fun PhotoTile(
             .aspectRatio(1f)
             .clip(RoundedCornerShape(6.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = "Select")
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = "选择")
     ) {
         AsyncImage(
             model = Uri.parse(photo.filePath),
-            contentDescription = photo.address ?: "Photo",
+            contentDescription = photo.address ?: "照片",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize().padding(if (isSelected) 8.dp else 0.dp).clip(RoundedCornerShape(4.dp))
         )
         when (status) {
-            TileStatus.VERIFIED -> StatusBadge(Icons.Filled.Verified, ProofColors.verified, "Verified")
-            TileStatus.TAMPERED -> StatusBadge(Icons.Filled.ErrorOutline, MaterialTheme.colorScheme.error, "Edited since capture")
+            TileStatus.VERIFIED -> StatusBadge(Icons.Filled.Verified, ProofColors.verified, "已验证")
+            TileStatus.TAMPERED -> StatusBadge(Icons.Filled.ErrorOutline, MaterialTheme.colorScheme.error, "拍摄后被修改")
             else -> Unit
         }
         if (selecting) {
@@ -398,7 +398,7 @@ private fun PhotoTile(
                 if (isSelected) {
                     Icon(
                         Icons.Filled.CheckCircle,
-                        contentDescription = "Selected",
+                        contentDescription = "已选",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(22.dp)
                     )
@@ -436,9 +436,9 @@ private fun dayLabel(epochMs: Long): String {
     val day = Calendar.getInstance().apply { timeInMillis = epochMs }
     val today = Calendar.getInstance()
     fun Calendar.sameDay(o: Calendar) = get(Calendar.YEAR) == o.get(Calendar.YEAR) && get(Calendar.DAY_OF_YEAR) == o.get(Calendar.DAY_OF_YEAR)
-    if (day.sameDay(today)) return "Today"
-    if (day.sameDay(today.apply { add(Calendar.DAY_OF_YEAR, -1) })) return "Yesterday"
-    return SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(Date(epochMs))
+    if (day.sameDay(today)) return "今天"
+    if (day.sameDay(today.apply { add(Calendar.DAY_OF_YEAR, -1) })) return "昨天"
+    return SimpleDateFormat("yyyy年M月d日 EEEE", Locale.SIMPLIFIED_CHINESE).format(Date(epochMs))
 }
 
 private fun shareMultiple(context: Context, uriStrings: List<String>) {
@@ -453,5 +453,5 @@ private fun shareMultiple(context: Context, uriStrings: List<String>) {
             putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uriStrings.map { Uri.parse(it) }))
         }
     }.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    context.startActivity(Intent.createChooser(intent, "Share photos"))
+    context.startActivity(Intent.createChooser(intent, "分享照片"))
 }

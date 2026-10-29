@@ -69,14 +69,14 @@ fun SignatureCaptureDialog(
     ModalBottomSheet(onDismissRequest = if (required) onDiscard else onSkip, sheetState = sheetState) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
             Text(
-                "Field worker signature",
+                "现场人员签名",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                if (required) "A signature is required before this photo is saved."
-                else "Sign below to confirm you captured this photo.",
+                if (required) "保存这张照片前必须签名。"
+                else "在下方签名，确认照片由你拍摄。",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -112,12 +112,12 @@ fun SignatureCaptureDialog(
                 TextButton(
                     onClick = { padState.clear() },
                     modifier = Modifier.align(Alignment.TopEnd)
-                ) { Text("Clear", color = Color.White) }
+                ) { Text("清除", color = Color.White) }
             }
 
             Spacer(Modifier.height(8.dp))
             Text(
-                "Stored on this device only.",
+                "签名只保存在本机。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 11.5.sp
@@ -128,12 +128,12 @@ fun SignatureCaptureDialog(
                 OutlinedButton(
                     onClick = if (required) onDiscard else onSkip,
                     modifier = Modifier.weight(1f).height(52.dp)
-                ) { Text(if (required) "Discard" else "Skip") }
+                ) { Text(if (required) "放弃" else "跳过") }
                 Button(
                     onClick = { onConfirm(padState.renderToBitmap(canvasSize.width, canvasSize.height)) },
                     enabled = !padState.isEmpty,
                     modifier = Modifier.weight(2f).height(52.dp)
-                ) { Text("Attach & save") }
+                ) { Text("附上并保存") }
             }
         }
     }

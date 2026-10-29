@@ -50,9 +50,9 @@ import com.geotagcamera.geotagginglocationonphoto.ui.verify.VerifyScreen
  * detail, verify, and about/legal, none of which show the bottom bar.
  */
 private sealed class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
-    data object Capture : Tab("capture", "Capture", Icons.Outlined.PhotoCamera, Icons.Filled.PhotoCamera)
-    data object Gallery : Tab("gallery", "Gallery", Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)
-    data object Settings : Tab("settings", "Settings", Icons.Outlined.Settings, Icons.Filled.Settings)
+    data object Capture : Tab("capture", "拍照", Icons.Outlined.PhotoCamera, Icons.Filled.PhotoCamera)
+    data object Gallery : Tab("gallery", "相册", Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)
+    data object Settings : Tab("settings", "设置", Icons.Outlined.Settings, Icons.Filled.Settings)
 }
 
 private val tabs = listOf(Tab.Capture, Tab.Gallery, Tab.Settings)
@@ -98,16 +98,16 @@ fun GeoTagCameraApp(shareUri: String? = null, onShareConsumed: () -> Unit = {}) 
     if (crashOffer) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = {},
-            title = { androidx.compose.material3.Text("GeoTag Camera closed unexpectedly") },
-            text = { androidx.compose.material3.Text("Send the crash details to the developer? You'll see the email before anything is sent. Your photos and locations are not included.") },
+            title = { androidx.compose.material3.Text("应用上次意外关闭") },
+            text = { androidx.compose.material3.Text("要把崩溃信息发给原作者吗？发送前你会先看到邮件内容。不包含照片和位置。") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = { crashOffer = false; navController.navigate(Routes.report(crash = true)) }) {
-                    androidx.compose.material3.Text("Write report")
+                    androidx.compose.material3.Text("写报告")
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { crashOffer = false; com.geotagcamera.geotagginglocationonphoto.support.CrashCatcher.clear(appContext) }) {
-                    androidx.compose.material3.Text("No, delete it")
+                    androidx.compose.material3.Text("不了，删除")
                 }
             }
         )

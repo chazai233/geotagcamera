@@ -1,5 +1,8 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.settings
 
+import com.geotagcamera.geotagginglocationonphoto.data.CaptureResolution
+import com.geotagcamera.geotagginglocationonphoto.data.CustomTime
+
 import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -88,35 +91,35 @@ private data class StampToggle(
 
 // The four most-changed fields; the rest sit behind "More fields".
 private val SURFACED = listOf(
-    StampToggle("Address", "Reverse-geocoded address and Plus Code", { it.showAddress }, { f, v -> f.copy(showAddress = v) }),
-    StampToggle("Coordinates", "Latitude and longitude", { it.showCoordinates }, { f, v -> f.copy(showCoordinates = v) }),
-    StampToggle("Date & time", "When the photo was taken", { it.showTimestamp }, { f, v -> f.copy(showTimestamp = v) }),
-    StampToggle("Map thumbnail", "Small street map (uses network)", { it.showMap }, { f, v -> f.copy(showMap = v) })
+    StampToggle("地址", "反查得到的地址和 Plus Code", { it.showAddress }, { f, v -> f.copy(showAddress = v) }),
+    StampToggle("经纬度", "纬度和经度", { it.showCoordinates }, { f, v -> f.copy(showCoordinates = v) }),
+    StampToggle("日期时间", "拍摄时间，格式在下方\"日期时间\"中设置", { it.showTimestamp }, { f, v -> f.copy(showTimestamp = v) }),
+    StampToggle("地图缩略图", "小幅街道地图（需联网或离线地图）", { it.showMap }, { f, v -> f.copy(showMap = v) })
 )
 
 private val MORE = listOf(
-    StampToggle("Country code", "ISO country code beside the place", { it.showCountry }, { f, v -> f.copy(showCountry = v) }),
-    StampToggle("GMT offset", "Time-zone offset after the time", { it.showGmtOffset }, { f, v -> f.copy(showGmtOffset = v) }),
-    StampToggle("Altitude", "Height above sea level", { it.showAltitude }, { f, v -> f.copy(showAltitude = v) }),
-    StampToggle("Accuracy", "GPS accuracy radius", { it.showAccuracy }, { f, v -> f.copy(showAccuracy = v) }),
-    StampToggle("Bearing", "Direction of travel", { it.showBearing }, { f, v -> f.copy(showBearing = v) }),
-    StampToggle("Weather", "Temperature and conditions (uses network)", { it.showWeather }, { f, v -> f.copy(showWeather = v) }),
-    StampToggle("Organisation name", "Your organisation's name in the footer", { it.showOrgLabelToggle }, { f, v -> f.copy(showOrgLabelToggle = v) }),
-    StampToggle("Organisation logo", "Your logo in the footer", { it.showOrgLogo }, { f, v -> f.copy(showOrgLogo = v) }),
-    StampToggle("Signed mark", "Shows SIGNED when a signature is attached", { it.showSignatureField }, { f, v -> f.copy(showSignatureField = v) }),
-    StampToggle("App mark", "Small GeoTag Camera mark", { it.showBrandMark }, { f, v -> f.copy(showBrandMark = v) }),
-    StampToggle("Custom text", "Your fixed line from Organisation", { it.showCustomText }, { f, v -> f.copy(showCustomText = v) })
+    StampToggle("国家代码", "地名旁的三字母国家代码", { it.showCountry }, { f, v -> f.copy(showCountry = v) }),
+    StampToggle("时区", "时间后显示 GMT 时区", { it.showGmtOffset }, { f, v -> f.copy(showGmtOffset = v) }),
+    StampToggle("海拔", "海拔高度", { it.showAltitude }, { f, v -> f.copy(showAltitude = v) }),
+    StampToggle("定位精度", "GPS 精度半径", { it.showAccuracy }, { f, v -> f.copy(showAccuracy = v) }),
+    StampToggle("方向", "移动方向（方位角）", { it.showBearing }, { f, v -> f.copy(showBearing = v) }),
+    StampToggle("天气", "气温和天气（需联网）", { it.showWeather }, { f, v -> f.copy(showWeather = v) }),
+    StampToggle("单位名称", "在水印右侧显示单位名称", { it.showOrgLabelToggle }, { f, v -> f.copy(showOrgLabelToggle = v) }),
+    StampToggle("单位 Logo", "在水印右侧显示 Logo", { it.showOrgLogo }, { f, v -> f.copy(showOrgLogo = v) }),
+    StampToggle("签名标记", "有手写签名时显示\"已签名\"", { it.showSignatureField }, { f, v -> f.copy(showSignatureField = v) }),
+    StampToggle("应用标记", "右下角的\"工程水印\"小字", { it.showBrandMark }, { f, v -> f.copy(showBrandMark = v) }),
+    StampToggle("自定义文字", "在\"单位信息\"里设置的固定文字", { it.showCustomText }, { f, v -> f.copy(showCustomText = v) })
 )
 
 /** A fixed, recognisable sample so the preview shows every enabled field. */
 private val SAMPLE_FIX = LocationFix(
-    latitude = 22.572645, longitude = 88.363892, altitudeMeters = 11.0,
+    latitude = 30.123456, longitude = 110.654321, altitudeMeters = 340.0,
     accuracyMeters = 4f, bearingDegrees = 135f, timestampEpochMs = 0L
 )
 private val SAMPLE_ADDRESS = AddressParts(
-    place = "Kolkata, West Bengal",
-    addressLine = "BBD Bagh, Kolkata, West Bengal, 700001",
-    countryName = "India", countryCode = "IN", fromCache = false
+    place = "示例市 示例区",
+    addressLine = "示例路 1 号 施工现场",
+    countryName = "中国", countryCode = "CN", fromCache = false
 )
 
 @Composable
@@ -130,8 +133,12 @@ fun SettingsScreen(
     val loaded by viewModel.fields.collectAsStateWithLifecycle()
     val autoDismiss by viewModel.autoDismissReview.collectAsStateWithLifecycle()
     val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val resolution by viewModel.resolution.collectAsStateWithLifecycle()
+    val jpegQuality by viewModel.jpegQuality.collectAsStateWithLifecycle()
+    val saveOriginal by viewModel.saveOriginal.collectAsStateWithLifecycle()
+    val customTime by viewModel.customTime.collectAsStateWithLifecycle()
 
-    AppScaffold(title = "Settings") { padding ->
+    AppScaffold(title = "设置") { padding ->
         val fields = loaded
         if (fields == null) {
             Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) { CircularProgressIndicator() }
@@ -141,6 +148,10 @@ fun SettingsScreen(
             fields = fields,
             autoDismiss = autoDismiss,
             profile = profile,
+            resolution = resolution,
+            jpegQuality = jpegQuality,
+            saveOriginal = saveOriginal,
+            customTime = customTime,
             contentPadding = padding,
             viewModel = viewModel,
             onOpenVerify = onOpenVerify,
@@ -157,6 +168,10 @@ private fun SettingsContent(
     fields: StampFields,
     autoDismiss: Boolean,
     profile: UserProfile,
+    resolution: CaptureResolution,
+    jpegQuality: Int,
+    saveOriginal: Boolean,
+    customTime: CustomTime,
     contentPadding: PaddingValues,
     viewModel: SettingsViewModel,
     onOpenVerify: () -> Unit,
@@ -176,9 +191,28 @@ private fun SettingsContent(
             .padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        StampPreview(fields)
+        StampPreview(fields, customTime)
 
-        SettingsCard("Set up for") {
+        PhotoSettingsCard(
+            resolution = resolution,
+            jpegQuality = jpegQuality,
+            saveOriginal = saveOriginal,
+            onResolution = viewModel::setResolution,
+            onJpegQuality = viewModel::setJpegQuality,
+            onSaveOriginal = viewModel::setSaveOriginal
+        )
+
+        StyleSettingsCard(fields) { transform -> viewModel.update(transform) }
+
+        DateTimeSettingsCard(
+            fields = fields,
+            customTime = customTime,
+            update = { transform -> viewModel.update(transform) },
+            onSetCustomTime = viewModel::setCustomTime,
+            onCustomTimeEnabled = viewModel::setCustomTimeEnabled
+        )
+
+        SettingsCard("使用场景") {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 UserProfile.entries.forEachIndexed { i, p ->
                     SegmentedButton(
@@ -190,36 +224,14 @@ private fun SettingsContent(
                 }
             }
             Text(
-                profile.summary + " Switching applies its recommended stamp fields.",
+                profile.summary + " 切换后会套用该场景推荐的水印字段。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
         }
 
-        SettingsCard("Stamp style") {
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                StampTemplate.entries.forEachIndexed { i, template ->
-                    SegmentedButton(
-                        selected = template == fields.template,
-                        onClick = { viewModel.update { it.copy(template = template) } },
-                        shape = SegmentedButtonDefaults.itemShape(i, StampTemplate.entries.size),
-                        label = { Text(template.label) }
-                    )
-                }
-            }
-            Text(
-                when (fields.template) {
-                    StampTemplate.BAR -> "Every enabled field in a strip across the top or bottom of the photo."
-                    StampTemplate.MINIMAL -> "A small label with coordinates and time only."
-                } + " To move it, hold the stamp on the camera screen and drag.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-        }
-
-        SettingsCard("Stamp fields") {
+        SettingsCard("水印内容") {
             SURFACED.forEach { ToggleRow(it, fields, viewModel) }
             AnimatedVisibility(visible = showAll) {
                 Column { MORE.forEach { ToggleRow(it, fields, viewModel) } }
@@ -230,11 +242,11 @@ private fun SettingsContent(
             ) {
                 Icon(if (showAll) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text(if (showAll) "Fewer fields" else "More fields (${MORE.size})")
+                Text(if (showAll) "收起" else "更多字段（${MORE.size} 项）")
             }
         }
 
-        SettingsCard("Organisation") {
+        SettingsCard("单位信息") {
             Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)) {
                 // Local text state: the field never waits on a DataStore round trip,
                 // so fast typing can't drop characters or move the cursor.
@@ -245,7 +257,7 @@ private fun SettingsContent(
                         orgText = value
                         viewModel.update { it.copy(orgLabel = value) }
                     },
-                    label = { Text("College, company or project name") },
+                    label = { Text("单位、公司或项目名称") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -257,8 +269,8 @@ private fun SettingsContent(
                         customText = value.take(120)
                         viewModel.update { it.copy(customText = customText) }
                     },
-                    label = { Text("Text on every photo (optional)") },
-                    supportingText = { Text("For example a contract number or inspector name. Per-shot notes are set on the camera screen.") },
+                    label = { Text("每张照片都显示的文字（可选）") },
+                    supportingText = { Text("例如合同编号、监理姓名。单张照片的备注在拍照界面设置。") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -275,7 +287,7 @@ private fun SettingsContent(
                         if (logoPath != null) {
                             AsyncImage(
                                 model = File(logoPath),
-                                contentDescription = "Organisation logo",
+                                contentDescription = "单位 Logo",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize().padding(4.dp)
                             )
@@ -283,64 +295,64 @@ private fun SettingsContent(
                             Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    OutlinedButton(onClick = pickLogo) { Text(if (logoPath != null) "Replace logo" else "Choose logo") }
+                    OutlinedButton(onClick = pickLogo) { Text(if (logoPath != null) "更换 Logo" else "选择 Logo") }
                     if (logoPath != null) {
                         TextButton(onClick = { viewModel.clearOrgLogo() }) {
                             Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Remove")
+                            Text("移除")
                         }
                     }
                 }
             }
         }
 
-        SettingsCard("Capture") {
+        SettingsCard("拍摄") {
             // Field keeps this one tucked away unless it's already on.
             if (profile.showsAllSettings || fields.requireSignature || showAll) {
                 SwitchRow(
-                    title = "Require signature",
-                    subtitle = "Ask for a signature before each photo is saved",
+                    title = "必须签名",
+                    subtitle = "每张照片保存前都要求手写签名",
                     checked = fields.requireSignature,
                     onChange = { checked -> viewModel.update { it.copy(requireSignature = checked) } }
                 )
             }
             SwitchRow(
-                title = "Auto-close review",
-                subtitle = "Go back to the camera 4 seconds after each photo",
+                title = "自动关闭预览",
+                subtitle = "拍完 4 秒后自动回到相机",
                 checked = autoDismiss,
                 onChange = { checked -> viewModel.setAutoDismissReview(checked) }
             )
         }
 
-        SettingsCard("More") {
-            NavRow(Icons.Outlined.Map, "Offline maps", "Save areas so the stamp map works without signal", onOpenOfflineMaps)
+        SettingsCard("更多") {
+            NavRow(Icons.Outlined.Map, "离线地图", "下载区域地图，没信号时水印地图也能显示", onOpenOfflineMaps)
             HorizontalDivider(Modifier.padding(start = 56.dp))
-            NavRow(Icons.Outlined.VerifiedUser, "Verify a photo", "Check any image's proof, even one you didn't take", onOpenVerify)
+            NavRow(Icons.Outlined.VerifiedUser, "校验照片", "检查任意照片的防篡改证明，包括别人拍的", onOpenVerify)
             HorizontalDivider(Modifier.padding(start = 56.dp))
-            NavRow(Icons.Outlined.Info, "About & legal", "Privacy, terms, licences, delete app data", onOpenAboutLegal)
+            NavRow(Icons.Outlined.Info, "关于与法律信息", "隐私、条款、许可证、清除应用数据", onOpenAboutLegal)
             HorizontalDivider(Modifier.padding(start = 56.dp))
-            NavRow(Icons.Outlined.BugReport, "Report a problem", "Email the developer, with device details if you like", onOpenReport)
+            NavRow(Icons.Outlined.BugReport, "反馈问题", "给原作者发邮件（英文），可附设备信息", onOpenReport)
         }
     }
 }
 
 /** The current stamp settings drawn on a sample frame, exactly as the camera would burn them in. */
 @Composable
-private fun StampPreview(fields: StampFields) {
+private fun StampPreview(fields: StampFields, customTime: CustomTime) {
     val logo by produceState<android.graphics.Bitmap?>(null, fields.orgLogoUri) {
         value = fields.orgLogoUri?.let { path -> withContext(Dispatchers.IO) { LogoDecoder.decode(path) } }
     }
-    val spec = remember(fields, logo) {
+    val spec = remember(fields, logo, customTime) {
         buildStampSpec(
             fix = SAMPLE_FIX,
             addressParts = SAMPLE_ADDRESS,
-            capturedAtEpochMs = System.currentTimeMillis(),
+            capturedAtEpochMs = customTime.toStampTime(System.currentTimeMillis()),
             fields = fields,
             mapTile = SampleMap.tile,
             orgLogo = logo,
             hasSignature = fields.requireSignature,
-            weatherChipText = "31°C CLEAR"
+            weatherChipText = "31°C 晴"
         )
     }
     Column {
@@ -359,7 +371,7 @@ private fun StampPreview(fields: StampFields) {
             StampOverlay(spec, Modifier.fillMaxSize())
         }
         Text(
-            "Preview with a sample location and map",
+            "效果预览（示例位置和地图）",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 6.dp, start = 4.dp)
@@ -368,7 +380,7 @@ private fun StampPreview(fields: StampFields) {
 }
 
 @Composable
-private fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+internal fun SettingsCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -421,8 +433,4 @@ private fun NavRow(icon: ImageVector, title: String, subtitle: String, onClick: 
     )
 }
 
-private val StampTemplate.label: String
-    get() = when (this) {
-        StampTemplate.BAR -> "Bar"
-        StampTemplate.MINIMAL -> "Minimal"
-    }
+

@@ -68,4 +68,19 @@ class UserCommentCodecTest {
         val p = UserCommentCodec.decode("{\"v\":2,\"h\":\"a\",\"sig\":\"b\",\"pk\":\"c\"}")!!
         assertNull(p.claims)
     }
+
+    @Test
+    fun editedTimeRoundTripsAsV3() {
+        val claims = ProofClaims(12.971599, 77.594566, 1_700_000_000_000L, realEpochMs = 1_700_000_999_000L)
+        val json = UserCommentCodec.encode(IntegrityResult("deadbeef", "c2ln", "k", "cGs=", claims), claims.epochMs)
+        val payload = UserCommentCodec.decode(json)!!
+        assertEquals(3, payload.version)
+        assertEquals(claims, payload.claims)
+    }
+
+    @Test
+    fun v3WithoutRealTimeHasNoClaims() {
+        val p = UserCommentCodec.decode("{\"v\":3,\"h\":\"a\",\"sig\":\"b\",\"pk\":\"c\",\"lat\":1.0,\"lon\":2.0,\"ms\":3}")!!
+        assertNull(p.claims)
+    }
 }

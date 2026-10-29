@@ -84,7 +84,7 @@ fun OfflineMapsScreen(onBack: () -> Unit, viewModel: OfflineMapsViewModel = view
         message?.let { snackbar.showSnackbar(it); viewModel.messageShown() }
     }
 
-    AppScaffold(title = "Offline maps", onBack = onBack, snackbarHostState = snackbar) { padding ->
+    AppScaffold(title = "离线地图", onBack = onBack, snackbarHostState = snackbar) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
@@ -107,7 +107,7 @@ fun OfflineMapsScreen(onBack: () -> Unit, viewModel: OfflineMapsViewModel = view
             } else {
                 item {
                     Text(
-                        "Saved areas",
+                        "已保存的区域",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -120,7 +120,7 @@ fun OfflineMapsScreen(onBack: () -> Unit, viewModel: OfflineMapsViewModel = view
             }
             item {
                 Text(
-                    "Maps: ${MapEngine.ATTRIBUTION}. Places you photograph while online are also kept offline automatically, up to about 150 MB.",
+                    "地图：${MapEngine.ATTRIBUTION}。联网时拍过照片的地点也会自动缓存，最多约 150 MB。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth().widthIn(max = 640.dp).padding(top = 8.dp, start = 4.dp, end = 4.dp)
@@ -133,10 +133,10 @@ fun OfflineMapsScreen(onBack: () -> Unit, viewModel: OfflineMapsViewModel = view
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
             icon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-            title = { Text("Delete ${area.name}?") },
-            text = { Text("The stamp map won't work offline in this area until you download it again. Photos are not affected.") },
-            confirmButton = { TextButton(onClick = { viewModel.delete(area.id); confirmDelete = null }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("Cancel") } }
+            title = { Text("删除「${area.name}」？") },
+            text = { Text("重新下载之前，这个区域离线时将无法显示水印地图。照片不受影响。") },
+            confirmButton = { TextButton(onClick = { viewModel.delete(area.id); confirmDelete = null }) { Text("删除") } },
+            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text("取消") } }
         )
     }
 
@@ -146,10 +146,10 @@ fun OfflineMapsScreen(onBack: () -> Unit, viewModel: OfflineMapsViewModel = view
         AlertDialog(
             onDismissRequest = { confirmMetered = null },
             icon = { Icon(Icons.Outlined.SignalCellularAlt, contentDescription = null) },
-            title = { Text("Use mobile data?") },
-            text = { Text("You're not on Wi-Fi. This area is about ${formatBytes(bytes)}.") },
-            confirmButton = { TextButton(onClick = { viewModel.download(radius); confirmMetered = null }) { Text("Download") } },
-            dismissButton = { TextButton(onClick = { confirmMetered = null }) { Text("Wait for Wi-Fi") } }
+            title = { Text("使用移动数据？") },
+            text = { Text("当前未连接 Wi-Fi，这个区域约 ${formatBytes(bytes)}。") },
+            confirmButton = { TextButton(onClick = { viewModel.download(radius); confirmMetered = null }) { Text("下载") } },
+            dismissButton = { TextButton(onClick = { confirmMetered = null }) { Text("等 Wi-Fi") } }
         )
     }
 }
@@ -157,9 +157,9 @@ fun OfflineMapsScreen(onBack: () -> Unit, viewModel: OfflineMapsViewModel = view
 @Composable
 private fun ConnectionRow(network: NetworkState) {
     val (icon, text) = when (network) {
-        NetworkState.OFFLINE -> Icons.Outlined.CloudOff to "Offline. Saved areas and recently visited places still work."
-        NetworkState.METERED -> Icons.Outlined.SignalCellularAlt to "On mobile data. Maps load as you shoot."
-        NetworkState.UNMETERED -> Icons.Outlined.Wifi to "On Wi-Fi. A good time to save areas."
+        NetworkState.OFFLINE -> Icons.Outlined.CloudOff to "离线中。已保存区域和最近去过的地点仍可显示。"
+        NetworkState.METERED -> Icons.Outlined.SignalCellularAlt to "使用移动数据，拍照时按需加载地图。"
+        NetworkState.UNMETERED -> Icons.Outlined.Wifi to "已连接 Wi-Fi，适合下载离线区域。"
     }
     Row(
         modifier = Modifier.fillMaxWidth().widthIn(max = 640.dp).padding(top = 4.dp, start = 4.dp, end = 4.dp),
@@ -176,25 +176,25 @@ private fun ConnectionRow(network: NetworkState) {
 private fun SaveAreaCard(here: HereState, network: NetworkState, onRetryLocate: () -> Unit, onDownload: (Int) -> Unit) {
     var radius by rememberSaveable { mutableStateOf(5) }
     Card {
-        Text("Save this area", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text("保存当前区域", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.size(4.dp))
         when (here) {
             HereState.Locating -> Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
-                Text("Finding your location", style = MaterialTheme.typography.bodyMedium)
+                Text("正在获取位置", style = MaterialTheme.typography.bodyMedium)
             }
             HereState.Unavailable -> {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.LocationOff, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.width(8.dp))
-                    Text("Location unavailable. Turn on location and allow access, then try again.", style = MaterialTheme.typography.bodyMedium)
+                    Text("无法获取位置。请开启定位并授权后重试。", style = MaterialTheme.typography.bodyMedium)
                 }
                 Spacer(Modifier.size(8.dp))
                 OutlinedButton(onClick = onRetryLocate) {
                     Icon(Icons.Outlined.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Try again")
+                    Text("重试")
                 }
             }
             is HereState.Found -> {
@@ -206,7 +206,7 @@ private fun SaveAreaCard(here: HereState, network: NetworkState, onRetryLocate: 
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.size(12.dp))
-                Text("Radius", style = MaterialTheme.typography.labelLarge)
+                Text("半径", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.size(6.dp))
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     OfflineMaps.RADIUS_OPTIONS_KM.forEachIndexed { i, km ->
@@ -214,18 +214,18 @@ private fun SaveAreaCard(here: HereState, network: NetworkState, onRetryLocate: 
                             selected = radius == km,
                             onClick = { radius = km },
                             shape = SegmentedButtonDefaults.itemShape(i, OfflineMaps.RADIUS_OPTIONS_KM.size),
-                            label = { Text("$km km") }
+                            label = { Text("$km 公里") }
                         )
                     }
                 }
                 val (_, bytes) = remember(radius, here.fix.latitude) { OfflineMaps.estimate(here.fix.latitude, radius) }
                 Spacer(Modifier.size(8.dp))
-                Text("About ${formatBytes(bytes)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("约 ${formatBytes(bytes)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.size(12.dp))
                 Button(onClick = { onDownload(radius) }, enabled = network != NetworkState.OFFLINE, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(if (network == NetworkState.OFFLINE) "Connect to download" else "Download")
+                    Text(if (network == NetworkState.OFFLINE) "联网后下载" else "下载")
                 }
             }
         }
@@ -246,17 +246,17 @@ private fun AreaRow(area: OfflineArea, onPause: () -> Unit, onResume: () -> Unit
             Column(Modifier.weight(1f)) {
                 Text(area.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val status = when {
-                    area.complete -> "Ready offline · ${area.radiusKm} km · ${formatBytes(area.completedBytes)}"
-                    area.downloading -> "Downloading ${(area.progress * 100).toInt()}% · ${formatBytes(area.completedBytes)}"
-                    else -> "Paused ${(area.progress * 100).toInt()}% · ${area.radiusKm} km"
+                    area.complete -> "可离线使用 · ${area.radiusKm} 公里 · ${formatBytes(area.completedBytes)}"
+                    area.downloading -> "下载中 ${(area.progress * 100).toInt()}% · ${formatBytes(area.completedBytes)}"
+                    else -> "已暂停 ${(area.progress * 100).toInt()}% · ${area.radiusKm} 公里"
                 }
                 Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!area.complete) {
-                if (area.downloading) IconAction(Icons.Outlined.Pause, "Pause", onPause)
-                else IconAction(Icons.Outlined.PlayArrow, "Resume", onResume)
+                if (area.downloading) IconAction(Icons.Outlined.Pause, "暂停", onPause)
+                else IconAction(Icons.Outlined.PlayArrow, "继续", onResume)
             }
-            IconAction(Icons.Outlined.Delete, "Delete", onDelete)
+            IconAction(Icons.Outlined.Delete, "删除", onDelete)
         }
         if (!area.complete) {
             Spacer(Modifier.size(10.dp))
@@ -277,9 +277,9 @@ private fun EmptyAreas() {
     ) {
         Icon(Icons.Outlined.Map, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(40.dp))
         Spacer(Modifier.size(8.dp))
-        Text("No saved areas yet", style = MaterialTheme.typography.titleSmall)
+        Text("还没有保存的区域", style = MaterialTheme.typography.titleSmall)
         Text(
-            "Going somewhere without signal? Save the area first.",
+            "要去没信号的地方？先把那片区域保存下来。",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

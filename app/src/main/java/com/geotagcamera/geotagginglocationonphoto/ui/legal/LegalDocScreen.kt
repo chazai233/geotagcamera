@@ -44,10 +44,10 @@ import kotlinx.coroutines.withContext
 
 /** The legal documents bundled in the app (copied from the repository at build time). */
 enum class LegalDoc(val title: String, val asset: String) {
-    PRIVACY("Privacy policy", "legal/PRIVACY.md"),
-    TERMS("Terms of use", "legal/TERMS.md"),
-    NOTICES("Open-source notices", "legal/THIRD_PARTY_NOTICES.md"),
-    LICENSE("Licence (GPLv3)", "legal/LICENSE"),
+    PRIVACY("隐私政策", "legal/PRIVACY.md"),
+    TERMS("使用条款", "legal/TERMS.md"),
+    NOTICES("开源声明", "legal/THIRD_PARTY_NOTICES.md"),
+    LICENSE("许可证（GPLv3）", "legal/LICENSE"),
     APACHE("Apache License 2.0", "legal/licenses/Apache-2.0.txt"),
     OFL("SIL Open Font License 1.1", "legal/licenses/OFL-1.1.txt"),
     MAPLIBRE("MapLibre BSD 2-Clause", "legal/licenses/MapLibre-BSD-2-Clause.txt");
@@ -65,7 +65,7 @@ fun LegalDocScreen(doc: LegalDoc, onBack: () -> Unit) {
         value = withContext(Dispatchers.IO) {
             runCatching { context.assets.open(doc.asset).bufferedReader().use { it.readText() } }
                 .map { text -> if (doc.asset.endsWith(".md")) parseMarkdown(text) else listOf(MdBlock.Plain(text)) }
-                .getOrElse { listOf(MdBlock.Paragraph("This document couldn't be opened. It is also at github.com/konkomaji/geotagcamera.")) }
+                .getOrElse { listOf(MdBlock.Paragraph("无法打开此文档。也可以在 github.com/konkomaji/geotagcamera 查看。")) }
         }
     }
     AppScaffold(title = doc.title, onBack = onBack) { padding ->

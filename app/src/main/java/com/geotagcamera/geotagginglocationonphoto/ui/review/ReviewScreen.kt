@@ -113,7 +113,7 @@ private fun TopBar(onBack: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to camera", tint = Ink)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回相机", tint = Ink)
         }
         Row(
             modifier = Modifier
@@ -124,7 +124,7 @@ private fun TopBar(onBack: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(Icons.Filled.Verified, contentDescription = null, tint = AccentVerified, modifier = Modifier.size(16.dp))
-            Text("Signed · SHA-256", color = AccentVerified, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text("已签名 · SHA-256", color = AccentVerified, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -134,7 +134,7 @@ private fun PhotoPane(uri: String, modifier: Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         AsyncImage(
             model = uri,
-            contentDescription = "Captured photo",
+            contentDescription = "刚拍的照片",
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
         )
@@ -158,7 +158,12 @@ private fun ColumnScope.Actions(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
     )
     Text(
-        "${ReviewFilename.formatSize(review.sizeBytes)} · saved to Pictures/GeoTagCamera",
+        buildString {
+            if (review.width > 0) append("${review.width}×${review.height}（${"%.1f".format(review.width.toLong() * review.height / 1_000_000.0)} 百万像素）· ")
+            append("${ReviewFilename.formatSize(review.sizeBytes)} · 已保存到 Pictures/GeoTagCamera")
+            if (review.originalUri != null) append("\n原图已另存到 GeoTagCamera/原图")
+            if (review.downscaled) append("\n内存不足，成片已按一半分辨率处理")
+        },
         color = Muted,
         fontSize = 11.5.sp,
         textAlign = TextAlign.Center,
@@ -175,7 +180,7 @@ private fun ColumnScope.Actions(
         ) {
             Icon(Icons.Filled.Refresh, contentDescription = null, tint = Ink, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Retake", color = Ink)
+            Text("重拍", color = Ink)
         }
         OutlinedButton(
             onClick = onDone,
@@ -184,7 +189,7 @@ private fun ColumnScope.Actions(
         ) {
             Icon(Icons.Filled.Check, contentDescription = null, tint = Ink, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Done", color = Ink)
+            Text("完成", color = Ink)
         }
     }
     Spacer(Modifier.height(10.dp))
@@ -195,7 +200,7 @@ private fun ColumnScope.Actions(
     ) {
         Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
-        Text("Share", fontWeight = FontWeight.Medium, fontSize = 15.5.sp)
+        Text("分享", fontWeight = FontWeight.Medium, fontSize = 15.5.sp)
     }
     Spacer(Modifier.height(8.dp))
 }

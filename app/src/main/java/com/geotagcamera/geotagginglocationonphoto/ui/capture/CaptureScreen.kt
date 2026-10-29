@@ -87,6 +87,7 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.NoPhotography
 import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Button
@@ -143,6 +144,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.geotagcamera.geotagginglocationonphoto.data.CaptureResolution
 import com.geotagcamera.geotagginglocationonphoto.stamp.StampAnchor
 import com.geotagcamera.geotagginglocationonphoto.stamp.StampOverlay
 import com.geotagcamera.geotagginglocationonphoto.stamp.StampTemplate
@@ -175,9 +177,6 @@ private val AccentVerified = ProofColors.Verified
 private val AccentPending = ProofColors.Pending
 private val AccentTamper = ProofColors.Tamper
 
-/** Caps the saved photo at ~12 MP: plenty for evidence, and a 50 MP decode would not fit in memory. */
-private val MAX_CAPTURE_4_3 = Size(4032, 3024)
-private val MAX_CAPTURE_16_9 = Size(4032, 2268)
 
 /** Zoom chip + shutter row, with breathing room. The frame shrinks before these do. */
 private val MIN_CONTROLS_HEIGHT = 196.dp
@@ -263,6 +262,12 @@ private fun CameraContent(
     val autoDismiss by viewModel.autoDismissReview.collectAsStateWithLifecycle()
     val activeProject by viewModel.activeProject.collectAsStateWithLifecycle()
     val captureNote by viewModel.captureNote.collectAsStateWithLifecycle()
+    val resolution by viewModel.resolution.collectAsStateWithLifecycle()
+    val jpegQuality by viewModel.jpegQuality.collectAsStateWithLifecycle()
+    val customTime by viewModel.customTime.collectAsStateWithLifecycle()
+    // "最高"档位在部分手机上绑定失败（高像素模式不被支持）时，自动退回 1200 万。
+    var maxResolutionFailed by remember { mutableStateOf(false) }
+    val effectiveResolution = if (resolution == CaptureResolution.MAX && maxResolutionFailed) CaptureResolution.MP12 else resolution
     val projects by viewModel.projects.collectAsStateWithLifecycle()
     var showContextSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -312,10 +317,15 @@ private fun CameraContent(
         }
     }
 
-    val imageCapture = remember(aspect) {
+    val imageCapture = remember(aspect, effectiveResolution, jpegQuality) {
         ImageCapture.Builder()
-            .setResolutionSelector(captureResolution(aspect))
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setResolutionSelector(captureResolution(aspect, effectiveResolution))
+            .setCaptureMode(
+                if (effectiveResolution == CaptureResolution.MAX) ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
+                else ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+            )
+            // 相机输出的 JPEG 也是"原图"的来源，至少按 95 的质量编码。
+            .setJpegQuality(maxOf(jpegQuality, 95))
             .build()
     }
 
@@ -411,7 +421,7 @@ private fun CameraContent(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            snackbarHostState.showSnackbar("The camera isn't available right now.")
+            snackbarHostState.showSnackbar("相机暂时不可用。")
             return@LaunchedEffect
         }
         provider = p
@@ -467,8 +477,12 @@ private fun CameraContent(
             camera = null
             when {
                 cameraMode != ExtensionMode.NONE -> cameraMode = ExtensionMode.NONE
+                effectiveResolution == CaptureResolution.MAX -> {
+                    maxResolutionFailed = true
+                    snackbarHostState.showSnackbar("这台手机不支持最高像素模式，已改用 1200 万像素。")
+                }
                 lensFacing != CameraSelector.DEFAULT_BACK_CAMERA -> lensFacing = CameraSelector.DEFAULT_BACK_CAMERA
-                else -> snackbarHostState.showSnackbar("Couldn't open the camera. Close other camera apps and try again.")
+                else -> snackbarHostState.showSnackbar("无法打开相机。请关闭其他相机应用后重试。")
             }
         }
     }
@@ -544,6 +558,8 @@ private fun CameraContent(
             snackbarHostState = snackbarHostState,
             frozenFrame = frozenFrame,
             stampAngle = stampAngle,
+            customTimeOn = customTime.active,
+            onCustomTimeClick = onOpenSettings,
             onTap = { offset ->
                 reticle = offset
                 exposureVisibleAt = System.currentTimeMillis()
@@ -589,7 +605,7 @@ private fun CameraContent(
                         onGrid = { gridOn = !gridOn },
                         onSettings = onOpenSettings
                     )
-                    GlassIconButton(Icons.Outlined.Folder, "Project and note: ${activeProject?.name ?: "none"}", { showContextSheet = true }, iconRotation)
+                    GlassIconButton(Icons.Outlined.Folder, "项目和备注：${activeProject?.name ?: "无"}", { showContextSheet = true }, iconRotation)
                 }
                 Box(
                     Modifier.weight(1f).fillMaxHeight()
@@ -700,12 +716,12 @@ private fun CameraContent(
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = {},
                 icon = { Icon(if (waiting.timedOut) Icons.Filled.LocationOff else Icons.Filled.MyLocation, contentDescription = null) },
-                title = { Text(if (waiting.timedOut) "Still no GPS fix" else "Waiting for GPS") },
+                title = { Text(if (waiting.timedOut) "仍未获取到 GPS 定位" else "正在等待 GPS 定位") },
                 text = {
                     Column {
                         Text(
-                            if (waiting.timedOut) "The photo is kept. Move to open sky and keep waiting, or discard it."
-                            else "Your photo is safe. It will be stamped and saved as soon as your location is found."
+                            if (waiting.timedOut) "照片已保留。请到开阔处继续等待，或放弃这张照片。"
+                            else "照片不会丢失。一旦获取到位置，就会自动加水印并保存。"
                         )
                         if (!waiting.timedOut) {
                             Spacer(Modifier.height(16.dp))
@@ -715,11 +731,11 @@ private fun CameraContent(
                 },
                 confirmButton = {
                     if (waiting.timedOut) {
-                        androidx.compose.material3.TextButton(onClick = { viewModel.keepWaitingForLocation() }) { Text("Keep waiting") }
+                        androidx.compose.material3.TextButton(onClick = { viewModel.keepWaitingForLocation() }) { Text("继续等待") }
                     }
                 },
                 dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { viewModel.discardHeldShot() }) { Text("Discard photo") }
+                    androidx.compose.material3.TextButton(onClick = { viewModel.discardHeldShot() }) { Text("放弃照片") }
                 }
             )
         }
@@ -757,7 +773,9 @@ private fun Viewfinder(
     onStampDrop: () -> Unit,
     modifier: Modifier = Modifier,
     frozenFrame: ImageBitmap? = null,
-    stampAngle: Float = 0f
+    stampAngle: Float = 0f,
+    customTimeOn: Boolean = false,
+    onCustomTimeClick: () -> Unit = {}
 ) {
     val currentAngle by rememberUpdatedState(stampAngle)
     val currentOnPinch by rememberUpdatedState(onPinch)
@@ -814,11 +832,14 @@ private fun Viewfinder(
             liveSpec?.anchor == StampAnchor.TOP_LEFT -> Alignment.TopEnd
             else -> Alignment.TopStart
         }
-        LocationChip(
-            state = locationChip,
-            onClick = onLocationChipClick,
-            modifier = Modifier.align(chipAlignment).padding(12.dp)
-        )
+        Column(
+            modifier = Modifier.align(chipAlignment).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            LocationChip(state = locationChip, onClick = onLocationChipClick)
+            // 自定义时间开着时一直提示，避免忘了关。
+            if (customTimeOn) CustomTimeChip(onCustomTimeClick)
+        }
 
         // Shutter feedback: read inside graphicsLayer, so the animation never recomposes the screen.
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = flashAlpha() }.background(Color.White.copy(alpha = 0.6f)))
@@ -858,7 +879,7 @@ private fun ExposureSlider(ui: ExposureUi, modifier: Modifier = Modifier) {
     val range by rememberUpdatedState(ui.range)
     AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut(), modifier = modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(Icons.Outlined.WbSunny, contentDescription = "Exposure", tint = AccentPending, modifier = Modifier.size(18.dp))
+            Icon(Icons.Outlined.WbSunny, contentDescription = "曝光", tint = AccentPending, modifier = Modifier.size(18.dp))
             Box(
                 modifier = Modifier
                     .width(28.dp)
@@ -900,7 +921,7 @@ private fun SavingIndicator() {
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         CircularProgressIndicator(modifier = Modifier.size(18.dp), color = AccentVerified, strokeWidth = 2.dp)
-        Text("Stamping and signing", color = Ink, fontSize = 13.sp)
+        Text("正在加水印并签名", color = Ink, fontSize = 13.sp)
     }
 }
 
@@ -927,10 +948,10 @@ private fun ControlButtons(
     beforeSettings: @Composable () -> Unit = {}
 ) {
     if (showFlash) GlassIconButton(flashIcon(flashMode), flashLabel(flashMode), onFlash, iconModifier)
-    GlassTextButton(aspectLabel(aspect), "Aspect ratio ${aspectLabel(aspect)}", onAspect, iconModifier)
-    GlassIconButton(if (gridOn) Icons.Filled.GridOn else Icons.Filled.GridOff, if (gridOn) "Grid on" else "Grid off", onGrid, iconModifier)
+    GlassTextButton(aspectLabel(aspect), "画幅比例 ${aspectLabel(aspect)}", onAspect, iconModifier)
+    GlassIconButton(if (gridOn) Icons.Filled.GridOn else Icons.Filled.GridOff, if (gridOn) "网格已开" else "网格已关", onGrid, iconModifier)
     beforeSettings()
-    GlassIconButton(Icons.Outlined.Settings, "Settings", onSettings, iconModifier)
+    GlassIconButton(Icons.Outlined.Settings, "设置", onSettings, iconModifier)
 }
 
 @Composable
@@ -965,13 +986,30 @@ private fun GlassTextButton(text: String, description: String, onClick: () -> Un
 }
 
 @Composable
+private fun CustomTimeChip(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .height(28.dp)
+            .clip(CircleShape)
+            .background(AccentPending.copy(alpha = 0.85f))
+            .clickable(role = Role.Button, onClickLabel = "修改时间设置", onClick = onClick)
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(Icons.Outlined.Schedule, contentDescription = null, tint = ChromeBase, modifier = Modifier.size(14.dp))
+        Text("自定义时间", color = ChromeBase, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
 private fun LocationChip(state: LocationChipState, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val (dot, label) = when (state) {
-        is LocationChipState.Locating -> AccentPending to "Locating…"
+        is LocationChipState.Locating -> AccentPending to "正在定位…"
         is LocationChipState.Locked -> AccentVerified to
-            ("Location locked" + (state.accuracyMeters?.let { " · ±${it.toInt()} m" } ?: ""))
-        is LocationChipState.Unavailable -> AccentTamper to "No GPS fix"
-        is LocationChipState.PermissionDenied -> AccentTamper to "Location off · Tap to allow"
+            ("已定位" + (state.accuracyMeters?.let { " · ±${it.toInt()} m" } ?: ""))
+        is LocationChipState.Unavailable -> AccentTamper to "无 GPS 信号"
+        is LocationChipState.PermissionDenied -> AccentTamper to "定位已关闭 · 点此开启"
     }
     val clickable = state is LocationChipState.PermissionDenied
     Row(
@@ -1044,7 +1082,7 @@ private fun ZoomPresets(ratio: Float, min: Float, max: Float, vertical: Boolean,
                     .clip(CircleShape)
                     .background(if (selected) Ink.copy(alpha = 0.92f) else Glass)
                     .border(BorderStroke(1.dp, GlassBorder), CircleShape)
-                    .clickable(role = Role.Button, onClickLabel = "Zoom ${formatZoom(preset)}") { onZoom(preset) }
+                    .clickable(role = Role.Button, onClickLabel = "变焦 ${formatZoom(preset)}") { onZoom(preset) }
                     .padding(horizontal = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -1092,12 +1130,12 @@ private val NATIVE_MODES = listOf(
 )
 
 private fun modeLabel(mode: Int): String = when (mode) {
-    ExtensionMode.AUTO -> "AUTO"
-    ExtensionMode.NIGHT -> "NIGHT"
+    ExtensionMode.AUTO -> "自动"
+    ExtensionMode.NIGHT -> "夜景"
     ExtensionMode.HDR -> "HDR"
-    ExtensionMode.BOKEH -> "PORTRAIT"
-    ExtensionMode.FACE_RETOUCH -> "RETOUCH"
-    else -> "PHOTO"
+    ExtensionMode.BOKEH -> "人像"
+    ExtensionMode.FACE_RETOUCH -> "美颜"
+    else -> "拍照"
 }
 
 @Composable
@@ -1108,18 +1146,18 @@ private fun ThumbnailControl(lastCaptureUri: String?, onClick: () -> Unit, rotat
             .clip(RoundedCornerShape(12.dp))
             .background(ChromeTokens.Pill)
             .border(BorderStroke(1.5.dp, Color.White.copy(alpha = 0.3f)), RoundedCornerShape(12.dp))
-            .clickable(role = Role.Button, onClickLabel = "Open gallery", onClick = onClick),
+            .clickable(role = Role.Button, onClickLabel = "打开相册", onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (lastCaptureUri != null) {
             AsyncImage(
                 model = lastCaptureUri,
-                contentDescription = "Last photo",
+                contentDescription = "上一张照片",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            Icon(Icons.Outlined.PhotoLibrary, contentDescription = "Gallery", tint = InkMuted, modifier = Modifier.size(22.dp))
+            Icon(Icons.Outlined.PhotoLibrary, contentDescription = "相册", tint = InkMuted, modifier = Modifier.size(22.dp))
         }
     }
 }
@@ -1138,7 +1176,7 @@ private fun ShutterControl(enabled: Boolean, scale: () -> Float, onShutter: () -
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
-                onClickLabel = "Take photo",
+                onClickLabel = "拍照",
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onShutter
@@ -1162,10 +1200,10 @@ private fun SwitchControl(visible: Boolean, onSwitch: () -> Unit, contentModifie
             .clip(CircleShape)
             .background(Glass)
             .border(BorderStroke(1.dp, GlassBorder), CircleShape)
-            .clickable(role = Role.Button, onClickLabel = "Switch camera", onClick = onSwitch),
+            .clickable(role = Role.Button, onClickLabel = "切换摄像头", onClick = onSwitch),
         contentAlignment = Alignment.Center
     ) {
-        Icon(Icons.Filled.Cameraswitch, contentDescription = "Switch camera", tint = Ink, modifier = contentModifier.size(24.dp))
+        Icon(Icons.Filled.Cameraswitch, contentDescription = "切换摄像头", tint = Ink, modifier = contentModifier.size(24.dp))
     }
 }
 
@@ -1187,11 +1225,11 @@ private fun CameraPermissionScreen(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Outlined.NoPhotography, contentDescription = null, tint = InkMuted, modifier = Modifier.size(48.dp))
             Spacer(Modifier.height(20.dp))
-            Text("Camera access needed", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Text("需要相机权限", color = Ink, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Text(
-                if (blocked) "Camera access was turned off for GeoTag Camera. Turn it on in Settings to take photos."
-                else "GeoTag Camera uses the camera only to take the photo you stamp. Nothing else.",
+                if (blocked) "相机权限已被关闭。请到系统设置中开启后再拍照。"
+                else "本应用只用相机拍摄要加水印的照片，不做其他用途。",
                 color = InkMuted,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -1201,31 +1239,33 @@ private fun CameraPermissionScreen(
                 onClick = if (blocked) onOpenSettings else onRequest,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Ink, contentColor = ChromeBase)
-            ) { Text(if (blocked) "Open settings" else "Allow camera", fontWeight = FontWeight.Medium) }
+            ) { Text(if (blocked) "打开设置" else "允许使用相机", fontWeight = FontWeight.Medium) }
             Spacer(Modifier.height(10.dp))
             OutlinedButton(
                 onClick = onOpenGallery,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 border = BorderStroke(1.dp, GlassBorder)
-            ) { Text("Go to gallery", color = Ink) }
+            ) { Text("前往相册", color = Ink) }
         }
     }
 }
 
-private fun captureResolution(aspect: CaptureAspect): ResolutionSelector {
+private fun captureResolution(aspect: CaptureAspect, resolution: CaptureResolution): ResolutionSelector {
     // Full is cropped from the 16:9 stream, the closest sensor shape to a phone screen.
     val wide = aspect == CaptureAspect.RATIO_16_9 || aspect == CaptureAspect.FULL
-    return ResolutionSelector.Builder()
+    val builder = ResolutionSelector.Builder()
         .setAspectRatioStrategy(
             if (wide) AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY else AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY
         )
-        .setResolutionStrategy(
-            ResolutionStrategy(
-                if (wide) MAX_CAPTURE_16_9 else MAX_CAPTURE_4_3,
-                ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
-            )
-        )
-        .build()
+    val target = if (wide) resolution.size169 else resolution.size43
+    if (target == null) {
+        // 最高：不设上限，并允许相机切到高像素模式（全尺寸传感器输出）。
+        builder.setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
+        builder.setAllowedResolutionMode(ResolutionSelector.PREFER_HIGHER_RESOLUTION_OVER_CAPTURE_RATE)
+    } else {
+        builder.setResolutionStrategy(ResolutionStrategy(target, ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER))
+    }
+    return builder.build()
 }
 
 private fun previewResolution(aspect: CaptureAspect): ResolutionSelector =
@@ -1295,9 +1335,9 @@ private fun flashIcon(mode: Int): ImageVector = when (mode) {
 }
 
 private fun flashLabel(mode: Int): String = when (mode) {
-    ImageCapture.FLASH_MODE_ON -> "Flash on"
-    ImageCapture.FLASH_MODE_OFF -> "Flash off"
-    else -> "Flash auto"
+    ImageCapture.FLASH_MODE_ON -> "闪光灯：开"
+    ImageCapture.FLASH_MODE_OFF -> "闪光灯：关"
+    else -> "闪光灯：自动"
 }
 
 private fun nextAspect(a: CaptureAspect): CaptureAspect = when (a) {
@@ -1311,7 +1351,7 @@ private fun aspectLabel(a: CaptureAspect): String = when (a) {
     CaptureAspect.RATIO_4_3 -> "4:3"
     CaptureAspect.RATIO_16_9 -> "16:9"
     CaptureAspect.RATIO_1_1 -> "1:1"
-    CaptureAspect.FULL -> "Full"
+    CaptureAspect.FULL -> "全屏"
 }
 
 /** The use cases this screen currently has bound, so it can unbind exactly those. */
@@ -1429,5 +1469,5 @@ private fun shareImage(context: Context, uriString: String) {
         putExtra(Intent.EXTRA_STREAM, Uri.parse(uriString))
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, "Share photo"))
+    context.startActivity(Intent.createChooser(intent, "分享照片"))
 }

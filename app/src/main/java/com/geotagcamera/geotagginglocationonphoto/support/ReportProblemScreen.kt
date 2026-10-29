@@ -58,12 +58,12 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
     val crash = remember { if (fromCrash) CrashCatcher.pending(context) else null }
 
     var kind by rememberSaveable { mutableStateOf(ProblemReport.Kind.PROBLEM) }
-    var message by rememberSaveable { mutableStateOf(if (crash != null) "The app closed unexpectedly. What I was doing: " else "") }
+    var message by rememberSaveable { mutableStateOf(if (crash != null) "应用意外关闭。当时我在：" else "") }
     var includeDevice by rememberSaveable { mutableStateOf(true) }
     var includeLog by rememberSaveable { mutableStateOf(false) }
     var includeCrash by rememberSaveable { mutableStateOf(crash != null) }
 
-    AppScaffold(title = "Report a problem", onBack = onBack, snackbarHostState = snackbar) { padding ->
+    AppScaffold(title = "反馈问题", onBack = onBack, snackbarHostState = snackbar) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -75,7 +75,7 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
         ) {
             Column(Modifier.fillMaxWidth().widthIn(max = 640.dp)) {
                 Text(
-                    "Your report opens in your email app, addressed to ${ProblemReport.EMAIL}. Nothing is sent until you press send there.",
+                    "会在邮件应用中打开，收件人为原作者 ${ProblemReport.EMAIL}（建议用英文）。在那里点发送前不会发出任何内容。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -94,16 +94,16 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
                 OutlinedTextField(
                     value = message,
                     onValueChange = { message = it.take(4000) },
-                    label = { Text(if (kind == ProblemReport.Kind.PROBLEM) "What happened, and what did you expect?" else "Your message") },
+                    label = { Text(if (kind == ProblemReport.Kind.PROBLEM) "发生了什么？你期望的结果是？" else "你的留言") },
                     minLines = 5,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp)
                 )
                 Spacer(Modifier.size(Spacing.S))
-                Check("Include device details", ProblemReport.deviceInfo(context).replace("\n", " · "), includeDevice) { includeDevice = it }
-                Check("Attach app log", "Recent messages from this app only. Map tile addresses are removed.", includeLog) { includeLog = it }
-                if (crash != null) Check("Include crash details", "From the last time the app closed unexpectedly.", includeCrash) { includeCrash = it }
+                Check("附带设备信息", ProblemReport.deviceInfo(context).replace("\n", " · "), includeDevice) { includeDevice = it }
+                Check("附带应用日志", "只含本应用最近的日志，已去除地图瓦片地址。", includeLog) { includeLog = it }
+                if (crash != null) Check("附带崩溃信息", "来自上一次意外关闭。", includeCrash) { includeCrash = it }
                 Text(
-                    "Never included: your photos, locations or capture list.",
+                    "始终不包含：照片、位置和拍摄记录。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Spacing.S)
@@ -121,7 +121,7 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
                             if (sent) {
                                 if (crash != null) CrashCatcher.clear(context)
                             } else {
-                                snackbar.showSnackbar("No email app found. Use GitHub issues instead, or email ${ProblemReport.EMAIL}.")
+                                snackbar.showSnackbar("没有找到邮件应用。请改用 GitHub Issues，或发邮件到 ${ProblemReport.EMAIL}。")
                             }
                         }
                     },
@@ -130,10 +130,10 @@ fun ReportProblemScreen(onBack: () -> Unit, fromCrash: Boolean = false) {
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(Spacing.S))
-                    Text("Continue in email")
+                    Text("在邮件中继续")
                 }
                 OutlinedButton(onClick = { ProblemReport.openIssues(context) }, modifier = Modifier.fillMaxWidth().padding(top = Spacing.S)) {
-                    Text("Report on GitHub instead")
+                    Text("改到 GitHub 反馈")
                 }
             }
         }

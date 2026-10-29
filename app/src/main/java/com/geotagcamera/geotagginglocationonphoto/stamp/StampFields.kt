@@ -59,8 +59,54 @@ data class StampFields(
     val showBrandMark: Boolean = true,
     /** A fixed line on every photo ("Contract A-123", "Inspector: R. Das"). */
     val customText: String = "",
-    val showCustomText: Boolean = true
+    val showCustomText: Boolean = true,
+    /** 水印整体大小倍数，0.5–2.5。 */
+    val styleScale: Float = 1f,
+    /** 背景颜色（RGB，不含透明度）。 */
+    val bgColor: Int = 0x121417,
+    /** 背景不透明度，0–1。 */
+    val bgOpacity: Float = 0.70f,
+    /** 文字颜色（RGB）。 */
+    val textColor: Int = 0xFFFFFF,
+    /** 文字不透明度，0.2–1。 */
+    val textOpacity: Float = 1f,
+    /** 水印离画面左右、上下边缘的距离（参考 dp，画面短边 = 360）。 */
+    val marginX: Float = 8f,
+    val marginY: Float = 8f,
+    /** 日期时间格式（java.text.SimpleDateFormat 格式串）。 */
+    val dateFormat: String = DateFormats.DEFAULT
 ) {
     /** Never show an empty line even if the toggle is on and the label is blank. */
     val showOrgLabel: Boolean get() = showOrgLabelToggle && orgLabel.isNotBlank()
+}
+
+/** 日期时间格式预设。星期按中文显示。 */
+object DateFormats {
+    const val DEFAULT = "yyyy-MM-dd HH:mm:ss EEEE"
+
+    val PRESETS = listOf(
+        "yyyy-MM-dd HH:mm:ss EEEE",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd HH:mm",
+        "yyyy年MM月dd日 EEEE HH:mm:ss",
+        "yyyy年MM月dd日 HH:mm",
+        "yyyy/MM/dd HH:mm:ss",
+        "yyyy.MM.dd HH:mm",
+        "MM-dd HH:mm",
+        "dd/MM/yyyy HH:mm:ss",
+        "yyyy-MM-dd a hh:mm",
+        "yyyy-MM-dd",
+        "HH:mm:ss"
+    )
+
+    /** 按 [pattern] 格式化；格式串非法时退回默认格式，绝不让水印出错。 */
+    fun format(pattern: String, epochMs: Long): String {
+        val locale = java.util.Locale.SIMPLIFIED_CHINESE
+        val date = java.util.Date(epochMs)
+        return runCatching { java.text.SimpleDateFormat(pattern.ifBlank { DEFAULT }, locale).format(date) }
+            .getOrElse { java.text.SimpleDateFormat(DEFAULT, locale).format(date) }
+    }
+
+    fun isValid(pattern: String): Boolean =
+        pattern.isNotBlank() && runCatching { java.text.SimpleDateFormat(pattern, java.util.Locale.SIMPLIFIED_CHINESE) }.isSuccess
 }

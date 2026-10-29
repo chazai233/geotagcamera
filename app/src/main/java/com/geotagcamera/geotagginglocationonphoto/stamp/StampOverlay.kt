@@ -28,8 +28,9 @@ fun StampOverlay(spec: StampSpec, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         val shortSide = size.minDimension
         if (shortSide <= 0f) return@Canvas
-        val density = Density(density = shortSide / StampRenderer.REFERENCE_SHORT_SIDE_DP, fontScale = 1f)
-        val key = shortSide.toInt()
+        val density = Density(density = StampPainter.density(shortSide, spec), fontScale = 1f)
+        // 尺寸或水印大小变了，密度就变了，测量器要重建。
+        val key = shortSide.toInt() * 1000 + (spec.style.scale * 100).toInt()
         val measurer = measurerHolder[0]?.takeIf { it.first == key }?.second
             ?: TextMeasurer(fontFamilyResolver, density, LayoutDirection.Ltr, cacheSize = 24)
                 .also { measurerHolder[0] = key to it }

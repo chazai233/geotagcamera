@@ -22,19 +22,23 @@ import java.io.File
 object MediaStoreImageSaver {
     private const val RELATIVE_DIR = "GeoTagCamera"
 
-    fun save(context: Context, sourceFile: File, displayName: String): Uri? =
+    /** 无水印原图的子文件夹：Pictures/GeoTagCamera/原图 */
+    const val ORIGINALS_DIR = "原图"
+
+    /** [subDir]：放在 Pictures/GeoTagCamera 下的子文件夹里，null = 直接放在该文件夹。 */
+    fun save(context: Context, sourceFile: File, displayName: String, subDir: String? = null): Uri? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            saveScoped(context, sourceFile, displayName)
+            saveScoped(context, sourceFile, displayName, subDir)
         } else {
-            saveLegacy(context, sourceFile, displayName)
+            saveLegacy(context, sourceFile, displayName, subDir)
         }
 
-    private fun saveScoped(context: Context, sourceFile: File, displayName: String): Uri? {
+    private fun saveScoped(context: Context, sourceFile: File, displayName: String, subDir: String?): Uri? {
         val resolver = context.contentResolver
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/$RELATIVE_DIR")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/$RELATIVE_DIR" + (subDir?.let { "/$it" } ?: ""))
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }
 
@@ -57,11 +61,12 @@ object MediaStoreImageSaver {
     }
 
     @Suppress("DEPRECATION")
-    private fun saveLegacy(context: Context, sourceFile: File, displayName: String): Uri? {
-        val picturesDir = File(
+    private fun saveLegacy(context: Context, sourceFile: File, displayName: String, subDir: String?): Uri? {
+        val baseDir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
             RELATIVE_DIR
         )
+        val picturesDir = if (subDir != null) File(baseDir, subDir) else baseDir
         if (!picturesDir.exists() && !picturesDir.mkdirs()) return null
 
         val destFile = uniqueFile(picturesDir, displayName)
