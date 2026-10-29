@@ -115,4 +115,40 @@ class BuildStampSpecTest {
         assertEquals(0xFFFFEB3B.toInt(), s.style.textArgb)
         assertEquals(1.5f, s.style.scale)
     }
+
+    @Test
+    fun `custom fields become labelled lines and skip empty or hidden ones`() {
+        val s = spec(
+            StampFields(
+                customFields = listOf(
+                    CustomField(1, "施工区域", "右岸坝肩"),
+                    CustomField(2, "施工内容", "土方开挖"),
+                    CustomField(3, "桩号", ""),
+                    CustomField(4, "监理", "张三", enabled = false),
+                    CustomField(5, "", "无名称")
+                )
+            )
+        )
+        assertEquals(listOf("施工区域：右岸坝肩", "施工内容：土方开挖", "无名称"), s.fieldLines)
+    }
+
+    @Test
+    fun `time label prefixes the date line`() {
+        val s = spec(StampFields(timeLabel = "拍摄时间", dateFormat = "yyyy"))
+        assertTrue(s.dateTimeText!!, s.dateTimeText!!.startsWith("拍摄时间：20"))
+    }
+
+    @Test
+    fun `history keeps newest first without duplicates`() {
+        var f = CustomField(1, "施工区域", "A")
+        f = f.withValueInHistory().copy(value = "B").withValueInHistory().copy(value = "A").withValueInHistory()
+        assertEquals(listOf("A", "B"), f.history)
+    }
+
+    @Test
+    fun `custom fields survive a json round trip and bad json falls back`() {
+        val list = listOf(CustomField(1, "施工区域", "右岸坝肩", true, listOf("右岸坝肩", "左岸")), CustomField(7, "桩号", "", false))
+        assertEquals(list, CustomFieldsCodec.decode(CustomFieldsCodec.encode(list)))
+        assertEquals(CustomField.DEFAULTS, CustomFieldsCodec.decode("not json"))
+    }
 }

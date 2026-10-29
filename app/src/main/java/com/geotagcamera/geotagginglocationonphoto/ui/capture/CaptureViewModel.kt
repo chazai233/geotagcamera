@@ -179,6 +179,18 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { capturePreferences.setNote(note) }
     }
 
+    /** 拍照界面改自定义字段内容。 */
+    fun setCustomFieldValues(values: Map<Long, String>) {
+        if (values.isEmpty()) return
+        viewModelScope.launch {
+            stampPreferences.edit { f ->
+                f.copy(customFields = f.customFields.map { c ->
+                    values[c.id]?.let { c.copy(value = it.take(com.geotagcamera.geotagginglocationonphoto.stamp.CustomField.MAX_VALUE)) } ?: c
+                })
+            }
+        }
+    }
+
     fun selectProject(id: Long?) {
         viewModelScope.launch { capturePreferences.setActiveProject(id) }
     }
@@ -560,6 +572,8 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
                 _uiState.value = saved
+                // 用过的字段内容记进历史，下次在拍照界面一点即可切换
+                stampPreferences.edit { f -> f.copy(customFields = f.customFields.map { it.withValueInHistory() }) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: OutOfMemoryError) {

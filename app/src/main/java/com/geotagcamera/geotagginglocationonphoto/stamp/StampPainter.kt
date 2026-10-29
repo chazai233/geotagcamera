@@ -8,6 +8,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -71,7 +72,11 @@ object StampPainter {
         val bg = Color(style.bgArgb)
         val border = StampColors.Border.copy(alpha = StampColors.Border.alpha * (bg.alpha / 0.7f).coerceIn(0f, 1f))
         private val text = Color(style.textArgb)
-        private fun t(base: TextStyle, k: Float) = base.copy(color = text.copy(alpha = (text.alpha * k).coerceIn(0f, 1f)))
+        // 背景很淡时给文字加阴影，白字落在亮处也看得清
+        private val shadow = if (bg.alpha < 0.35f) {
+            Shadow(color = Color.Black.copy(alpha = 0.75f), offset = Offset(0f, 0.6f), blurRadius = 2.5f)
+        } else null
+        private fun t(base: TextStyle, k: Float) = base.copy(color = text.copy(alpha = (text.alpha * k).coerceIn(0f, 1f)), shadow = shadow)
         val title = t(StampType.Title, 1f)
         val body = t(StampType.Body, 0.9f)
         val data = t(StampType.Data, 1f)
@@ -151,6 +156,7 @@ object StampPainter {
         }
         spec.addressLine?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
         spec.coordinatesText?.let { y += drawLine(tm, it, pal.data, textX, y, textWidth) + lineGap }
+        spec.fieldLines.forEach { y += drawLine(tm, it, pal.note, textX, y, textWidth) + lineGap }
         dateTimeLine(spec)?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
         spec.noteLine?.let { y += drawLine(tm, it, pal.note, textX, y, textWidth) + lineGap }
 
@@ -201,6 +207,7 @@ object StampPainter {
             if (spec.placeName != null) add(tm.measure(PROBE, pal.title, maxLines = 1).size.height)
             if (spec.addressLine != null) add(tm.measure(PROBE, pal.body, maxLines = 1).size.height)
             if (spec.coordinatesText != null) add(tm.measure(PROBE, pal.data, maxLines = 1).size.height)
+            spec.fieldLines.forEach { _ -> add(tm.measure(PROBE, pal.note, maxLines = 1).size.height) }
             if (dateTimeLine(spec) != null) add(tm.measure(PROBE, pal.body, maxLines = 1).size.height)
             if (spec.noteLine != null) add(tm.measure(PROBE, pal.note, maxLines = 1).size.height)
             if (spec.chips.isNotEmpty() || marksText(spec) != null) {
@@ -218,7 +225,7 @@ object StampPainter {
         listOfNotNull(if (spec.showSignedMark) "已签名" else null, if (spec.showBrandMark) "工程水印" else null)
             .joinToString("  ·  ").takeIf { it.isNotBlank() }
 
-    // ---- Minimal: a small pill, coordinates and date/time only ----
+    // ---- Minimal: a small label — custom fields, coordinates and date/time ----
 
     private fun drawMinimal(scope: DrawScope, spec: StampSpec, tm: TextMeasurer, pal: Palette) = with(scope) {
         val marginX = px(pal.marginX / pal.scale)
@@ -227,9 +234,9 @@ object StampPainter {
         val padV = px(5f)
         val lineGap = px(1.5f)
         val maxW = size.width * 0.7f
-        val lines = listOfNotNull(
+        val lines = spec.fieldLines.map { one(tm, it, pal.note, maxW) } + listOfNotNull(
             spec.coordinatesText?.let { one(tm, it, pal.data, maxW) },
-            dateTimeLine(spec)?.let { one(tm, it, pal.body, maxW) }
+            dateTimeLine(spec)?.let { one(tm, it, pal.note, maxW) }
         )
         if (lines.isEmpty()) return@with
 

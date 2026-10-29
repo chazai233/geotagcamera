@@ -265,6 +265,7 @@ private fun CameraContent(
     val resolution by viewModel.resolution.collectAsStateWithLifecycle()
     val jpegQuality by viewModel.jpegQuality.collectAsStateWithLifecycle()
     val customTime by viewModel.customTime.collectAsStateWithLifecycle()
+    val stampFieldsState by viewModel.stampFields.collectAsStateWithLifecycle()
     // "最高"档位在部分手机上绑定失败（高像素模式不被支持）时，自动退回 1200 万。
     var maxResolutionFailed by remember { mutableStateOf(false) }
     val effectiveResolution = if (resolution == CaptureResolution.MAX && maxResolutionFailed) CaptureResolution.MP12 else resolution
@@ -671,7 +672,14 @@ private fun CameraContent(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically)
                         ) {
-                            CaptureContextRow(activeProject, captureNote, onClick = { showContextSheet = true }, modifier = Modifier.padding(horizontal = 16.dp))
+                            val enabledFields = stampFieldsState.customFields.filter { it.enabled }
+                            CaptureContextRow(
+                                activeProject, captureNote,
+                                onClick = { showContextSheet = true },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                fieldsSummary = if (enabledFields.isEmpty()) null
+                                else enabledFields.mapNotNull { it.value.trim().ifEmpty { null } }.joinToString(" · ")
+                            )
                             ZoomPresets(zoomRatio, minZoom, maxZoom, vertical = false, onZoom = { applyZoom(it) })
                             ModePicker(availableModes, cameraMode, vertical = false) { cameraMode = it }
                             Row(
@@ -697,7 +705,9 @@ private fun CameraContent(
                 onSelectProject = { viewModel.selectProject(it) },
                 onCreateProject = { name -> viewModel.createProject(name) },
                 onNoteChange = { viewModel.setCaptureNote(it) },
-                onDismiss = { showContextSheet = false }
+                onDismiss = { showContextSheet = false },
+                customFields = stampFieldsState.customFields,
+                onFieldValues = { viewModel.setCustomFieldValues(it) }
             )
         }
 

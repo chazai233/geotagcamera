@@ -1,5 +1,13 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.capture
 
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.runtime.mutableStateMapOf
+import com.geotagcamera.geotagginglocationonphoto.stamp.CustomField
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -64,7 +72,13 @@ import kotlinx.coroutines.launch
  * the sticky note. Both are optional; when empty they read as quiet prompts.
  */
 @Composable
-fun CaptureContextRow(project: ProjectEntity?, note: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun CaptureContextRow(
+    project: ProjectEntity?,
+    note: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    fieldsSummary: String? = null
+) {
     Row(
         modifier = modifier
             .widthIn(max = 420.dp)
@@ -77,7 +91,12 @@ fun CaptureContextRow(project: ProjectEntity?, note: String, onClick: () -> Unit
     ) {
         Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(12.dp))
-        Pill(Icons.Outlined.StickyNote2, note.ifBlank { "添加备注" }, note.isNotBlank(), Modifier.weight(1f, fill = false))
+        if (fieldsSummary != null) {
+            // 有自定义字段时优先显示字段内容；备注仍可在面板里改
+            Pill(Icons.Outlined.EditNote, fieldsSummary.ifBlank { "填写字段" }, fieldsSummary.isNotBlank(), Modifier.weight(1f, fill = false))
+        } else {
+            Pill(Icons.Outlined.StickyNote2, note.ifBlank { "添加备注" }, note.isNotBlank(), Modifier.weight(1f, fill = false))
+        }
     }
 }
 
@@ -100,7 +119,9 @@ fun CaptureContextSheet(
     onSelectProject: (Long?) -> Unit,
     onCreateProject: suspend (String) -> String?,
     onNoteChange: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    customFields: List<CustomField> = emptyList(),
+    onFieldValues: (Map<Long, String>) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -109,10 +130,58 @@ fun CaptureContextSheet(
     var creating by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    fun close() { onNoteChange(noteText); onDismiss() }
+    // 只编辑开着的字段；关闭面板时一次写回
+    val shownFields = customFields.filter { it.enabled }
+    val fieldValues = remember { mutableStateMapOf<Long, String>().apply { shownFields.forEach { put(it.id, it.value) } } }
+
+    fun close() {
+        onNoteChange(noteText)
+        onFieldValues(fieldValues.filter { (id, v) -> shownFields.firstOrNull { it.id == id }?.value != v })
+        onDismiss()
+    }
 
     ModalBottomSheet(onDismissRequest = { close() }, sheetState = sheetState) {
-        Column(Modifier.padding(horizontal = Spacing.XL).navigationBarsPadding()) {
+        Column(
+            Modifier
+                .padding(horizontal = Spacing.XL)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+        ) {
+            if (shownFields.isNotEmpty()) {
+                Text("水印字段", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.size(Spacing.S))
+                shownFields.forEach { f ->
+                    val v = fieldValues[f.id] ?: ""
+                    OutlinedTextField(
+                        value = v,
+                        onValueChange = { fieldValues[f.id] = it.take(CustomField.MAX_VALUE) },
+                        label = { Text(f.label.ifBlank { "（无名称）" }) },
+                        singleLine = true,
+                        trailingIcon = {
+                            if (v.isNotEmpty()) IconButton(onClick = { fieldValues[f.id] = "" }) { Icon(Icons.Outlined.Close, contentDescription = "清空") }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    val recent = f.history.filter { it != v }
+                    if (recent.isNotEmpty()) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.S),
+                            modifier = Modifier.padding(top = Spacing.XS)
+                        ) {
+                            items(recent) { h ->
+                                SuggestionChip(onClick = { fieldValues[f.id] = h }, label = { Text(h, maxLines = 1) })
+                            }
+                        }
+                    }
+                    Spacer(Modifier.size(Spacing.S))
+                }
+                Text(
+                    "字段的名称、顺序和增删在 设置 → 自定义字段 里改。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.size(Spacing.L))
+            }
             Text("水印备注", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.size(Spacing.S))
             OutlinedTextField(
@@ -133,11 +202,10 @@ fun CaptureContextSheet(
             Text("项目", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.size(Spacing.XS))
             val active = projects.filter { !it.archived }
-            LazyColumn(Modifier.heightIn(max = 280.dp)) {
-                item { ProjectRow("不选项目", null, activeProjectId == null) { onSelectProject(null) } }
-                items(active, key = { it.id }) { p ->
-                    ProjectRow(p.name, "${p.photoCount} photo" + if (p.photoCount == 1) "" else "s", p.id == activeProjectId) { onSelectProject(p.id) }
-                }
+            // 面板整体可滚动，这里不能再嵌套 LazyColumn
+            ProjectRow("不选项目", null, activeProjectId == null) { onSelectProject(null) }
+            active.forEach { p ->
+                ProjectRow(p.name, "${p.photoCount} 张", p.id == activeProjectId) { onSelectProject(p.id) }
             }
             HorizontalDivider(Modifier.padding(vertical = Spacing.S))
             if (creating) {

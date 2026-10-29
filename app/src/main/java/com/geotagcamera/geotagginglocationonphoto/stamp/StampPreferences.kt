@@ -64,6 +64,8 @@ class StampPreferences(private val context: Context) {
         val MARGIN_X = floatPreferencesKey("style_margin_x")
         val MARGIN_Y = floatPreferencesKey("style_margin_y")
         val DATE_FORMAT = stringPreferencesKey("date_format")
+        val TIME_LABEL = stringPreferencesKey("time_label")
+        val CUSTOM_FIELDS = stringPreferencesKey("custom_fields_json")
     }
 
     val fields: Flow<StampFields> = context.stampDataStore.data.map { it.toFields() }
@@ -101,7 +103,9 @@ class StampPreferences(private val context: Context) {
             textOpacity = (prefs[Keys.TEXT_OPACITY] ?: 1f).coerceIn(0.2f, 1f),
             marginX = (prefs[Keys.MARGIN_X] ?: 8f).coerceIn(0f, 80f),
             marginY = (prefs[Keys.MARGIN_Y] ?: 8f).coerceIn(0f, 80f),
-            dateFormat = prefs[Keys.DATE_FORMAT] ?: DateFormats.DEFAULT
+            dateFormat = prefs[Keys.DATE_FORMAT] ?: DateFormats.DEFAULT,
+            timeLabel = prefs[Keys.TIME_LABEL] ?: "",
+            customFields = prefs[Keys.CUSTOM_FIELDS]?.let { CustomFieldsCodec.decode(it) } ?: CustomField.DEFAULTS
         )
     }
 
@@ -168,5 +172,7 @@ class StampPreferences(private val context: Context) {
         prefs[Keys.MARGIN_X] = fields.marginX
         prefs[Keys.MARGIN_Y] = fields.marginY
         prefs[Keys.DATE_FORMAT] = fields.dateFormat
+        prefs[Keys.TIME_LABEL] = fields.timeLabel
+        prefs[Keys.CUSTOM_FIELDS] = CustomFieldsCodec.encode(fields.customFields)
     }
 }

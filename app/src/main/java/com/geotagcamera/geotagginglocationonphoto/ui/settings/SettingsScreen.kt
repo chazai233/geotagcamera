@@ -202,6 +202,8 @@ private fun SettingsContent(
             onSaveOriginal = viewModel::setSaveOriginal
         )
 
+        CustomFieldsCard(fields) { transform -> viewModel.update(transform) }
+
         StyleSettingsCard(fields) { transform -> viewModel.update(transform) }
 
         DateTimeSettingsCard(

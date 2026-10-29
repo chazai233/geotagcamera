@@ -67,7 +67,9 @@ data class StampSpec(
     /** Capture note and/or the fixed custom text, as one line. */
     val noteLine: String? = null,
     /** 大小、颜色、透明度、边距。 */
-    val style: StampStyle = StampStyle()
+    val style: StampStyle = StampStyle(),
+    /** 自定义字段，每条一行，如"施工区域：右岸坝肩"。 */
+    val fieldLines: List<String> = emptyList()
 ) {
     val hasFooterRow: Boolean get() = orgLabel != null || orgLogo != null || showSignedMark || showBrandMark
 }
@@ -113,7 +115,9 @@ fun buildStampSpec(
     } else null
 
     val dateTimeText = if (fields.showTimestamp) {
-        DateFormats.format(fields.dateFormat, capturedAtEpochMs)
+        DateFormats.format(fields.dateFormat, capturedAtEpochMs).let { t ->
+            fields.timeLabel.trim().takeIf { it.isNotEmpty() }?.let { "$it：$t" } ?: t
+        }
     } else null
 
     val gmtOffsetText = if (fields.showTimestamp && fields.showGmtOffset) formatGmtOffset(capturedAtEpochMs) else null
@@ -150,7 +154,8 @@ fun buildStampSpec(
             note?.trim()?.takeIf { it.isNotEmpty() },
             fields.customText.trim().takeIf { fields.showCustomText && it.isNotEmpty() }
         ).joinToString("  ·  ").ifEmpty { null },
-        style = StampStyle.from(fields)
+        style = StampStyle.from(fields),
+        fieldLines = fields.customFields.mapNotNull { it.line }
     )
 }
 

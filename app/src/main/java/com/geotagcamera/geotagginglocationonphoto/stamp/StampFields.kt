@@ -74,7 +74,11 @@ data class StampFields(
     val marginX: Float = 8f,
     val marginY: Float = 8f,
     /** 日期时间格式（java.text.SimpleDateFormat 格式串）。 */
-    val dateFormat: String = DateFormats.DEFAULT
+    val dateFormat: String = DateFormats.DEFAULT,
+    /** 时间前的标签，如"拍摄时间"；空 = 不加标签。 */
+    val timeLabel: String = "",
+    /** 自定义字段，如"施工区域：右岸坝肩"，按顺序显示在时间之前。 */
+    val customFields: List<CustomField> = CustomField.DEFAULTS
 ) {
     /** Never show an empty line even if the toggle is on and the label is blank. */
     val showOrgLabel: Boolean get() = showOrgLabelToggle && orgLabel.isNotBlank()
@@ -109,4 +113,41 @@ object DateFormats {
 
     fun isValid(pattern: String): Boolean =
         pattern.isNotBlank() && runCatching { java.text.SimpleDateFormat(pattern, java.util.Locale.SIMPLIFIED_CHINESE) }.isSuccess
+}
+
+/**
+ * 一条自定义水印字段："[label]：[value]"。值为空时不显示。
+ * [history] 记录最近用过的值（最新在前），方便在拍照界面一键切换。
+ */
+data class CustomField(
+    val id: Long,
+    val label: String,
+    val value: String = "",
+    val enabled: Boolean = true,
+    val history: List<String> = emptyList()
+) {
+    /** 在水印上显示的一行；没开或没填值时为 null。 */
+    val line: String?
+        get() {
+            val v = value.trim()
+            if (!enabled || v.isEmpty()) return null
+            val l = label.trim()
+            return if (l.isEmpty()) v else "$l：$v"
+        }
+
+    /** 把当前值记进历史（去重，最多 [MAX_HISTORY] 条）。 */
+    fun withValueInHistory(): CustomField {
+        val v = value.trim()
+        if (v.isEmpty()) return this
+        return copy(history = (listOf(v) + history.filter { it != v }).take(MAX_HISTORY))
+    }
+
+    companion object {
+        const val MAX_HISTORY = 8
+        const val MAX_LABEL = 20
+        const val MAX_VALUE = 60
+        val DEFAULTS = listOf(CustomField(1, "施工区域"), CustomField(2, "施工内容"))
+        /** 添加字段时的常用标签。 */
+        val SUGGESTED_LABELS = listOf("施工区域", "施工内容", "施工部位", "桩号", "施工单位", "监理单位", "检查人", "工程名称", "天气", "备注")
+    }
 }

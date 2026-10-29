@@ -24,6 +24,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ArrowDownward
+import androidx.compose.material.icons.outlined.ArrowUpward
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.runtime.key
+import com.geotagcamera.geotagginglocationonphoto.stamp.CustomField
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AlertDialog
@@ -191,7 +199,7 @@ internal fun StyleSettingsCard(fields: StampFields, update: ((StampFields) -> St
         Text(
             when (fields.template) {
                 StampTemplate.BAR -> "所有已开启的信息排成一栏，放在照片顶部或底部。"
-                StampTemplate.MINIMAL -> "小标签，只显示坐标和时间，可放在九宫格任意位置。"
+                StampTemplate.MINIMAL -> "简洁文字：只显示自定义字段、坐标和时间，可放在九宫格任意位置。背景不透明度调到 0% 就是纯文字效果（自动加阴影）。"
             } + " 也可以在拍照界面长按水印拖动。",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -472,6 +480,7 @@ internal fun DateTimeSettingsCard(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             modifier = Modifier.clickable { showFormats = true }
         )
+        TimeLabelEditor(fields.timeLabel) { v -> update { it.copy(timeLabel = v) } }
         HorizontalDivider(Modifier.padding(horizontal = 16.dp))
         ToggleListRow(
             title = "自定义拍摄时间",
@@ -663,4 +672,165 @@ internal fun ToggleListRow(title: String, subtitle: String, checked: Boolean, on
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable { onChange(!checked) }
     )
+}
+
+// ---------------------------------------------------------------------------
+// 自定义字段：施工区域、施工内容……
+// ---------------------------------------------------------------------------
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun CustomFieldsCard(fields: StampFields, update: ((StampFields) -> StampFields) -> Unit) {
+    var showAdd by remember { mutableStateOf(false) }
+    val list = fields.customFields
+
+    fun edit(id: Long, transform: (CustomField) -> CustomField) =
+        update { f -> f.copy(customFields = f.customFields.map { if (it.id == id) transform(it) else it }) }
+
+    fun move(id: Long, delta: Int) = update { f ->
+        val l = f.customFields.toMutableList()
+        val i = l.indexOfFirst { it.id == id }
+        val j = i + delta
+        if (i < 0 || j !in l.indices) f else f.copy(customFields = l.apply { add(j, removeAt(i)) })
+    }
+
+    SettingsCard("自定义字段") {
+        Text(
+            "每条显示为一行\"名称：内容\"，排在时间前面。内容为空的字段不显示。拍照界面点下方的项目栏可以快速改内容。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
+        )
+        list.forEachIndexed { index, field ->
+            key(field.id) {
+                CustomFieldEditor(
+                    field = field,
+                    canMoveUp = index > 0,
+                    canMoveDown = index < list.lastIndex,
+                    onLabel = { v -> edit(field.id) { it.copy(label = v) } },
+                    onValue = { v -> edit(field.id) { it.copy(value = v) } },
+                    onEnabled = { v -> edit(field.id) { it.copy(enabled = v) } },
+                    onUp = { move(field.id, -1) },
+                    onDown = { move(field.id, 1) },
+                    onDelete = { update { f -> f.copy(customFields = f.customFields.filter { it.id != field.id }) } }
+                )
+            }
+            if (index < list.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp))
+        }
+        TextButton(onClick = { showAdd = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
+            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("添加字段")
+        }
+    }
+
+    if (showAdd) {
+        AddFieldDialog(
+            existing = list.map { it.label },
+            onDismiss = { showAdd = false },
+            onAdd = { label ->
+                showAdd = false
+                update { f ->
+                    val id = (f.customFields.maxOfOrNull { it.id } ?: 0L) + 1
+                    f.copy(customFields = f.customFields + CustomField(id, label.take(CustomField.MAX_LABEL)))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun CustomFieldEditor(
+    field: CustomField,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onLabel: (String) -> Unit,
+    onValue: (String) -> Unit,
+    onEnabled: (Boolean) -> Unit,
+    onUp: () -> Unit,
+    onDown: () -> Unit,
+    onDelete: () -> Unit
+) {
+    // 本地文本状态：输入不等 DataStore 回写，光标不会跳。
+    var label by remember(field.id) { mutableStateOf(field.label) }
+    // 设置页打开时拍照界面不会同时改内容，所以不用回写同步（回写会在快速输入时吞字）。
+    var value by remember(field.id) { mutableStateOf(field.value) }
+
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = label,
+                onValueChange = { label = it.take(CustomField.MAX_LABEL); onLabel(label) },
+                label = { Text("名称") },
+                singleLine = true,
+                modifier = Modifier.weight(0.8f)
+            )
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it.take(CustomField.MAX_VALUE); onValue(value) },
+                label = { Text("内容") },
+                singleLine = true,
+                modifier = Modifier.weight(1.2f)
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Switch(checked = field.enabled, onCheckedChange = onEnabled)
+            Spacer(Modifier.width(8.dp))
+            Text(if (field.enabled) "显示" else "隐藏", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            IconButton(onClick = onUp, enabled = canMoveUp) { Icon(Icons.Outlined.ArrowUpward, contentDescription = "上移") }
+            IconButton(onClick = onDown, enabled = canMoveDown) { Icon(Icons.Outlined.ArrowDownward, contentDescription = "下移") }
+            IconButton(onClick = onDelete) { Icon(Icons.Outlined.Delete, contentDescription = "删除字段") }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AddFieldDialog(existing: List<String>, onDismiss: () -> Unit, onAdd: (String) -> Unit) {
+    var custom by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("添加字段") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("常用", style = MaterialTheme.typography.labelLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CustomField.SUGGESTED_LABELS.filter { it !in existing }.forEach { l ->
+                        SuggestionChip(onClick = { onAdd(l) }, label = { Text(l) })
+                    }
+                }
+                OutlinedTextField(
+                    value = custom,
+                    onValueChange = { custom = it.take(CustomField.MAX_LABEL) },
+                    label = { Text("或输入名称") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onAdd(custom.trim()) }, enabled = custom.isNotBlank()) { Text("添加") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
+}
+
+/** 时间前的标签，如"拍摄时间：2026.10.29 18:12:46"。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TimeLabelEditor(current: String, onChange: (String) -> Unit) {
+    var text by remember { mutableStateOf(current) }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it.take(CustomField.MAX_LABEL); onChange(text) },
+            label = { Text("时间前的名称（可空）") },
+            placeholder = { Text("例如 拍摄时间") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 6.dp)) {
+            listOf("" to "不加", "拍摄时间" to "拍摄时间", "时间" to "时间", "日期" to "日期").forEach { (v, l) ->
+                SuggestionChip(onClick = { text = v; onChange(v) }, label = { Text(l) })
+            }
+        }
+    }
 }
