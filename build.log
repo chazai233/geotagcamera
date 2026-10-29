@@ -1,0 +1,123 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:buildKotlinToolingMetadata
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:copyLegalDocs
+> Task :app:preBuild
+> Task :app:preFossReleaseBuild
+> Task :app:generateFossReleaseBuildConfig
+> Task :app:checkFossReleaseAarMetadata
+> Task :app:processFossReleaseNavigationResources FROM-CACHE
+> Task :app:compileFossReleaseNavigationResources FROM-CACHE
+> Task :app:generateFossReleaseResValues FROM-CACHE
+> Task :app:mapFossReleaseSourceSetPaths
+> Task :app:generateFossReleaseResources FROM-CACHE
+> Task :app:packageFossReleaseResources
+> Task :app:parseFossReleaseLocalResources FROM-CACHE
+> Task :app:createFossReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksFossRelease FROM-CACHE
+> Task :app:processFossReleaseMainManifest
+> Task :app:processFossReleaseManifest
+> Task :app:javaPreCompileFossRelease FROM-CACHE
+> Task :app:processFossReleaseManifestForPackage
+> Task :app:preFossReleaseUnitTestBuild
+> Task :app:javaPreCompileFossReleaseUnitTest FROM-CACHE
+> Task :app:mergeFossReleaseResources
+> Task :app:processFossReleaseResources
+> Task :app:kspFossReleaseKotlin
+
+> Task :app:compileFossReleaseKotlin
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/export/PhotoExport.kt:95:77 Redundant call of conversion method.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/location/map/MapEngine.kt:61:14 'fun withStyle(uri: String?): MapSnapshotter.Options' is deprecated. use {@link  #withStyleBuilder(Style.Builder)} instead.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/location/map/MapEngine.kt:91:22 'fun withStyle(uri: String?): MapSnapshotter.Options' is deprecated. use {@link  #withStyleBuilder(Style.Builder)} instead.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/stamp/StampSpec.kt:100:27 'constructor(p0: String!, p1: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/ui/common/ProofCard.kt:104:64 Unnecessary safe call on a non-null receiver of type 'ProofClaims'.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/ui/common/ProofCard.kt:128:28 'val Icons.Outlined.HelpOutline: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.HelpOutline.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/ui/detail/PhotoDetailScreen.kt:198:21 'val LocalClipboardManager: ProvidableCompositionLocal<ClipboardManager>' is deprecated. Use LocalClipboard instead which supports suspend functions.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/main/java/com/geotagcamera/geotagginglocationonphoto/ui/gallery/GalleryScreen.kt:148:41 'val Icons.Outlined.DriveFileMove: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Outlined.DriveFileMove.
+
+> Task :app:compileFossReleaseJavaWithJavac
+> Task :app:processFossReleaseJavaRes
+> Task :app:bundleFossReleaseClassesToRuntimeJar
+> Task :app:bundleFossReleaseClassesToCompileJar
+> Task :app:kspFossReleaseUnitTestKotlin
+
+> Task :app:compileFossReleaseUnitTestKotlin
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/test/java/com/geotagcamera/geotagginglocationonphoto/stamp/BuildStampSpecTest.kt:87:72 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+w: file:///home/runner/work/geotagcamera/geotagcamera/app/src/test/java/com/geotagcamera/geotagginglocationonphoto/stamp/BuildStampSpecTest.kt:138:52 Unnecessary non-null assertion (!!) on a non-null receiver of type 'String'.
+
+> Task :app:compileFossReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processFossReleaseUnitTestJavaRes
+> Task :app:testFossReleaseUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1793279821975.json
+
+BUILD SUCCESSFUL in 48s
+30 actionable tasks: 22 executed, 8 from cache
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:copyLegalDocs UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preFossReleaseBuild UP-TO-DATE
+> Task :app:mergeFossReleaseJniLibFolders
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:mergeFossReleaseNativeLibs
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateFossReleaseBuildConfig UP-TO-DATE
+> Task :app:checkFossReleaseDuplicateClasses
+> Task :app:checkFossReleaseAarMetadata UP-TO-DATE
+
+> Task :app:stripFossReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so, libimage_processing_util_jni.so, libmaplibre.so, libsurface_util_jni.so. Run with --info option to learn more.
+
+> Task :app:processFossReleaseNavigationResources UP-TO-DATE
+> Task :app:compileFossReleaseNavigationResources UP-TO-DATE
+> Task :app:generateFossReleaseResValues UP-TO-DATE
+> Task :app:extractFossReleaseNativeSymbolTables
+> Task :app:mapFossReleaseSourceSetPaths UP-TO-DATE
+> Task :app:mergeFossReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:generateFossReleaseResources UP-TO-DATE
+> Task :app:mergeFossReleaseResources UP-TO-DATE
+> Task :app:packageFossReleaseResources UP-TO-DATE
+> Task :app:parseFossReleaseLocalResources UP-TO-DATE
+> Task :app:createFossReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksFossRelease UP-TO-DATE
+> Task :app:processFossReleaseMainManifest UP-TO-DATE
+> Task :app:processFossReleaseManifest UP-TO-DATE
+> Task :app:processFossReleaseManifestForPackage UP-TO-DATE
+> Task :app:processFossReleaseResources UP-TO-DATE
+> Task :app:kspFossReleaseKotlin UP-TO-DATE
+> Task :app:compileFossReleaseKotlin UP-TO-DATE
+> Task :app:javaPreCompileFossRelease UP-TO-DATE
+> Task :app:compileFossReleaseJavaWithJavac UP-TO-DATE
+> Task :app:extractProguardFiles
+> Task :app:mergeFossReleaseArtProfile
+> Task :app:mergeFossReleaseGeneratedProguardFiles
+> Task :app:processFossReleaseJavaRes UP-TO-DATE
+> Task :app:mergeFossReleaseStartupProfile
+> Task :app:expandFossReleaseArtProfileWildcards
+> Task :app:mergeFossReleaseJavaResource
+> Task :app:mergeFossReleaseShaders
+> Task :app:compileFossReleaseShaders NO-SOURCE
+> Task :app:generateFossReleaseAssets UP-TO-DATE
+> Task :app:mergeFossReleaseAssets
+> Task :app:produceFossReleaseComposeMapping
+> Task :app:reportFossReleaseComposeMappingErrors
+> Task :app:compressFossReleaseAssets
+> Task :app:generateFossReleaseLintVitalReportModel
+> Task :app:writeFossReleaseAppMetadata
+> Task :app:writeFossReleaseSigningConfigVersions
+> Task :app:minifyFossReleaseWithR8
+> Task :app:lintVitalAnalyzeFossRelease
+> Task :app:lintVitalReportFossRelease
+> Task :app:lintVitalFossRelease
+> Task :app:mergeFossReleaseComposeMapping
+> Task :app:compileFossReleaseArtProfile
+> Task :app:convertShrunkResourcesToBinaryFossRelease
+> Task :app:optimizeFossReleaseResources
+> Task :app:packageFossRelease
+> Task :app:createFossReleaseApkListingFileRedirect
+> Task :app:assembleFossRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_4-1793279870259.json
+
+BUILD SUCCESSFUL in 1m 46s
+52 actionable tasks: 29 executed, 23 up-to-date

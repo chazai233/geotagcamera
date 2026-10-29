@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.geotagcamera.geotagginglocationonphoto.export.PhotoExportTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-29T13:17:47.373Z" hostname="runnervmnwato" time="0.025">
+  <properties/>
+  <testcase name="csv_quotesCommasAndQuotes_andHasBom" classname="com.geotagcamera.geotagginglocationonphoto.export.PhotoExportTest" time="0.016"/>
+  <testcase name="kml_escapesXml_andUsesLonLatOrder" classname="com.geotagcamera.geotagginglocationonphoto.export.PhotoExportTest" time="0.007"/>
+  <testcase name="geoJson_isValidFeatureCollection" classname="com.geotagcamera.geotagginglocationonphoto.export.PhotoExportTest" time="0.001"/>
+  <testcase name="csv_neutralisesFormulaInjection" classname="com.geotagcamera.geotagginglocationonphoto.export.PhotoExportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

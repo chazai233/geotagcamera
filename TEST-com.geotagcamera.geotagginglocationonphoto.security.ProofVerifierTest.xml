@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-29T13:17:47.413Z" hostname="runnervmnwato" time="0.096">
+  <properties/>
+  <testcase name="malformedProofIsFalseNotCrash" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.001"/>
+  <testcase name="v2RejectsTamperedClaimsInPayload" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.039"/>
+  <testcase name="v3EditedTimeVerifiesAndRealTimeIsBound" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.01"/>
+  <testcase name="v2SignatureDoesNotVerifyAsV1" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.005"/>
+  <testcase name="stillVerifiesAfterProofIsEmbedded" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.005"/>
+  <testcase name="v2VerifiesWhenExifMatchesClaims" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.005"/>
+  <testcase name="rejectsEditedImage" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.002"/>
+  <testcase name="longitudeWrapsAcrossAntimeridian" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.001"/>
+  <testcase name="v2RejectsRewrittenGps" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.002"/>
+  <testcase name="v2WithMissingClaimsFails" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.004"/>
+  <testcase name="timeMustMatchExactly" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.0"/>
+  <testcase name="v2RejectsRewrittenTime" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.004"/>
+  <testcase name="verifiesWithOnlyTheEmbeddedPublicKey" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.007"/>
+  <testcase name="v2FailsClosedWhenExifMissing" classname="com.geotagcamera.geotagginglocationonphoto.security.ProofVerifierTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

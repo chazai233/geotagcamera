@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-29T13:17:47.514Z" hostname="runnervmnwato" time="0.024">
+  <properties/>
+  <testcase name="no address falls back to the plus code alone" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.009"/>
+  <testcase name="history keeps newest first without duplicates" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="defaults show place, address with plus code, coordinates and time" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="custom fields survive a json round trip and bad json falls back" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.003"/>
+  <testcase name="chips follow their toggles and round sensibly" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.002"/>
+  <testcase name="map is off by default" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="without a location only the time, fields and plain address show" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="style carries colour and opacity" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="org label only when toggled on and non-blank" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="date format follows the chosen pattern" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="line breaks never get into fields, presets or history" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="time label prefixes the date line" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="turning fields off removes them" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="gmt offset needs the timestamp on" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="custom fields become labelled lines and skip empty or hidden ones" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="presets dedupe, trim, remove and reorder" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.001"/>
+  <testcase name="signed mark needs both a signature and the toggle" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <testcase name="invalid date pattern falls back instead of failing" classname="com.geotagcamera.geotagginglocationonphoto.stamp.BuildStampSpecTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

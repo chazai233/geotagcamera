@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.geotagcamera.geotagginglocationonphoto.ui.ReviewFilenameTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-29T13:17:47.543Z" hostname="runnervmnwato" time="0.003">
+  <properties/>
+  <testcase name="place slug keeps only letters and digits of the first part" classname="com.geotagcamera.geotagginglocationonphoto.ui.ReviewFilenameTest" time="0.0"/>
+  <testcase name="two shots in the same minute get different names" classname="com.geotagcamera.geotagginglocationonphoto.ui.ReviewFilenameTest" time="0.001"/>
+  <testcase name="size formatting boundaries" classname="com.geotagcamera.geotagginglocationonphoto.ui.ReviewFilenameTest" time="0.001"/>
+  <testcase name="no usable place falls back to timestamp only" classname="com.geotagcamera.geotagginglocationonphoto.ui.ReviewFilenameTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

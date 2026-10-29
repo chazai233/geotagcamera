@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.geotagcamera.geotagginglocationonphoto.ui.AnchorForFractionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-29T13:17:47.540Z" hostname="runnervmnwato" time="0.001">
+  <properties/>
+  <testcase name="corners and centre" classname="com.geotagcamera.geotagginglocationonphoto.ui.AnchorForFractionTest" time="0.001"/>
+  <testcase name="drags past the frame edge land in the edge cells" classname="com.geotagcamera.geotagginglocationonphoto.ui.AnchorForFractionTest" time="0.0"/>
+  <testcase name="thirds boundaries belong to the next cell" classname="com.geotagcamera.geotagginglocationonphoto.ui.AnchorForFractionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
