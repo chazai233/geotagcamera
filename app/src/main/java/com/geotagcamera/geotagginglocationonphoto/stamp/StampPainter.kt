@@ -69,6 +69,7 @@ object StampPainter {
         val scale = style.scale
         val marginX = style.marginX
         val marginY = style.marginY
+        val wrap = style.wrap
         val bg = Color(style.bgArgb)
         val border = StampColors.Border.copy(alpha = StampColors.Border.alpha * (bg.alpha / 0.7f).coerceIn(0f, 1f))
         private val text = Color(style.textArgb)
@@ -157,9 +158,9 @@ object StampPainter {
         }
         spec.addressLine?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
         spec.coordinatesText?.let { y += drawLine(tm, it, pal.data, textX, y, textWidth) + lineGap }
-        spec.fieldLines.forEach { y += drawWrapped(tm, it, pal.note, textX, y, textWidth) + lineGap }
+        spec.fieldLines.forEach { y += drawWrapped(tm, it, pal.note, textX, y, textWidth, pal.wrap) + lineGap }
         dateTimeLine(spec)?.let { y += drawLine(tm, it, pal.body, textX, y, textWidth) + lineGap }
-        spec.noteLine?.let { y += drawWrapped(tm, it, pal.note, textX, y, textWidth) + lineGap }
+        spec.noteLine?.let { y += drawWrapped(tm, it, pal.note, textX, y, textWidth, pal.wrap) + lineGap }
 
         // Last line: meta chips as one dotted run on the left, marks on the right.
         val marks = marksText(spec)
@@ -205,7 +206,7 @@ object StampPainter {
     /** [wrapWidth] 为 null 时每项按一行算；否则按实际换行后的高度算。 */
     private fun barTextHeight(spec: StampSpec, tm: TextMeasurer, lineGap: Float, pal: Palette, wrapWidth: Float?): Float {
         fun wrappedH(text: String, style: TextStyle): Int =
-            if (wrapWidth == null) tm.measure(PROBE, style, maxLines = 1).size.height
+            if (wrapWidth == null || !pal.wrap) tm.measure(PROBE, style, maxLines = 1).size.height
             else wrap(tm, text, style, wrapWidth).size.height
         // 用含中文的探针测行高：中文字体的行高可能比拉丁字母高。
         val heights = buildList {
@@ -240,7 +241,7 @@ object StampPainter {
         val lineGap = px(1.5f)
         // 最宽可占满画面（扣掉两侧边距），长内容自动换行
         val maxW = (size.width - marginX * 2 - padH * 2).coerceAtLeast(1f)
-        val lines = spec.fieldLines.map { wrap(tm, it, pal.note, maxW) } + listOfNotNull(
+        val lines = spec.fieldLines.map { if (pal.wrap) wrap(tm, it, pal.note, maxW) else one(tm, it, pal.note, maxW) } + listOfNotNull(
             spec.coordinatesText?.let { one(tm, it, pal.data, maxW) },
             dateTimeLine(spec)?.let { one(tm, it, pal.note, maxW) }
         )
@@ -286,8 +287,8 @@ object StampPainter {
             constraints = Constraints(maxWidth = maxWidth.roundToInt().coerceAtLeast(1))
         )
 
-    private fun DrawScope.drawWrapped(tm: TextMeasurer, text: String, style: TextStyle, x: Float, y: Float, maxWidth: Float): Float {
-        val layout = wrap(tm, text, style, maxWidth)
+    private fun DrawScope.drawWrapped(tm: TextMeasurer, text: String, style: TextStyle, x: Float, y: Float, maxWidth: Float, wrapLines: Boolean): Float {
+        val layout = if (wrapLines) wrap(tm, text, style, maxWidth) else one(tm, text, style, maxWidth)
         drawText(layout, topLeft = Offset(x, y))
         return layout.size.height.toFloat()
     }

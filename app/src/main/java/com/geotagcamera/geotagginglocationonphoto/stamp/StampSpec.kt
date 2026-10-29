@@ -17,7 +17,8 @@ data class StampStyle(
     val bgArgb: Int = 0xB3121417.toInt(),
     val textArgb: Int = 0xFFFFFFFF.toInt(),
     val marginX: Float = 8f,
-    val marginY: Float = 8f
+    val marginY: Float = 8f,
+    val wrap: Boolean = true
 ) {
     companion object {
         fun from(fields: StampFields): StampStyle {
@@ -27,7 +28,8 @@ data class StampStyle(
                 bgArgb = argb(fields.bgColor, fields.bgOpacity),
                 textArgb = argb(fields.textColor, fields.textOpacity),
                 marginX = fields.marginX,
-                marginY = fields.marginY
+                marginY = fields.marginY,
+                wrap = fields.wrapText
             )
         }
     }

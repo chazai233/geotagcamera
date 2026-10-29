@@ -65,6 +65,7 @@ class StampPreferences(private val context: Context) {
         val MARGIN_Y = floatPreferencesKey("style_margin_y")
         val DATE_FORMAT = stringPreferencesKey("date_format")
         val TIME_LABEL = stringPreferencesKey("time_label")
+        val WRAP_TEXT = booleanPreferencesKey("wrap_text")
         val CUSTOM_FIELDS = stringPreferencesKey("custom_fields_json")
     }
 
@@ -105,6 +106,7 @@ class StampPreferences(private val context: Context) {
             marginY = (prefs[Keys.MARGIN_Y] ?: 8f).coerceIn(0f, 80f),
             dateFormat = prefs[Keys.DATE_FORMAT] ?: DateFormats.DEFAULT,
             timeLabel = prefs[Keys.TIME_LABEL] ?: "",
+            wrapText = prefs[Keys.WRAP_TEXT] ?: true,
             customFields = prefs[Keys.CUSTOM_FIELDS]?.let { CustomFieldsCodec.decode(it) } ?: CustomField.DEFAULTS
         )
     }
@@ -173,6 +175,7 @@ class StampPreferences(private val context: Context) {
         prefs[Keys.MARGIN_Y] = fields.marginY
         prefs[Keys.DATE_FORMAT] = fields.dateFormat
         prefs[Keys.TIME_LABEL] = fields.timeLabel
+        prefs[Keys.WRAP_TEXT] = fields.wrapText
         prefs[Keys.CUSTOM_FIELDS] = CustomFieldsCodec.encode(fields.customFields)
     }
 }

@@ -75,6 +75,8 @@ data class StampFields(
     val marginY: Float = 8f,
     /** 日期时间格式（java.text.SimpleDateFormat 格式串）。 */
     val dateFormat: String = DateFormats.DEFAULT,
+    /** 长文字（自定义字段、备注）自动换行；关闭则单行显示，超出部分省略。 */
+    val wrapText: Boolean = true,
     /** 时间前的标签，如"拍摄时间"；空 = 不加标签。 */
     val timeLabel: String = "",
     /** 自定义字段，如"施工区域：右岸坝肩"，按顺序显示在时间之前。 */
