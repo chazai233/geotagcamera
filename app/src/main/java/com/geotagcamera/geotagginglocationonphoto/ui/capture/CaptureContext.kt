@@ -1,6 +1,9 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.capture
 
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material3.InputChip
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
@@ -135,7 +138,7 @@ private fun Pill(icon: ImageVector, text: String, active: Boolean, modifier: Mod
 }
 
 /** Pick the project, write the note, or start a new project, in one sheet. */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CaptureContextSheet(
     projects: List<ProjectWithCount>,
@@ -148,6 +151,7 @@ fun CaptureContextSheet(
     customFields: List<CustomField> = emptyList(),
     onFieldValues: (Map<Long, String>) -> Unit = {},
     onAddPreset: (Long, String) -> Unit = { _, _ -> },
+    onRemoveHistory: (Long, String) -> Unit = { _, _ -> },
     showProjects: Boolean = true,
     onManageProjects: () -> Unit = {}
 ) {
@@ -205,9 +209,21 @@ fun CaptureContextSheet(
                     val recent = f.history.filter { it != v && it !in f.presets }
                     if (recent.isNotEmpty()) {
                         Text("最近", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = Spacing.XS))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.S)) {
-                            items(recent) { h ->
-                                SuggestionChip(onClick = { input.setTextAndPlaceCursorAtEnd(h) }, label = { Text(h) })
+                        // 点一下填入，点 × 从最近记录里删掉；长内容整条换行显示，不被截断
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.S)) {
+                            recent.forEach { h ->
+                                InputChip(
+                                    selected = false,
+                                    onClick = { input.setTextAndPlaceCursorAtEnd(h) },
+                                    label = { Text(h) },
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Outlined.Close,
+                                            contentDescription = "删除这条最近记录",
+                                            modifier = Modifier.size(18.dp).clickable { onRemoveHistory(f.id, h) }
+                                        )
+                                    }
+                                )
                             }
                         }
                     }

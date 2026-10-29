@@ -211,6 +211,14 @@ class CaptureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun removeCustomFieldHistory(id: Long, value: String) {
+        viewModelScope.launch {
+            stampPreferences.edit { f ->
+                f.copy(customFields = f.customFields.map { if (it.id == id) it.copy(history = it.history.filter { h -> h != value }) else it })
+            }
+        }
+    }
+
     fun addCustomFieldPreset(id: Long, value: String) {
         viewModelScope.launch {
             stampPreferences.edit { f ->

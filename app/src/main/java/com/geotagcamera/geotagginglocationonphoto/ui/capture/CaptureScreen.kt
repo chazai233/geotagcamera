@@ -717,6 +717,7 @@ private fun CameraContent(
                 customFields = stampFieldsState.customFields,
                 onFieldValues = { viewModel.setCustomFieldValues(it) },
                 onAddPreset = { id, v -> viewModel.addCustomFieldPreset(id, v) },
+                onRemoveHistory = { id, v -> viewModel.removeCustomFieldHistory(id, v) },
                 showProjects = useProjects,
                 onManageProjects = { showManageProjects = true }
             )

@@ -148,6 +148,14 @@ class LocalWatermarkViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
+    fun removeHistory(id: Long, value: String) {
+        viewModelScope.launch {
+            stampPreferences.edit { f ->
+                f.copy(customFields = f.customFields.map { if (it.id == id) it.copy(history = it.history.filter { h -> h != value }) else it })
+            }
+        }
+    }
+
     fun dismissResult() {
         _save.value = LocalSaveState.Idle
     }

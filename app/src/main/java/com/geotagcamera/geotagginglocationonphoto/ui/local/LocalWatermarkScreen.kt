@@ -289,6 +289,7 @@ fun LocalWatermarkScreen(viewModel: LocalWatermarkViewModel = viewModel()) {
             customFields = fields.customFields,
             onFieldValues = { viewModel.setFieldValues(it) },
             onAddPreset = { id, v -> viewModel.addPreset(id, v) },
+            onRemoveHistory = { id, v -> viewModel.removeHistory(id, v) },
             showProjects = false
         )
     }
