@@ -1,6 +1,7 @@
 package com.geotagcamera.geotagginglocationonphoto.ui.capture
 
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.InputChip
@@ -92,50 +93,41 @@ fun CaptureContextRow(
     fields: List<CustomField> = emptyList(),
     showProject: Boolean = true
 ) {
-    // 取景框下方的字段卡：每个字段一行、完整显示，点一下打开面板选预设
+    // 和定位标签、变焦按钮同一套样式：玻璃质感胶囊、12sp 系统字体、高 32dp。
+    // 只显示字段内容（名称已经在取景框的水印预览里），放不下时换行，不省略。
+    val values = fields.mapNotNull { it.value.trim().ifEmpty { null } }
+    val text = buildList {
+        if (showProject) add(project?.name ?: "未选项目")
+        if (values.isNotEmpty()) addAll(values) else add("点此填写水印字段")
+    }.joinToString("  ·  ")
+    val muted = values.isEmpty() && (!showProject || project == null)
     Row(
         modifier = modifier
             .widthIn(max = 480.dp)
-            .fillMaxWidth()
+            .heightIn(min = 32.dp)
             .clip(RoundedCornerShape(16.dp))
-            .border(BorderStroke(1.dp, ChromeTokens.GlassBorder), RoundedCornerShape(16.dp))
             .background(ChromeTokens.Glass)
+            .border(BorderStroke(1.dp, ChromeTokens.GlassBorder), RoundedCornerShape(16.dp))
             .clickable(onClickLabel = "修改水印字段", onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            if (showProject) {
-                Pill(if (project != null) Icons.Outlined.Folder else Icons.Outlined.FolderOff, project?.name ?: "未选项目", project != null, Modifier)
-            }
-            if (fields.isEmpty()) {
-                Text("点此填写水印字段", color = ChromeTokens.InkMuted, style = MaterialTheme.typography.labelLarge)
-            }
-            fields.forEach { f ->
-                val v = f.value.trim()
-                Text(
-                    buildString {
-                        if (f.label.isNotBlank()) append(f.label).append("：")
-                        append(v.ifEmpty { "未填写" })
-                    },
-                    color = if (v.isEmpty()) ChromeTokens.InkMuted else ChromeTokens.Ink,
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-        }
-        Spacer(Modifier.width(8.dp))
-        Icon(Icons.Outlined.EditNote, contentDescription = null, tint = ChromeTokens.InkMuted, modifier = Modifier.size(20.dp))
+        Icon(
+            if (showProject) Icons.Outlined.Folder else Icons.Outlined.EditNote,
+            contentDescription = null,
+            tint = ChromeTokens.InkMuted,
+            modifier = Modifier.size(14.dp)
+        )
+        Text(
+            text,
+            color = if (muted) ChromeTokens.InkMuted else ChromeTokens.Ink,
+            fontSize = 12.sp,
+            lineHeight = 16.sp
+        )
     }
 }
 
-@Composable
-private fun Pill(icon: ImageVector, text: String, active: Boolean, modifier: Modifier) {
-    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = if (active) ChromeTokens.Ink else ChromeTokens.InkMuted, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(text, color = if (active) ChromeTokens.Ink else ChromeTokens.InkMuted, style = MaterialTheme.typography.labelLarge)
-    }
-}
 
 /** Pick the project, write the note, or start a new project, in one sheet. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)

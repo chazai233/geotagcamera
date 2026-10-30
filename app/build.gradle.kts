@@ -28,8 +28,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // Split APKs get versionCode * 10 + ABI digit (see androidComponents below).
-        versionCode = 8
-        versionName = "1.4.1-cn2"
+        versionCode = 9
+        versionName = "1.4.1-cn3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
